@@ -204,7 +204,6 @@ class genepool:
 	filtered_gen = []
 	tlist = []
 	for i in range(len(gen)):
-	    #gen[i]['score'] = 0	#they are retested when reset_scores is called #clear the scores so they get retested
 	    if gen[i]['gene'] in tlist:
 		#twin found ignore
 		pass
@@ -366,8 +365,7 @@ class genepool:
 if __name__ == "__main__":
     #test the genetic class    
     g = genepool()
-
-    
+   
     #16 bit number (65535) with the decimal three places to the left (10^3 = 1000)
     #max value should be 65.535
     g.add_numvar("afloat",16,3)
@@ -382,8 +380,6 @@ if __name__ == "__main__":
     max_gene = ""
 
     while g.local_optima_reached == False:
-    #for i in range(35000):
-	#should converge on the max value of the variable 'float'
 	ag = g.get_next()
 	score = ag['afloat'] * ag['aint']
 	if score > max_score:

@@ -170,11 +170,6 @@ class trade_engine:
 			if i < atr_depth + 1:
 				self.market_class[i][1] = 0.0	#ignore early (uncalculated) data 
 
-		#print "end market classify"
-
-		#debug!!
-		#self.net_worth_log = self.market_class
-
 	def metrics_report(self):
 		m = ""
 		m += "\nShares: " + str(self.shares)
@@ -429,22 +424,6 @@ class trade_engine:
 		return
 
 	def log_orders(self,filename=None):
-		""" old method:
-		self.order_history = ""
-		if filename != None:
-			f = open(filename,'w')
-		for position in self.positions:
-			if filename != None:
-				f.write("-"*40 + "\n")
-			self.order_history += "-"*40 + "\n"
-			for key in position.keys():
-				if filename != None:
-					f.write(key + "," + str(position[key]) + "\n")
-				self.order_history += key + "," + str(position[key]) + "\n"
-		if filename != None:
-			f.close()
-		"""
-
 		self.order_history = ""
 		self.positions = sorted(self.positions, key=itemgetter('buy_period'),reverse=True)
 		if len(self.positions) > 0:

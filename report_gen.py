@@ -36,7 +36,7 @@ import xmlrpclib
 import json
 import gene_server_config
 import time
-import pdb
+
 
 __server__ = gene_server_config.__server__
 __port__ = str(gene_server_config.__port__)
@@ -63,8 +63,6 @@ def load():
 	#truncate the dataset
 	d [max_length * -1:]
 
-
-
     #load the backtest dataset
     input = []
     for row in d[1:]:
@@ -78,10 +76,8 @@ while 1:
     print "_" * 80
     print time.ctime()  
     #load the data set
-    #print "loading the data set"
     input = load()
     
-    #quartile = 2
     buys = []
     targets = []
     for quartile in [1,2,3,4]:
@@ -95,9 +91,6 @@ while 1:
 		except:
 		    print "Gene Server Error"
 		    time.sleep(10)
-	
-	    #print type(ag)
-	    #print str(ag)
 	    
 	    if type(ag) == type([]):
 		ag = ag[0]
@@ -114,17 +107,16 @@ while 1:
 	    te.stop_loss = ag['stop_loss']
 	    te.stop_age = ag['stop_age']
 	    te.macd_buy_trip = ag['macd_buy_trip'] * -1.0
-	    #te.min_i_neg = ag['min_i_neg']
-	    #te.min_i_pos = ag['min_i_pos']
 	    te.buy_wait_after_stop_loss = ag['buy_wait_after_stop_loss']
 	    #feed the input through the trade engine
 	    
-	    #preprocess
-	    #print "preprocessing..."
+	    #preprocess the data
 	    te.classify_market(input)
+	    #selecct the quartile to test
 	    te.test_quartile(quartile)
 	    te.net_worth_log = []
 
+	    #feed the data
 	    try:
 		for i in input:
 		    te.input(i[0],i[1])
@@ -133,33 +125,18 @@ while 1:
 	    else:
 
 		# Calc the next buy trigger point
-		#print "number of positions: ", len(te.positions)
 		if len(te.positions) > 0:
 		    target = te.input_log[-1][1] - (((te.macd_pct_log[-1][1] - te.macd_buy_trip) / 100.0) * te.input_log[-1][1]) - 0.001
 		    if target > te.input_log[-1][1]:
 		    	target = te.input_log[-1][1]
 
-		    #print "-" * 40
-		    #print "Buy Target: $", target
-		    #print "Transactions: ",len(te.positions)
-		    #print "-" * 40
-
 		    te.score()
-
-
 		    st = input[-1][0] + 2000
 		    te.input(st,target)
 		    p = te.positions[-1]
-		    #for key in p:
-			#print key,p[key]
-		
-		    #print "generating trade chart..."
-		   
-		    #debug!!
-		    te.classify_market(input)
 
-		    #te.chart("/home/emfb/public_html/bc/chart.templ","/home/emfb/public_html/bc/chart_test.html")
-		    #te.chart("/home/emfb/public_html/bc/chart.templ","/home/emfb/public_html/bc/chart_test_zoom.html",60*12)
+		    #te.classify_market(input)
+
 		    te.chart("/home/emfb/public_html/bc/chart.templ","/tmp/chart_test_%s.html"%str(quartile))
 		    te.chart("/home/emfb/public_html/bc/chart.templ","/tmp/chart_test_zoom_%s.html"%str(quartile),60*24)
 		    #print "Evaluating target price"
@@ -190,7 +167,6 @@ while 1:
     f.write(",".join(map(str,targets)) + "\n")
     f.close()
 
-    #pdb.set_trace()
     #print "sleeping..."
     print "_" * 80
     print "\n"
