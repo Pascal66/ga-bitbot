@@ -24,9 +24,6 @@ import telnetlib
 import json
 from time import *
 
-#client = telnetlib.Telnet('bitcoincharts.com',27007)
-#sleep(60)
-
 def process(message):
 	mdict = json.loads(message)
 	return mdict['symbol'],mdict['price'],mdict['volume']

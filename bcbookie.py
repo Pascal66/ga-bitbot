@@ -65,7 +65,6 @@ class bookie:
 	#dump the records into a html file
 	if len(self.records) > 0:
 	    export = sorted(self.records, key=itemgetter('localtime'),reverse=True)
-	    #f = open('/home/emfb/public_html/bc/book.html','w')
 	    f = open('/tmp/book.html','w')
 	    f.write('<table border="1">\n')
 	    keys = export[0].keys()
@@ -122,7 +121,6 @@ class bookie:
 	
     def load_orders(self):
 	#load orders from mt.gox
-	#print "load_orders: downloading orders"
 	while 1:
 	    try:
 		sleep(3)
@@ -134,7 +132,6 @@ class bookie:
 	
     def load_records(self):
 	#load records from local file
-	#print "load_records: loading local data"
 	try:
 	    f = open("bookie_records.pkl",'r')
 	    pd = f.read()
@@ -145,14 +142,12 @@ class bookie:
 	self.record_synch()
     
     def save_records(self):
-	#print "save_records: saving record file"
 	#save records to local file
 	f = open("bookie_records.pkl",'w')
 	f.write(pickle.dumps(self.records))
 	f.close()
     
     def add_record(self,record):
-	#print "add_record: appending new record"
 	self.records.append(record)
 	self.save_records()
     
@@ -183,7 +178,6 @@ class bookie:
 	return None
 	    
     def funds(self):
-	#print "funds: downloading balance"
 	while 1:
 	    try:
 		sleep(1)
@@ -197,7 +191,6 @@ class bookie:
 
     def sell(self, amount, price):
 	price = float("%.3f"%price)
-
 	print "sell: selling position: qty,price: ",amount,price
 	if price < self.btc_price:
 	    price = self.btc_price - 0.01
@@ -207,7 +200,6 @@ class bookie:
 	    try:
 		sleep(1)
 		self.client.sell_btc(amount, price)
-		#save any updated records
 		self.save_records()
 		return
 	    except:
@@ -288,19 +280,10 @@ class bookie:
 		self.add_record(order)
 		return
 	    else:
-		#add the additonal criteria to the order dict
 		order.update({'localtime':time(),'book':'open','commit':commit_price,'target':target_price,'stop':stop_loss,'max_wait':max_wait,'max_hold':max_hold})
 		self.add_record(order)
 		
 		print "buy: order confirmed"
-		"""
-		print "\tqty",qty
-		print "\tprice",buy_price
-		print "\ttarget",target_price
-		print "\tstop loss",stop_loss
-		print "\tcost",cost
-		print "\tfunds",self.usds
-		"""
 		return 1
 		
 	else:
@@ -316,7 +299,6 @@ class bookie:
 	    try:
 		sleep(1)	
 		self.client.cancel_order(oid)
-		#save any updated records
 		self.save_records()
 		return
 	    except:
@@ -354,13 +336,7 @@ class bookie:
 			else:
 			    r['book'] = "error: insuf funds"
 			    print "\t\trecord_synch: OID:",r['oid'], " tag as error: insuf funds"
-	"""	
-	print "-"*40
-	print "record_synch: Mt.Gox Active Orders:"
-	for o in self.orders:
-	    print "\t" + o['oid']
-	print "-"*40
-	"""
+
 	#print "record_synch: error check:"
 	error_found = 0
 	for o in self.orders:
@@ -382,8 +358,6 @@ class bookie:
 	else:
 	    #print "record_synch: no order errors found"
 	    pass
-
-
    
 	self.save_records()
 	self.report()
