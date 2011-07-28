@@ -2,5 +2,5 @@
 global __server__
 global __port__
 
-__server__ = "192.168.0.16"
+__server__ = "127.0.0.1"
 __port__ = 9854
