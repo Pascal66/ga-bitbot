@@ -49,6 +49,9 @@ class trade_engine:
 		self.stbf = 1.97		#short trade biasing factor
 						#-- increase to favor day trading
 						#-- decrease to 1 to eliminate bias
+
+		self.nlsf = 5.0			#non-linear scoring factor - favor the latest trades
+						#max factor = exp(self.nlsf) @ the last sample periord 
 		
 		self.commision = 0.0# 0.0065	#mt.gox commision
 		
@@ -220,8 +223,8 @@ class trade_engine:
 			self.positions = sorted(self.positions, key=itemgetter('buy_period'))
 			#use the last position buy_period to calc the exp_scale. If the total input period counts are used the scores will
 			#change with new price data regardless if the trade history remains unchanged. This would effectivly disable local optima detection
-			exp_scale = 1 / float(self.positions[-1]['buy_period'])	
-			final_score_balance = self.score_balance
+			exp_scale = self.nlsf / float(self.positions[-1]['buy_period'])	
+			final_score_balance = 0
 			for p in self.positions:
 				if p['status'] == "sold":
 					p['age'] = float(p['age'])
@@ -230,10 +233,11 @@ class trade_engine:
 					#favors a faster turn around time on positions
 					p['score'] /= (pow(p['age'],self.stbf) / p['age'] )
 					p['score'] *= 100.0
-					if p['age'] < 2.0:
-						p['score'] *= 0.3 #I'm knocking down 1min trades because theres a chance the system will miss them
+					if p['age'] < 5.0:
+						p['score'] *= p['age'] * (1/5.0) #I'm knocking down short trades because theres a chance the system will miss them
 				if p['status'] == "stop":
-					if p['actual'] > p['buy']: #only add stop orders to the score if there was a loss
+					if p['actual'] > p['buy']: 
+						#only add stop orders to the score if there was a loss
 						p['score'] = (((p['actual'] - p['buy']) / p['buy']) * 100.0)  * self.shares
 				#apply e^0 to e^1 weighting to favor the latest trade results
 				p['score'] *= exp(exp_scale * p['buy_period']) 
@@ -244,7 +248,6 @@ class trade_engine:
 			final_score_balance -= self.stop_loss / 10.0
 			final_score_balance += (self.wls / 10000.0)
 			final_score_balance -= (self.stop_age / 1000.0)
-			#final_score_balance += self.markup / 10000.0
 
 			final_score_balance *= self.wins / (self.wins + self.loss * 1.0)
 			final_score_balance *= self.markup
