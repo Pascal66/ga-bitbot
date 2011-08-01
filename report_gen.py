@@ -136,7 +136,7 @@ while 1:
 		    p = te.positions[-1]
 
 		    #te.classify_market(input)
-
+		    print "creating charts..."
 		    te.chart("/home/emfb/public_html/bc/chart.templ","/tmp/chart_test_%s.html"%str(quartile))
 		    te.chart("/home/emfb/public_html/bc/chart.templ","/tmp/chart_test_zoom_%s.html"%str(quartile),60*24)
 		    #print "Evaluating target price"

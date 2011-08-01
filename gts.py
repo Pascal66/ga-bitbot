@@ -131,7 +131,7 @@ if __name__ == "__main__":
     	bs = raw_input()
     if bs == 'y':
 	bob_simulator = True
-	g.local_optima_trigger = 10
+	g.local_optima_trigger = 5
 	g.pool = []
 	calibrate = 1
     	bootstrap = json.loads(server.get_bobs(quartile))
@@ -152,8 +152,9 @@ if __name__ == "__main__":
 	
     else:
 	bob_simulator = False
+	g.local_optima_trigger = 3
 
-
+    cycle_time = 60 * 5#time in seconds to test the entire population
     test_count = 0
     total_count = 0
     max_score = -10000
@@ -173,14 +174,14 @@ if __name__ == "__main__":
 	    elapsed_time = current_time - start_time
 	    gps = total_count / elapsed_time
 	    if calibrate == 1:
-	    	g.pool_size = int(gps * 40)
+	    	g.pool_size = int(gps * cycle_time)
 	    print "Genes/Sec Processed: ","%.2f"%gps,"Pool Size: ",g.pool_size,"Total Processed: ",total_count
 	    #load the latest trade data
 	    print "Loading the lastest trade data..."
 	    input = load()
 	    #preprocess input data
 	    te.classify_market(input)
-	    print g.local_optima_reached
+	    #print g.local_optima_reached
 	    if g.local_optima_reached:
 		print '#'*10, " Local optima reached...sending bob to the gene_server ", '#'*10		
 		max_score = 0
@@ -206,7 +207,7 @@ if __name__ == "__main__":
 				g.seed() #not sure if I need this
 		else:
 			print "slicing the gene pool"
-			g.pool = g.pool[(g.pool_size / 2):]
+			g.pool = g.pool[int(g.pool_size * 70):]
 			g.local_optima_reached = False
 			g.local_optima_buffer = []
 	    print "back to crunching..."
