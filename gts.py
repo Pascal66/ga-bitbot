@@ -59,7 +59,7 @@ if __name__ == "__main__":
 
     def load():
 	#open the history file
-	print "loading the data set"
+	#print "loading the data set"
 	f = open("./datafeed/bcfeed_mtgoxUSD_1min.csv",'r')
 	#f = open("./datafeed/test_data.csv",'r')
 	d = f.readlines()
@@ -75,7 +75,7 @@ if __name__ == "__main__":
 	    r = row.split(',')[1] #last price
 	    t = row.split(',')[0] #time
 	    input.append([int(float(t)),float(r)])
-	print "done loading"
+	#print "done loading"
 	return input
 	
     #load the inital data
@@ -149,12 +149,13 @@ if __name__ == "__main__":
 	print "%s BOBs loaded"%len(bootstrap)
 	for agene in bootstrap:
 		g.pool.append(agene)
+	g.pool_size = len(bootstrap)
 	
     else:
 	bob_simulator = False
 	g.local_optima_trigger = 3
 
-    cycle_time = 60 * 5#time in seconds to test the entire population
+    cycle_time = 60 * 1#time in seconds to test the entire population
     test_count = 0
     total_count = 0
     max_score = -10000
@@ -177,13 +178,13 @@ if __name__ == "__main__":
 	    	g.pool_size = int(gps * cycle_time)
 	    print "Genes/Sec Processed: ","%.2f"%gps,"Pool Size: ",g.pool_size,"Total Processed: ",total_count
 	    #load the latest trade data
-	    print "Loading the lastest trade data..."
+	    #print "Loading the lastest trade data..."
 	    input = load()
 	    #preprocess input data
 	    te.classify_market(input)
 	    #print g.local_optima_reached
 	    if g.local_optima_reached:
-		print '#'*10, " Local optima reached...sending bob to the gene_server ", '#'*10		
+		#print '#'*10, " Local optima reached...sending bob to the gene_server ", '#'*10		
 		max_score = 0
 		test_count = 0
 		 
@@ -191,11 +192,15 @@ if __name__ == "__main__":
 		if max_gene != None:
 		    server.put_bob(json.dumps(max_gene),quartile)
 	    	if bob_simulator:
+			#after a local optima is reached, sleep for some time to allow extra processing power to
+			#the other clients so they can find potentialy better genes
+			print "going to sleep..."
+			time.sleep(60*15)
     			bootstrap = json.loads(server.get_bobs(quartile))
 			if len(bootstrap) < 2:	#not enough bobs available
 				#instead get all of the available high score submissions
 		    		bootstrap = json.loads(server.get_all(quartile))
-				print "BOBS not available..using high score submissions instead."
+				#print "BOBS not available..using high score submissions instead."
 			if (type(bootstrap) == type([])) and len(bootstrap) > 0:
 				g.seed() #not sure if I need this
 				g.pool = [] #clear the existing population pool
@@ -203,14 +208,16 @@ if __name__ == "__main__":
 					g.pool.append(agene)
 				g.next_gen()
 			else: #if no BOBS or high scores..seed with a new population
-				print "no BOBs or high scores available...seeding new pool."
+				#print "no BOBs or high scores available...seeding new pool."
 				g.seed() #not sure if I need this
 		else:
-			print "slicing the gene pool"
-			g.pool = g.pool[int(g.pool_size * 70):]
+			#print "slicing the gene pool"
+			#g.pool = g.pool[int(g.pool_size * 70):]
+			g.pool = []
+			g.seed()
 			g.local_optima_reached = False
-			g.local_optima_buffer = []
-	    print "back to crunching..."
+			#g.local_optima_buffer = []
+	    #print "back to crunching..."
 
 	if test_count > (g.pool_size * 3):
 	    test_count = 0
