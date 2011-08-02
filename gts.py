@@ -115,7 +115,7 @@ if __name__ == "__main__":
     	bs = raw_input()
     if bs == 'y':
 	bob_simulator = True
-	g.local_optima_trigger = 5
+	g.local_optima_trigger = 10
 	g.pool = []
 	calibrate = 1
     	bootstrap = json.loads(server.get_bobs(quartile))
@@ -137,7 +137,7 @@ if __name__ == "__main__":
 	
     else:
 	bob_simulator = False
-	g.local_optima_trigger = 3
+	g.local_optima_trigger = 5
 
     cycle_time = 60 * 1#time in seconds to test the entire population
     test_count = 0
@@ -171,7 +171,9 @@ if __name__ == "__main__":
 		#print '#'*10, " Local optima reached...sending bob to the gene_server ", '#'*10		
 		max_score = 0
 		test_count = 0
-		 
+		g.max_mutate = 0.5
+		g.prune_threshold = 0.2
+
 		max_gene = g.get_by_id(max_score_id)
 		if max_gene != None:
 		    server.put_bob(json.dumps(max_gene),quartile)
@@ -201,6 +203,16 @@ if __name__ == "__main__":
 			g.seed()
 			g.local_optima_reached = False
 			#g.local_optima_buffer = []
+	    else:
+		if g.max_mutate >= 0.1:		
+			g.max_mutate -= 0.05
+		elif g.max_mutate >= 0.02:
+			g.max_mutate -= 0.01		
+		if g.prune_threshold >= 0.05:		
+			g.prune_threshold -= 0.045
+
+
+		
 	    #print "back to crunching..."
 
 	if test_count > (g.pool_size * 3):

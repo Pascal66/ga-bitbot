@@ -219,6 +219,11 @@ class genepool:
 	#apply the niche filter
 	gen = self.niche_filter(gen)
 
+	#make sure there are at least three genes available (even if they're twins)
+	if len(gen) < 3:
+		gen = self.pool[0:3]
+
+
 	#generate offspring
 	os = []
 	if len(gen) > 1:
@@ -272,11 +277,12 @@ class genepool:
 	#decode the genes 
 	self.decode()	 
 	
-	#print "Survivors",len(gen)	
-	#print "Offspring",len(os)
-	#print "New",new_gene_count  
-	#print "Pool Size:",len(self.pool)
-	#print "Threshold:",self.prune_threshold
+	print "Survivors",len(gen)	
+	print "Offspring",len(os)
+	print "New",new_gene_count  
+	print "Pool Size:",len(self.pool)
+	print "Threshold:",self.prune_threshold
+	print "Max Mutate:",self.max_mutate
 	
 	
     def get_next(self):
