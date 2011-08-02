@@ -10,7 +10,7 @@
 	{
 		"add_numvar":
 		[
-			["shares",8,2],
+			["shares",12,2],
 			["wll",8,0],
 			["wls",7,0],
 			["buy_wait",7,0],

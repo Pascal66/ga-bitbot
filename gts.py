@@ -84,22 +84,6 @@ if __name__ == "__main__":
     #configure the gene pool
     g = genepool()
     g = load_config_into_object(load_config_from_file("gene_def.json"),g)
-    """"
-    g.pool_size = 1000
-    g.max_iteration = 60000
-    g.kill_score = -10000
-    #g.add_numvar("shares",1,0) #order size
-    g.add_numvar("wll",8,0)	#window length long
-    g.add_numvar("wls",7,0)	#window length short
-    g.add_numvar("buy_wait",7,0)	#min sample periods between buy orders
-    g.add_numvar("markup",10,4)	#order mark up
-    g.add_numvar("stop_loss",10,3)	#stop loss
-    g.add_numvar("stop_age",12,0)	#stop age 
-    g.add_numvar("macd_buy_trip",10,2)	#macd buy indicator
-    g.add_numvar("min_i_pos",1,0)	#min pos periods
-    g.add_numvar("min_i_neg",1,0)	#min neg periods
-    g.add_numvar("buy_wait_after_stop_loss",10,0)	#min neg periods
-    """
 
     print "Seeding the gene pool"
     g.seed()

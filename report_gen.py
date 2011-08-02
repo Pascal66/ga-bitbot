@@ -86,7 +86,7 @@ while 1:
 	    #get the high score gene from the gene server
 	    while 1:
 		try:
-		    ag = json.loads(server.get(120*5,quartile))
+		    ag = json.loads(server.get(60*20,quartile))
 		    break
 		except:
 		    print "Gene Server Error"
@@ -170,5 +170,5 @@ while 1:
     #print "sleeping..."
     print "_" * 80
     print "\n"
-    #time.sleep(60) #generate a report every 20 seconds
+    time.sleep(60) #generate a report every 20 seconds
     
