@@ -202,12 +202,13 @@ class genepool:
 	self.log_dict(winning_gene)
 
 	#test for local optima
-	self.local_optima_buffer.append(max_score)
+	if max_score != None:
+		self.local_optima_buffer.append(max_score)
 	if len(self.local_optima_buffer) > self.local_optima_trigger:
 		self.local_optima_buffer = self.local_optima_buffer[1:]
 
 	if len(self.local_optima_buffer) == self.local_optima_trigger:
-		#print sum(self.local_optima_buffer) / self.local_optima_trigger,max_score
+		#print sum(self.local_optima_buffer),self.local_optima_trigger,max_score
 		#print (sum(self.local_optima_buffer) / self.local_optima_trigger) - max_score
 		if abs((sum(self.local_optima_buffer) / self.local_optima_trigger) - max_score) < 0.000001:
 			#local optima reached
