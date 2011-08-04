@@ -34,12 +34,18 @@ def zero(a):
 #create a gene pool
 class genepool:
     def __init__(self):
-	self.prune_threshold = 0.20	#score threshold - percentile (top n%)
+	self.prune_threshold = 0.70	#score threshold - percentile (top n%)
+	self.max_prune_threshold = 0.70	#score threshold - percentile (top n%)
+	self.min_prune_threshold = 0.10	#score threshold - percentile (top n%)
+	self.step_prune_threshold_rate = 0.01#score threshold - step down increment
+
 	self.mutate = 0.20		#mutation rate
-	self.multiple_parent = 0.05	#multiple parent rate
-	self.max_multiple_parents = 7	#maximum number of multi parent merge (per parent)
 	self.max_mutate = 0.50		#max/min mutation rates
 	self.min_mutate = 0.00		#adds support for adaptive mutation rates
+	self.step_mutate_rate = 0.0001		#step down increment
+
+	self.multiple_parent = 0.05	#multiple parent rate
+	self.max_multiple_parents = 7	#maximum number of multi parent merge (per parent)
 	self.niche_trigger = 3		#trigger niche filter when n bits or less don't match
 	self.niche_threshold = 0.95	#(calculated!) niche filter threshold for fitering similar genes
 	self.pool_size = 1000		#min pool size (working size may be larger)
@@ -56,6 +62,19 @@ class genepool:
 	self.local_optima_reached = False	#flag to indicate when a local optima has been reached
 	self.local_optima_trigger = 20		#number of iterations with no increase in score required to trigger
 	self.local_optima_buffer = [] 		#the local optima flag. The buffer maintains the last high scores
+
+    def step_prune(self):
+	if self.prune_threshold > self.min_prune_threshold:
+		self.prune_threshold -= self.step_prune_threshold_rate
+	else:
+		self.prune_threshold = self.max_prune_threshold
+
+    def step_mutate(self):
+	if self.mutate > self.min_mutate:
+		self.mutate -= self.step_mutate_rate
+	else:
+		self.mutate = self.max_mutate
+
 
     def set_log(self,filename):
 	self.log_enable = True
@@ -84,11 +103,7 @@ class genepool:
 	    g['time'] = None
 		
     def mutate_gene(self,c):
-	#variate the mutatation rates
-	if self.mutate <= self.min_mutate:
-	    self.mutate = self.max_mutate
-	else:
-	    self.mutate -= 0.001
+	self.step_mutate()
 	
 	m = ""
 	for bit in c:
@@ -213,11 +228,12 @@ class genepool:
 	gen = filtered_gen
 
 	#apply the threshold
+	self.step_prune()	#variable pruning threshold
 	threshold = int(len(gen) * self.prune_threshold)
 	gen = gen[:threshold]
 
 	#apply the niche filter
-	gen = self.niche_filter(gen)
+	#gen = self.niche_filter(gen)
 
 	#make sure there are at least three genes available (even if they're twins)
 	if len(gen) < 3:
@@ -276,14 +292,14 @@ class genepool:
 	
 	#decode the genes 
 	self.decode()	 
-	
+
 	print "Survivors",len(gen)	
 	print "Offspring",len(os)
 	print "New",new_gene_count  
 	print "Pool Size:",len(self.pool)
 	print "Threshold:",self.prune_threshold
-	print "Max Mutate:",self.max_mutate
-	
+	print "Mutate:",self.mutate
+	print "-" * 80
 	
     def get_next(self):
 	#get the next available unscored gene
@@ -347,7 +363,22 @@ class genepool:
 		if v[2] > 0:
 		    n = (n * 1.0) / pow(10,v[2])
 		g[name] = n
-		    
+		
+    def decode_gene_dict(self,g_d):
+	offset = 0
+	for v in self.contains:
+		name = v[0]
+		glen = v[1]
+		subg = g_d['gene'][offset:offset+glen]
+		offset += glen
+		n = int(subg,2)
+		if v[2] > 0:
+		    n = (n * 1.0) / pow(10,v[2])
+		g_d[name] = n
+	return g_d
+
+
+    
     def create_gene(self):
 	gene = ""
 	for j in range(self.genelen):
@@ -356,7 +387,29 @@ class genepool:
 	for v in self.contains:
 	    gdict.update({v[0]:0})
 	return gdict
-    
+
+    def insert_genedict(self,g_d):
+	self.pool.append(g_d)
+	return
+
+    def insert_genedict_list(self,g_dl):
+	for g_d in g_dl:
+		self.pool.append(g_d)
+	return
+
+
+    def insert_genestr(self,gene):
+	g_d = self.create_gene()
+	g_d['gene'] = gene
+	g_d = self.decode_gene_dict(g_d)
+	self.pool.append(g_d)
+	return g_d
+
+    def insert_genestr_list(self,gene_list):
+	for gene in gene_list:
+		self.insert_gene(gene)
+	return
+
     def seed(self):
 	self.pool = []
 	self.local_optima_reached = False

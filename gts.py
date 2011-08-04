@@ -85,8 +85,6 @@ if __name__ == "__main__":
     g = genepool()
     g = load_config_into_object(load_config_from_file("gene_def.json"),g)
 
-    print "Seeding the gene pool"
-    g.seed()
     #g.set_log("winners.txt")
     print "Creating the trade engine"
     te = trade_engine()
@@ -116,30 +114,32 @@ if __name__ == "__main__":
     if bs == 'y':
 	bob_simulator = True
 	g.local_optima_trigger = 10
-	g.pool = []
 	calibrate = 1
-    	bootstrap = json.loads(server.get_bobs(quartile))
-	if (type(bootstrap) == type([])) and len(bootstrap) > 2:
-		print "bootstrapping BOBs from the gene_server"
-	else:	#not enough bobs available
-		#instead get all of the available high score submissions
-    		bootstrap = json.loads(server.get_all(quartile))
-		print "BOBS not available..using high score submissions instead."
-
-	if len(bootstrap) < 2:
+    	bootstrap_bobs = json.loads(server.get_bobs(quartile))
+	bootstrap_all = json.loads(server.get_all(quartile))
+	print len(bootstrap_all)
+	if (type(bootstrap_bobs) == type([])) and (type(bootstrap_all) == type([])):
+		g.seed()
+		g.pool = []		
+		g.insert_genedict_list(bootstrap_bobs)
+		g.insert_genedict_list(bootstrap_all)	
+		g.reset_scores()
+	else: #if no BOBS or high scores..seed with a new population
 		print "no BOBs or high scores available...seeding new pool."
 		g.seed()
 
-	print "%s BOBs loaded"%len(bootstrap)
-	for agene in bootstrap:
-		g.pool.append(agene)
-	g.pool_size = len(bootstrap)
+	print "%s BOBs loaded"%len(bootstrap_bobs)
+	print "%s high scores loaded"%len(bootstrap_all)
+
+	print "Pool size: %s"%len(g.pool)
 	
     else:
 	bob_simulator = False
 	g.local_optima_trigger = 5
+	print "Seeding the initial population"
+	g.seed()
 
-    cycle_time = 60 * 1#time in seconds to test the entire population
+    cycle_time = 20 * 1#time in seconds to test the entire population
     test_count = 0
     total_count = 0
     max_score = -10000
@@ -176,23 +176,21 @@ if __name__ == "__main__":
 
 		max_gene = g.get_by_id(max_score_id)
 		if max_gene != None:
+		    print "--\tSubmit BOB for id:%s to server (%.2f)"%(str(max_gene['id']),max_gene['score'])
 		    server.put_bob(json.dumps(max_gene),quartile)
 	    	if bob_simulator:
 			#after a local optima is reached, sleep for some time to allow extra processing power to
 			#the other clients so they can find potentialy better genes
-			print "going to sleep..."
-			time.sleep(60*15)
-    			bootstrap = json.loads(server.get_bobs(quartile))
-			if len(bootstrap) < 2:	#not enough bobs available
-				#instead get all of the available high score submissions
-		    		bootstrap = json.loads(server.get_all(quartile))
-				#print "BOBS not available..using high score submissions instead."
-			if (type(bootstrap) == type([])) and len(bootstrap) > 0:
-				g.seed() #not sure if I need this
-				g.pool = [] #clear the existing population pool
-				for agene in bootstrap:
-					g.pool.append(agene)
-				g.next_gen()
+			#print "going to sleep..."
+			#time.sleep(60*15)
+    			bootstrap_bobs = json.loads(server.get_bobs(quartile))
+		    	bootstrap_all = json.loads(server.get_all(quartile))
+			if (type(bootstrap_bobs) == type([])) and (type(bootstrap_all) == type([])):
+				g.seed()
+				g.pool = []		
+				g.insert_genedict_list(bootstrap_bobs)
+				g.insert_genedict_list(bootstrap_all)	
+				g.reset_scores()			
 			else: #if no BOBS or high scores..seed with a new population
 				#print "no BOBs or high scores available...seeding new pool."
 				g.seed() #not sure if I need this
@@ -203,15 +201,6 @@ if __name__ == "__main__":
 			g.seed()
 			g.local_optima_reached = False
 			#g.local_optima_buffer = []
-	    else:
-		if g.max_mutate >= 0.1:		
-			g.max_mutate -= 0.05
-		elif g.max_mutate >= 0.02:
-			g.max_mutate -= 0.01		
-		if g.prune_threshold >= 0.05:		
-			g.prune_threshold -= 0.045
-
-
 		
 	    #print "back to crunching..."
 

@@ -1,7 +1,7 @@
 {
 	"set" :
 	{
-		"pool_size" : 10,
+		"pool_size" : 500,
 		"max_iteration" : 60000,
 		"kill_score" : -10000
 	},
