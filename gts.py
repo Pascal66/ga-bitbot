@@ -59,7 +59,7 @@ if __name__ == "__main__":
 
 	def load():
 		#open the history file
-		#print "loading the data set"
+		print "loading the data set"
 		f = open("./datafeed/bcfeed_mtgoxUSD_1min.csv",'r')
 		#f = open("./datafeed/test_data.csv",'r')
 		d = f.readlines()
@@ -75,7 +75,7 @@ if __name__ == "__main__":
 			r = row.split(',')[1] #last price
 			t = row.split(',')[0] #time
 			input.append([int(float(t)),float(r)])
-		#print "done loading"
+		print "done loading:", str(len(input)),"records."
 		return input
 	
 	#load the inital data
@@ -160,7 +160,10 @@ if __name__ == "__main__":
 			elapsed_time = current_time - start_time
 			gps = total_count / elapsed_time
 			if calibrate == 1:
+				print "Recalibrating pool size..."
 				g.pool_size = int(gps * cycle_time)
+				if g.pool_size > 10000:
+					g.pool_size = 10000
 			print "Genes/Sec Processed: ","%.2f"%gps,"Pool Size: ",g.pool_size,"Total Processed: ",total_count
 			#load the latest trade data
 			#print "Loading the lastest trade data..."
@@ -203,62 +206,63 @@ if __name__ == "__main__":
 				g.local_optima_reached = False
 				#g.local_optima_buffer = []
 
-	if test_count > (g.pool_size * 3):
-		test_count = 0
-		print "Reset scores to force retest of winners..."
-		test_count = 0
-		max_score = 0	#knock the high score down to prevent blocking
-				#latest scoring data which may fall due to
-				#the latest price data
-		g.next_gen()
-		g.reset_scores()
+		if test_count > (g.pool_size * 3):
+			test_count = 0
+			print "Reset scores to force retest of winners..."
+			test_count = 0
+			max_score = 0	#knock the high score down to prevent blocking
+					#latest scoring data which may fall due to
+					#the latest price data
+			g.next_gen()
+			g.reset_scores()
 
-	#create/reset the trade engine
-	te.reset()
-	    
-	#get the next gene
-	ag = g.get_next()
-	    
-	#set the trade engine class vars
-	#te.buy_delay = len(input) - (60 * 12)
-	te.shares = ag['shares']
-	te.wll = ag['wll'] + ag['wls'] + 2 #add the two together to make sure
-				    #the macd moving windows dont get inverted
-	te.wls = ag['wls'] + 1
-	te.buy_wait = ag['buy_wait']
-	te.markup = ag['markup'] + (te.commision * 3.0) #+ 0.025
-	te.stop_loss = ag['stop_loss']
-	te.stop_age = ag['stop_age']
-	te.macd_buy_trip = ag['macd_buy_trip'] * -1.0
-	#te.min_i_neg = ag['min_i_neg']
-	#te.min_i_pos = ag['min_i_pos']
-	te.buy_wait_after_stop_loss = ag['buy_wait_after_stop_loss']
-	#feed the input through the trade engine
+		#create/reset the trade engine
+		te.reset()
+		    
+		#get the next gene
+		ag = g.get_next()
+		    
+		#set the trade engine class vars
+		#te.buy_delay = len(input) - (60 * 12)
+		te.shares = ag['shares']
+		te.wll = ag['wll'] + ag['wls'] + 2 #add the two together to make sure
+					    #the macd moving windows dont get inverted
+		te.wls = ag['wls'] + 1
+		te.buy_wait = ag['buy_wait']
+		te.markup = ag['markup'] + (te.commision * 3.0) #+ 0.025
+		te.stop_loss = ag['stop_loss']
+		te.stop_age = ag['stop_age']
+		te.macd_buy_trip = ag['macd_buy_trip'] * -1.0
+		#te.min_i_neg = ag['min_i_neg']
+		#te.min_i_pos = ag['min_i_pos']
+		te.buy_wait_after_stop_loss = ag['buy_wait_after_stop_loss']
+		#feed the input through the trade engine
 
-	te.test_quartile(quartile)
+		te.test_quartile(quartile)
 
-	try:
-		for i in input:
-			te.input(i[0],i[1])
-	except:
-		#kill off any genes that crash the trade engine (div by 0 errors for instance)
-		g.set_score(ag['id'],g.kill_score)
-	else:
-		#return the score to the gene pool
-		score = te.score()
-		g.set_score(ag['id'],score)
-		g.set_message(ag['id'],"Balance: " + str(te.balance) +"; Wins: " + str(te.wins)+ "; Loss:" + str(te.loss) +  "; Positions: " + str(len(te.positions)))
+		try:
+			for i in input:
+				te.input(i[0],i[1])
+		except:
+			#kill off any genes that crash the trade engine (div by 0 errors for instance)
+			g.set_score(ag['id'],g.kill_score)
+		else:
+			#return the score to the gene pool
+			score = te.score()
+			print score
+			g.set_score(ag['id'],score)
+			g.set_message(ag['id'],"Balance: " + str(te.balance) +"; Wins: " + str(te.wins)+ "; Loss:" + str(te.loss) +  "; Positions: " + str(len(te.positions)))
 
-		#if a new high score is found (or revisited) submitt the gene to
-		#the server
-		if score > max_score:
-			print "--\tSubmit high score for id:%s to server (%.2f)"%(str(ag['id']),score)
-			max_score = score
-			max_score_id = ag['id']
-			max_gene = g.get_by_id(max_score_id)
-			if max_gene != None:
-				server.put(json.dumps(max_gene),quartile)
-			else:
-				print "MAX_GENE is None!!"
+			#if a new high score is found (or revisited) submitt the gene to
+			#the server
+			if score > max_score:
+				print "--\tSubmit high score for id:%s to server (%.2f)"%(str(ag['id']),score)
+				max_score = score
+				max_score_id = ag['id']
+				max_gene = g.get_by_id(max_score_id)
+				if max_gene != None:
+					server.put(json.dumps(max_gene),quartile)
+				else:
+					print "MAX_GENE is None!!"
 
 
