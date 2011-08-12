@@ -30,6 +30,8 @@ from math import exp
 class trade_engine:
 	def __init__(self):
 		#configurable variables
+		self.score_only = False		#set to true to only calculate what is required for scoring a strategy 
+						#to speed up performance.
 		self.shares = 0.1 		#order size
 		self.wll = 180			#window length long
 		self.wls = 2		#window length short
@@ -110,7 +112,7 @@ class trade_engine:
 		#print "calc the true pct range indicator"
 		last_t = 0
 		last_tr = 0
-		for i in range(len(input_list)):
+		for i in xrange(len(input_list)):
 			t,p = input_list[i]
 			t = int(t * 1000) 
 			if i > atr_depth + 1:
@@ -126,7 +128,7 @@ class trade_engine:
 				self.market_class.append([t,0])
 
 		#pad the end of the data to support future order testing
-		for i in range(10):
+		for i in xrange(10):
 			self.market_class.append([t,tr])
 
 		"""
@@ -161,7 +163,7 @@ class trade_engine:
 		quartiles.append(l[int(len(l) * 0.75)])
 
 		#and apply them to the market class log
-		for i in range(len(self.market_class)):
+		for i in xrange(len(self.market_class)):
 			p = self.market_class[i][1]
 			self.market_class[i][1] = 0.25
 			if p > quartiles[0]:
@@ -341,12 +343,12 @@ class trade_engine:
 
 		#add the balance to the net worth
 		current_net_worth += self.balance
-		
-		self.net_worth_log.append([self.time,current_net_worth])
-		if sell > 0:
-			self.sell_log.append([self.time,sell])
-		if stop > 0:
-			self.stop_log.append([self.time,stop])
+		if not self.score_only:
+			self.net_worth_log.append([self.time,current_net_worth])
+			if sell > 0:
+				self.sell_log.append([self.time,sell])
+			if stop > 0:
+				self.stop_log.append([self.time,stop])
 		return
 	
 	def macd(self):
@@ -361,7 +363,7 @@ class trade_engine:
 			
 			#bootstrap the ema calc using a simple moving avg if needed
 			if self.ema_long == 0:
-				for i in range(self.wll):
+				for i in xrange(self.wll):
 					if i < self.wls:
 						s += self.history[i]
 						l += self.history[i]
@@ -380,8 +382,8 @@ class trade_engine:
 			self.macd_abs = self.ema_short - self.ema_long
 			self.macd_pct = (self.macd_abs / self.ema_short) * 100
 			
-		
-	
+			
+			"""
 			#track the number of sequential positive and negative periods
 			if self.history[0] - self.history[1] > 0:
 				self.i_neg = 0
@@ -389,21 +391,23 @@ class trade_engine:
 			if self.history[0] - self.history[1] < 0:
 				self.i_pos = 0
 				self.i_neg += 1
-		
-			#track the max & min macd pcts (metric)
-			if self.macd_pct > self.metric_macd_pct_max:
-				self.metric_macd_pct_max = self.macd_pct
-			if self.macd_pct < self.metric_macd_pct_min:
-				self.metric_macd_pct_min = self.macd_pct
+			"""
+			if not self.score_only:
+				#track the max & min macd pcts (metric)
+				if self.macd_pct > self.metric_macd_pct_max:
+					self.metric_macd_pct_max = self.macd_pct
+				if self.macd_pct < self.metric_macd_pct_min:
+					self.metric_macd_pct_min = self.macd_pct
 		else:
 			self.ema_short = self.history[0]
 			self.ema_long = self.history[0]
 			self.macd_pct = 0
 
 		#log the indicators
-		self.macd_pct_log.append([self.time,self.macd_pct])
-		self.wl_log.append([self.time,self.ema_long])
-		self.ws_log.append([self.time,self.ema_short])
+		if not self.score_only:
+			self.macd_pct_log.append([self.time,self.macd_pct])
+			self.wl_log.append([self.time,self.ema_long])
+			self.ws_log.append([self.time,self.ema_short])
 		
 		
 	def display(self):
@@ -467,7 +471,7 @@ class trade_engine:
 		#used with excel / gdocs to chart price and buy/sell indicators
 		f = open(filename,'w')
 		
-		for i in range(len(self.input_log)):
+		for i in xrange(len(self.input_log)):
 			for position in self.positions:
 				if position['buy_period'] == i:
 					#print position['buy_period'],i
@@ -489,7 +493,7 @@ class trade_engine:
 	def compress_log(self,log):
 		#removes records with no change in price, before and after record n
 		ret_log = []
-		for i in range(len(log)):
+		for i in xrange(len(log)):
 			if i > 1 and i < len(log) - 2:
 				if log[i-1][1] == log[i][1] and log[i+1][1] == log[i][1]:
 					pass #no change before or after, omit record
@@ -532,15 +536,15 @@ class trade_engine:
 			#get the timestamp for the start index
 			time_stamp = self.input_log[periods:periods+1][0][0]
 			#search the following for the time stamp
-			for i in range(len(self.buy_log)):
+			for i in xrange(len(self.buy_log)):
 				if self.buy_log[i][0] >= time_stamp:
 					buy = str(self.buy_log[i:]).replace('L','')
 					break
-			for i in range(len(self.sell_log)):
+			for i in xrange(len(self.sell_log)):
 				if self.sell_log[i][0] >= time_stamp:
 					sell = str(self.sell_log[i:]).replace('L','')
 					break
-			for i in range(len(self.stop_log)):
+			for i in xrange(len(self.stop_log)):
 				if self.stop_log[i][0] >= time_stamp:
 					stop = str(self.stop_log[i:]).replace('L','')
 					break

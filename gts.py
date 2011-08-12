@@ -88,6 +88,7 @@ if __name__ == "__main__":
     #g.set_log("winners.txt")
     print "Creating the trade engine"
     te = trade_engine()
+    te.score_only = True
     #preprocess input data
     te.classify_market(input)
 
