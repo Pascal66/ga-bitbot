@@ -49,7 +49,7 @@ class genepool:
 	self.niche_trigger = 3		#trigger niche filter when n bits or less don't match
 	self.niche_threshold = 0.95	#(calculated!) niche filter threshold for fitering similar genes
 	self.pool_size = 1000		#min pool size (working size may be larger)
-	self.pool_family_ratio = 0.9	#pct of the pool to be filled w/ offspring
+	self.pool_family_ratio = 0.99	#pct of the pool to be filled w/ offspring
 	self.pool_max_survivor_ratio = 0.3	#max survivor pool ratio
 	self.kill_score = -100000
 	self.pool= []			#gene pool

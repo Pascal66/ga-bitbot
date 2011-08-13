@@ -249,7 +249,7 @@ if __name__ == "__main__":
 		else:
 			#return the score to the gene pool
 			score = te.score()
-			print score
+			print ag['gene'],"\t","%.5f"%score
 			g.set_score(ag['id'],score)
 			g.set_message(ag['id'],"Balance: " + str(te.balance) +"; Wins: " + str(te.wins)+ "; Loss:" + str(te.loss) +  "; Positions: " + str(len(te.positions)))
 
