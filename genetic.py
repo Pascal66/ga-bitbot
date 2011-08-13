@@ -48,6 +48,7 @@ class genepool:
 	self.max_multiple_parents = 7	#maximum number of multi parent merge (per parent)
 	self.niche_trigger = 3		#trigger niche filter when n bits or less don't match
 	self.niche_threshold = 0.95	#(calculated!) niche filter threshold for fitering similar genes
+	self.bit_sweep_rate = 0.99	#rate at which to execute a bit sweep across the best gene (bit level hill climbing) 
 	self.pool_size = 1000		#min pool size (working size may be larger)
 	self.pool_family_ratio = 0.99	#pct of the pool to be filled w/ offspring
 	self.pool_max_survivor_ratio = 0.3	#max survivor pool ratio
@@ -108,11 +109,23 @@ class genepool:
 	m = ""
 	for bit in c:
 	    if random.random() > (1 - self.mutate):
-		bit = str(int(bool(bit) ^ bool(1))) #xor
+		bit = str(int(bool(int(bit)) ^ bool(1))) #xor
 	    m += bit
 		
 	return m
-    
+	    
+    def bit_sweep(self,g):
+	bsl = []
+	for j in xrange(len(g)):
+		ng = ""
+		for k in xrange(len(g)):
+			if j == k:
+				ng += str(int(bool(int(g[k])) ^ bool(1))) #xor
+			else:
+				ng += g[k]
+		bsl.append(ng)
+	return bsl
+
     def niche_filter(self,pool):
 	#filter out similar genes to the winner
 	#to maintain population diversity
@@ -272,6 +285,14 @@ class genepool:
 			new_g = self.mate(gen[m]['gene'],gen[f]['gene'])
 		gdict = {"gene":new_g,"score":None,"time":None,"generation":gen[m]["generation"] + 1,"id":int(random.random()*999999999),"msg":""}
 		os.append(gdict)
+
+	if random.random() <= self.bit_sweep_rate:
+		#sweep a bit across the current high scoring gene (xor)
+		bsl = self.bit_sweep(winning_gene['gene'])
+		for new_g in bsl:
+			gdict = {"gene":new_g,"score":None,"time":None,"generation":winning_gene["generation"] + 1,"id":int(random.random()*999999999),"msg":""}
+			os.append(gdict)
+		
 
 	#if max iterations have been reached repopulate
 	#the gene pool
