@@ -34,13 +34,13 @@ def zero(a):
 #create a gene pool
 class genepool:
     def __init__(self):
-	self.prune_threshold = 0.70	#score threshold - percentile (top n%)
-	self.max_prune_threshold = 0.70	#score threshold - percentile (top n%)
-	self.min_prune_threshold = 0.10	#score threshold - percentile (top n%)
-	self.step_prune_threshold_rate = 0.01#score threshold - step down increment
+	self.prune_threshold = 0.30	#score threshold - percentile (top n%)
+	self.max_prune_threshold = 0.20	#score threshold - percentile (top n%)
+	self.min_prune_threshold = 0.03	#score threshold - percentile (top n%)
+	self.step_prune_threshold_rate = 0.03#score threshold - step down increment
 
-	self.mutate = 0.20		#mutation rate
-	self.max_mutate = 0.50		#max/min mutation rates
+	self.mutate = 0.10		#mutation rate
+	self.max_mutate = 0.20		#max/min mutation rates
 	self.min_mutate = 0.00		#adds support for adaptive mutation rates
 	self.step_mutate_rate = 0.0001		#step down increment
 
@@ -48,7 +48,9 @@ class genepool:
 	self.max_multiple_parents = 7	#maximum number of multi parent merge (per parent)
 	self.niche_trigger = 3		#trigger niche filter when n bits or less don't match
 	self.niche_threshold = 0.95	#(calculated!) niche filter threshold for fitering similar genes
+	self.niche_min_iteration = 7	#min iteration before the niche filter starts
 	self.bit_sweep_rate = 0.99	#rate at which to execute a bit sweep across the best gene (bit level hill climbing) 
+	self.bit_sweep_min_iteration = 3#min iteration before a bit sweep can happen
 	self.pool_size = 1000		#min pool size (working size may be larger)
 	self.pool_family_ratio = 0.99	#pct of the pool to be filled w/ offspring
 	self.pool_max_survivor_ratio = 0.3	#max survivor pool ratio
@@ -57,16 +59,18 @@ class genepool:
 	self.contains = []		#gene data config
 	self.genelen = 0 		#calculated gene length	
 	self.iteration = 0		#current iteration
-	self.max_iteration = 100000000	#max iteration before kill off
+	self.max_iteration = 30		#max iteration before kill off
 	self.log_enable = False
 	self.log_filename = ""
 	self.local_optima_reached = False	#flag to indicate when a local optima has been reached
-	self.local_optima_trigger = 20		#number of iterations with no increase in score required to trigger
+	self.local_optima_trigger = 10		#number of iterations with no increase in score required to trigger
 	self.local_optima_buffer = [] 		#the local optima flag. The buffer maintains the last high scores
 
     def step_prune(self):
 	if self.prune_threshold > self.min_prune_threshold:
 		self.prune_threshold -= self.step_prune_threshold_rate
+		if self.prune_threshold <= 0:
+			self.prune_threshold = self.max_prune_threshold
 	else:
 		self.prune_threshold = self.max_prune_threshold
 
@@ -247,7 +251,8 @@ class genepool:
 	gen = gen[:threshold]
 
 	#apply the niche filter
-	#gen = self.niche_filter(gen)
+	if self.iteration > self.niche_min_iteration:
+		gen = self.niche_filter(gen)
 
 	#make sure there are at least three genes available (even if they're twins)
 	if len(gen) < 3:
@@ -286,12 +291,18 @@ class genepool:
 		gdict = {"gene":new_g,"score":None,"time":None,"generation":gen[m]["generation"] + 1,"id":int(random.random()*999999999),"msg":""}
 		os.append(gdict)
 
-	if random.random() <= self.bit_sweep_rate:
+	#bit sweep (bit level hill climbing)
+	if random.random() <= self.bit_sweep_rate and self.iteration > self.bit_sweep_min_iteration:
+		print "** Hill Climb Bit Sweep **"
 		#sweep a bit across the current high scoring gene (xor)
 		bsl = self.bit_sweep(winning_gene['gene'])
+		#and another random gene
+		#index = int(random.random() * (len(gen) - 1)) + 1
+		#bsl += self.bit_sweep(gen[index]['gene'])
 		for new_g in bsl:
 			gdict = {"gene":new_g,"score":None,"time":None,"generation":winning_gene["generation"] + 1,"id":int(random.random()*999999999),"msg":""}
 			os.append(gdict)
+
 		
 
 	#if max iterations have been reached repopulate
@@ -301,7 +312,7 @@ class genepool:
 	    winning_gene['score'] = 0 #reset the score
 	    gen = [winning_gene]
 	    os = []
-	    print "*"*10,"NEW POPULATION","*"*10		
+	    print "*"*10,"NEW POPULATION (saving only the winning gene)","*"*10		
 	
 	
 	self.pool = gen + os
@@ -434,6 +445,9 @@ class genepool:
 
     def seed(self):
 	self.pool = []
+	self.iteration = 0
+	self.mutate = self.max_mutate
+	self.prune_threshold = self.max_prune_threshold
 	self.local_optima_reached = False
 	self.local_optima_buffer = []
 	self.calc_genelen()
@@ -446,7 +460,8 @@ class genepool:
 if __name__ == "__main__":
     #test the genetic class    
     g = genepool()
-   
+    g.pool_size = 100
+    g.niche_min_iteration = 10000
     #16 bit number (65535) with the decimal three places to the left (10^3 = 1000)
     #max value should be 65.535
     g.add_numvar("afloat",16,3)
@@ -463,6 +478,7 @@ if __name__ == "__main__":
     while g.local_optima_reached == False:
 	ag = g.get_next()
 	score = ag['afloat'] * ag['aint']
+	#print ag['gene'],"\t",score
 	if score > max_score:
 		max_score = score
 		max_gene = ag['gene']

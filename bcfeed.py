@@ -41,6 +41,7 @@ while 1:
 			stream_data = client.read_very_eager()
 			reset_connection = False
 		except:
+			print "Connection reset failed. Wait to retry..."
 			sleep(30)
 
 	try:

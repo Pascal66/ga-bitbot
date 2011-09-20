@@ -137,8 +137,8 @@ while 1:
 
 		    #te.classify_market(input)
 		    print "creating charts..."
-		    te.chart("/home/emfb/public_html/bc/chart.templ","/tmp/chart_test_%s.html"%str(quartile))
-		    te.chart("/home/emfb/public_html/bc/chart.templ","/tmp/chart_test_zoom_%s.html"%str(quartile),60*24)
+		    te.chart("./report/chart.templ","./report/chart_test_%s.html"%str(quartile))
+		    te.chart("./report/chart.templ","./report/chart_test_zoom_%s.html"%str(quartile),60*24)
 		    #print "Evaluating target price"
 		    if (target >= p['buy']) or (abs(target - p['buy']) < 0.01): #submit the order at or below target
 			    print "sending target buy order to server.."
@@ -162,7 +162,7 @@ while 1:
 		    buys.append(p['buy'])
 		    targets.append(p['target'])
     #log the orders
-    f = open("/tmp/rg_buys.csv",'a')
+    f = open("./report/rg_buys.csv",'a')
     f.write(",".join(map(str,buys)) + ",")
     f.write(",".join(map(str,targets)) + "\n")
     f.close()

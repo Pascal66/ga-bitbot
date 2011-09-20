@@ -59,7 +59,7 @@ if __name__ == "__main__":
 
 	def load():
 		#open the history file
-		print "loading the data set"
+		#print "loading the data set"
 		f = open("./datafeed/bcfeed_mtgoxUSD_1min.csv",'r')
 		#f = open("./datafeed/test_data.csv",'r')
 		d = f.readlines()
@@ -75,7 +75,7 @@ if __name__ == "__main__":
 			r = row.split(',')[1] #last price
 			t = row.split(',')[0] #time
 			input.append([int(float(t)),float(r)])
-		print "done loading:", str(len(input)),"records."
+		#print "done loading:", str(len(input)),"records."
 		return input
 	
 	#load the inital data
@@ -95,11 +95,16 @@ if __name__ == "__main__":
 	#process command line args
 	quartile = ''
 	bs = ''
+	verbose = False
 	print sys.argv
-	if len(sys.argv) == 3:
+	if len(sys.argv) >= 3:
 		# Convert the two arguments from strings into numbers
 		quartile = sys.argv[1]
 		bs = sys.argv[2]
+		if len(sys.argv) == 4:
+			if sys.argv[3] == 'v':
+				verbose = True
+			
 	
 	#which quartile group to test
 	while not (quartile in ['1','2','3','4']):
@@ -141,6 +146,9 @@ if __name__ == "__main__":
 		g.seed()
 
 	cycle_time = 20 * 1#time in seconds to test the entire population
+	min_cycle_time = 10
+	cycle_time_step = 2
+
 	test_count = 0
 	total_count = 0
 	max_score = -10000
@@ -160,8 +168,11 @@ if __name__ == "__main__":
 			elapsed_time = current_time - start_time
 			gps = total_count / elapsed_time
 			if calibrate == 1:
-				print "Recalibrating pool size..."
+				#print "Recalibrating pool size..."
 				g.pool_size = int(gps * cycle_time)
+				cycle_time -= cycle_time_step
+				if cycle_time < min_cycle_time:
+					cycle_time = min_cycle_time
 				if g.pool_size > 10000:
 					g.pool_size = 10000
 			print "Genes/Sec Processed: ","%.2f"%gps,"Pool Size: ",g.pool_size,"Total Processed: ",total_count
@@ -175,8 +186,6 @@ if __name__ == "__main__":
 			#print '#'*10, " Local optima reached...sending bob to the gene_server ", '#'*10		
 			max_score = 0
 			test_count = 0
-			g.max_mutate = 0.5
-			g.prune_threshold = 0.2
 
 			max_gene = g.get_by_id(max_score_id)
 			if max_gene != None:
@@ -249,7 +258,8 @@ if __name__ == "__main__":
 		else:
 			#return the score to the gene pool
 			score = te.score()
-			print ag['gene'],"\t","%.5f"%score
+			if verbose:
+				print ag['gene'],"\t".join(["%.5f"%max_score,"%.5f"%score,"%.3f"%g.prune_threshold])
 			g.set_score(ag['id'],score)
 			g.set_message(ag['id'],"Balance: " + str(te.balance) +"; Wins: " + str(te.wins)+ "; Loss:" + str(te.loss) +  "; Positions: " + str(len(te.positions)))
 

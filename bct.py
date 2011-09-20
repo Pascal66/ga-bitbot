@@ -55,7 +55,7 @@ class trade_engine:
 		self.nlsf = 5.0			#non-linear scoring factor - favor the latest trades
 						#max factor = exp(self.nlsf) @ the last sample periord 
 		
-		self.commision = 0.003	#mt.gox commision
+		self.commision = 0.006	#mt.gox commision
 		
 		self.quartile = 1		#define which market detection quartile to trade on (1-4)
 		self.market_class = []
