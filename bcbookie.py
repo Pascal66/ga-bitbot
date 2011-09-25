@@ -25,7 +25,7 @@ import pdb
 import pickle
 from operator import itemgetter
 from time import *
-from MtGoxAPI import *
+from MtGoxHMAC import *
 
 # connect to the xml server
 #
@@ -49,16 +49,14 @@ print "Connected to",__server__,":",__port__
 
 
 class bookie:
-    def __init__(self,login,password):
-	self.login = login
-	self.password = password
-	self.client = Client(login,password)
-	self.orders = []#self.client.get_orders()
+    def __init__(self):
+	self.client = Client()
+	self.orders = []
 	self.records = []
-	self.balance = 0#self.client.get_balance()
-	self.usds = 0#self.balance['usds']
-	self.btcs = 0#self.balance['btcs']
-	self.btc_price = 0#self.client.get_ticker()['last']
+	self.balance = 0
+	self.usds = 0
+	self.btcs = 0
+	self.btc_price = 0
 	self.load_records()
     
     def report(self):
@@ -446,12 +444,7 @@ class bookie:
 if __name__ == "__main__":
     monitor_mode = False
 
-    print "enter user name:"
-    user = raw_input()
-    print "enter user password:"
-    passwd = raw_input()
-
-    b = bookie(user,passwd)
+    b = bookie()
 
     bid_counter = 3
     
