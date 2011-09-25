@@ -145,8 +145,8 @@ if __name__ == "__main__":
 		print "Seeding the initial population"
 		g.seed()
 
-	cycle_time = 20 * 1#time in seconds to test the entire population
-	min_cycle_time = 10
+	cycle_time = 60 * 1#time in seconds to test the entire population
+	min_cycle_time = 30
 	cycle_time_step = 2
 
 	test_count = 0
