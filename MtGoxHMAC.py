@@ -201,6 +201,7 @@ if __name__ == "__main__":
 	b = ppdict(pwdict(c.buy_btc(1.5,0.25),'./test_data/mg_buy.txt'))
 	s = ppdict(pwdict(c.sell_btc(1.0,100.00),'./test_data/mg_sell.txt'))
 	ppdict(pwdict(c.get_info(),'./test_data/mg_info.txt'))
+	ppdict(pwdict(c.get_ticker(),'./test_data/mg_ticker.txt'))
 	ppdict(pwdict(c.get_depth(),'./test_data/mg_depth.txt'))
 	ppdict(pwdict(c.get_balance(),'./test_data/mg_balance.txt'))	
 	ppdict(pwdict(c.get_orders(),'./test_data/mg_orders.txt'))
