@@ -109,23 +109,19 @@ class bookie:
 	#print "get_price: downloading last price"
 	while 1:
 	    try:
-		sleep(1)
 		self.btc_price = self.client.get_ticker()['last']
 		return self.btc_price
 	    except:
 		print "get_price: client error..retrying @ " + ctime()
-		sleep(10)
 	
     def load_orders(self):
 	#load orders from mt.gox
 	while 1:
 	    try:
-		sleep(3)
 		self.orders = self.client.get_orders()
 		return
 	    except:
 		print "load_orders: client error..retrying @ " + ctime()
-		sleep(10)
 	
     def load_records(self):
 	#load records from local file
@@ -177,14 +173,12 @@ class bookie:
     def funds(self):
 	while 1:
 	    try:
-		sleep(1)
 		self.balance = self.client.get_balance()
 		self.usds = self.balance['usds']
 		self.btcs = self.balance['btcs']
 		return self.usds
 	    except:
 		print "funds: client error..retrying @ " + ctime()
-		sleep(10)
 
     def sell(self, amount, price):
 	price = float("%.3f"%price)
@@ -195,13 +189,11 @@ class bookie:
 
 	while 1:
 	    try:
-		sleep(1)
 		self.client.sell_btc(amount, price)
 		self.save_records()
 		return
 	    except:
 		print "sell: client error..retrying @ " + ctime()
-		sleep(10)
    
     def validate_buy(self,buy_price,target_price):
 	if (buy_price * 1.00013) >= target_price:
@@ -244,12 +236,10 @@ class bookie:
 
 	    while 1:
 		try:
-		    sleep(1)
 		    order = self.client.buy_btc(qty,buy_price)
 		    break
 		except:
 		    print "buy: client error..retrying @ " + ctime()
-		    sleep(10)
 
 	    if order == None:
 		print 'buy: first level order verification failed'
@@ -293,14 +283,12 @@ class bookie:
     def cancel_order(self,oid):
 	print "cancel_order: canceling"
 	while 1:
-	    try:
-		sleep(1)	
+	    try:	
 		self.client.cancel_order(oid)
 		self.save_records()
 		return
 	    except:
 		print "cancel_order: client error..retrying @ " + ctime()
-		sleep(10)
 	
     
     def record_synch(self):
