@@ -157,6 +157,14 @@ class Client:
 			return 0
 		params = {"amount":str(amount), "price":str(price)}
 		return self.request("buyBTC.php", params)
+
+
+	def sell_btc(self, amount, price):
+		if amount < 0.01:
+			print "minimun amount is 0.1btc"
+			return 0
+		params = {"amount":str(amount), "price":str(price)}
+		return self.request("sellBTC.php", params)
         
 	def cancel_buy_order(self, oid):
 		params = {"oid":str(oid), "type":str(2)}
@@ -190,13 +198,14 @@ if __name__ == "__main__":
 
 	print "\ndownloaded examples of the MtGox json format will be stored in the test_data folder."
 	c = Client()
+	b = ppdict(pwdict(c.buy_btc(1.5,0.25),'./test_data/mg_buy.txt'))
+	s = ppdict(pwdict(c.sell_btc(1.0,100.00),'./test_data/mg_sell.txt'))
 	ppdict(pwdict(c.get_info(),'./test_data/mg_info.txt'))
 	ppdict(pwdict(c.get_depth(),'./test_data/mg_depth.txt'))
-	ppdict(pwdict(c.get_balance(),'./test_data/mg_balance.txt'))
-	d = ppdict(pwdict(c.buy_btc(1.5,0.25),'./test_data/mg_buy.txt'))	
+	ppdict(pwdict(c.get_balance(),'./test_data/mg_balance.txt'))	
 	ppdict(pwdict(c.get_orders(),'./test_data/mg_orders.txt'))
-	time.sleep(2)
-	ppdict(pwdict(c.cancel_buy_order(d['oid']),'./test_data/mg_cancel_buy.txt'))
+	ppdict(pwdict(c.cancel_buy_order(b['oid']),'./test_data/mg_cancel_buy.txt'))
+	ppdict(pwdict(c.cancel_sell_order(s['oid']),'./test_data/mg_cancel_sell.txt'))
 	print "done."
 
 
