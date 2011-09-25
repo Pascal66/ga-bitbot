@@ -65,7 +65,7 @@ class bookie:
 	#dump the records into a html file
 	if len(self.records) > 0:
 	    export = sorted(self.records, key=itemgetter('localtime'),reverse=True)
-	    f = open('/tmp/book.html','w')
+	    f = open('./report/book.html','w')
 	    f.write('<table border="1">\n')
 	    keys = export[0].keys()
 
@@ -101,8 +101,7 @@ class bookie:
 	    f.write('</table>\n')
 	    f.close()
 	else:
-	    #f = open('/home/emfb/public_html/bc/book.html','w')
-	    f = open('/tmp/book.html','w')
+	    f = open('./report/book.html','w')
 	    f.write("No records to report.")
 	    f.close()
 	    
@@ -133,7 +132,7 @@ class bookie:
     def load_records(self):
 	#load records from local file
 	try:
-	    f = open("bookie_records.pkl",'r')
+	    f = open("./report/bookie_records.pkl",'r')
 	    pd = f.read()
 	    f.close()
 	    self.records = pickle.loads(pd)
@@ -143,7 +142,7 @@ class bookie:
     
     def save_records(self):
 	#save records to local file
-	f = open("bookie_records.pkl",'w')
+	f = open("./report/bookie_records.pkl",'w')
 	f.write(pickle.dumps(self.records))
 	f.close()
     
