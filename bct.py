@@ -112,6 +112,8 @@ class trade_engine:
 		#print "calc the true pct range indicator"
 		last_t = 0
 		last_tr = 0
+		t = 0
+		tr = 0
 		for i in xrange(len(input_list)):
 			t,p = input_list[i]
 			t = int(t * 1000) 
@@ -124,7 +126,7 @@ class trade_engine:
 				last_t = t
 				last_tr = tr
 			else:
-				#pad out the data
+				#pad out the initial data
 				self.market_class.append([t,0])
 
 		#pad the end of the data to support future order testing
@@ -174,6 +176,8 @@ class trade_engine:
 				self.market_class[i][1] = 1.0
 			if i < atr_depth + 1:
 				self.market_class[i][1] = 0.0	#ignore early (uncalculated) data 
+
+		return int(self.market_class[len(self.market_class)-1][1] * 4)	#return the current quartile (1-4)
 
 	def metrics_report(self):
 		m = ""
@@ -245,19 +249,29 @@ class trade_engine:
 				p['score'] *= exp(exp_scale * p['buy_period']) 
 				final_score_balance += p['score']
 
+			
+			#because stop loss will generaly be higher that the target (markup) percentage
+			#the loss count needs to be weighted by the pct difference
+			loss_weighting_factor = self.stop_loss / self.markup
+			
+			final_score_balance *= self.wins / (self.wins + (self.loss * loss_weighting_factor) * 1.0)
+			final_score_balance *= self.markup * len(self.positions)
+
+			#fine tune the score
 			final_score_balance += self.buy_wait / 1000.0
 			final_score_balance += self.buy_wait_after_stop_loss / 1000.0
-			final_score_balance -= self.stop_loss / 10.0
+			final_score_balance -= (self.stop_loss * 1000)
 			final_score_balance += (self.wls / 10000.0)
 			final_score_balance -= (self.stop_age / 1000.0)
-
-			final_score_balance *= self.wins / (self.wins + self.loss * 1.0)
-			final_score_balance *= self.markup
 			final_score_balance += self.shares
 
-			if self.opening_balance > self.balance:
-				#losing strategy
-				final_score_balance -= 5000 #999999999
+			#severly penalize the score if the win/ratio is less than 85%
+			if self.wins / (self.wins + self.loss * 1.0) < 0.85:
+				final_score_balance /= 10000.0
+
+			#if self.opening_balance > self.balance:
+			#	#losing strategy
+			#	final_score_balance -= 5000 #999999999
 		else:
 			#no trades generated
 			final_score_balance = -0.123456789
@@ -441,7 +455,13 @@ class trade_engine:
 		for key in keys:
 			self.order_history +="<th>%s</tht>"%key
 		self.order_history +="</tr>\n"
-		for p in self.positions:
+
+		#only htmlize the last positions so the browser doesn't blow up ;)
+		if len(self.positions) > 20:
+			last_positions = self.positions[:20]
+		else:
+			last_positions = self.positions
+		for p in last_positions:
 			self.order_history +="<tr>"
 			for key in keys:
 				if p.has_key(key):
@@ -559,7 +579,7 @@ class trade_engine:
 		tmpl = tmpl.replace("{STOP}",stop)
 		tmpl = tmpl.replace("{NET_WORTH}",net_worth)
 		tmpl = tmpl.replace("{METRICS_REPORT}",self.metrics_report().replace('\n','<BR>'))
-		#tmpl = tmpl.replace("{ORDERS_REPORT}",self.order_history)
+		tmpl = tmpl.replace("{ORDERS_REPORT}",self.order_history)
 		tmpl = tmpl.replace("{VOLATILITY_QUARTILE}",volatility_quartile)
 
 

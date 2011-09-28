@@ -152,11 +152,26 @@ class Client:
 		return self.request("getOrders.php", None)
 
 	def buy_btc(self, amount, price):
+		#new mtgox market orders begin in a pending state
+		#so we have to make a second delayed call to verify the order was actually accepted
+		#there is a risk here that the mtgox system will not be able to verify the order before
+		#the second call so it could reported as still pending. 
+		#In this case, the host script will need to verify the order at a later time.
+		#to do: check how the system responds to instant orders and partialy filled orders.
 		if amount < 0.01:
 			print "minimun amount is 0.1btc"
 			return 0
 		params = {"amount":str(amount), "price":str(price)}
-		return self.request("buyBTC.php", params)
+		buy = self.request("buyBTC.php", params)
+		oid = buy['oid']
+		time.sleep(1)
+		orders = self.get_orders()['orders']
+		for order in orders:
+			if order['oid'] == oid:
+				return order
+		else:
+			return None
+		
 
 
 	def sell_btc(self, amount, price):
@@ -179,15 +194,21 @@ if __name__ == "__main__":
 	def ppdict(d):
 		#pretty print a dict
 		print "-"*40
-		for key in d.keys():
-			print key,':',d[key]
+		try:
+			for key in d.keys():
+				print key,':',d[key]			
+		except:
+			print d
 		return d
 
 	def pwdict(d,filename):
 		#pretty write a dict
 		f = open(filename,'w')
-		for key in d.keys():
-			f.write(key + " : " + str(d[key]) + "\n")
+		try:
+			for key in d.keys():
+				f.write(key + " : " + str(d[key]) + "\n")
+		except:
+			pass
 		f.write('\n' + '-'*80 + '\n')
 		f.write(str(d))
 		f.close()

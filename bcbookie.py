@@ -25,7 +25,7 @@ import pdb
 import pickle
 from operator import itemgetter
 from time import *
-from MtGoxHMAC import *
+import MtGoxHMAC
 
 # connect to the xml server
 #
@@ -45,12 +45,9 @@ server = xmlrpclib.Server('http://' + __server__ + ":" + __port__)
 
 print "Connected to",__server__,":",__port__
 
-
-
-
 class bookie:
     def __init__(self):
-	self.client = Client()
+	self.client = MtGoxHMAC.Client()
 	self.orders = []
 	self.records = []
 	self.balance = 0
@@ -77,7 +74,7 @@ class bookie:
 	    
 	    #write the records
 	    for r in export:
-		if not('buy_cancel:max_wait' == r['book']):
+		if r['book'].find('buy_cancel') < 0:
 			f.write('\t<tr>\n')
 			for key in keys:
 			    s = ""
@@ -118,7 +115,7 @@ class bookie:
 	#load orders from mt.gox
 	while 1:
 	    try:
-		self.orders = self.client.get_orders()
+		self.orders = self.client.get_orders()['orders']
 		return
 	    except:
 		print "load_orders: client error..retrying @ " + ctime()
@@ -213,7 +210,7 @@ class bookie:
 
 	if commit_price > target_price:
 		print "buy: order validation failed, commit price higher than target"
-		return 0
+		return False
 
 	#verify that the order doesn't already exist at the price point
 	if self.validate_buy(buy_price,target_price) == False:
@@ -222,7 +219,7 @@ class bookie:
 	    	print "buy: order validation failed @ $%.2f , target ($%.2f) too low)"%(buy_price,target_price)
 	    else:
 	    	print "buy: order validation failed @ $%.2f , target ($%.2f) duplicate order)"%(buy_price,target_price)
-	    return 0
+	    return False
 	else:
 	    print "buy: order validated"
 
@@ -250,28 +247,28 @@ class bookie:
 		self.funds()
 		if self.btcs > last_btc_balance:
 			print 'buy: instant order verified'
-			order = {'price':buy_price,'oid':'none','localtime':time(),'book':'closed:instant','commit':commit_price,'target':target_price,'stop':stop_loss,'max_wait':max_wait,'max_hold':max_hold}
+			order = {'price':buy_price,'oid':'none','localtime':time(),'pending_counter':5,'book':'closed:instant','commit':commit_price,'target':target_price,'stop':stop_loss,'max_wait':max_wait,'max_hold':max_hold}
 			self.sell(qty, target_price)
 		else:
 			print 'buy: third level order verification failed'
-			order = {'price':buy_price,'oid':'none','localtime':time(),'book':'closed: order not acknowledged','commit':commit_price,'target':target_price,'stop':stop_loss,'max_wait':max_wait,'max_hold':max_hold}
+			order = {'price':buy_price,'oid':'none','localtime':time(),'pending_counter':5,'book':'closed: order not acknowledged','commit':commit_price,'target':target_price,'stop':stop_loss,'max_wait':max_wait,'max_hold':max_hold}
 		self.add_record(order)
 		#print 'buy: posting instant order for sale @ target (off book)'
 		#self.sell(qty, target_price)
 		
 
 	    elif order['status'] == 2 and order['real_status'] != 'pending':
-		self.cancel_order(order['oid'])
+		self.cancel_buy_order(order['oid'])
 		print 'buy: insuf funds'
-		order.update({'localtime':time(),'book':'closed:insuf','commit':commit_price,'target':target_price,'stop':stop_loss,'max_wait':max_wait,'max_hold':max_hold})
+		order.update({'localtime':time(),'pending_counter':5,'book':'closed:insuf','commit':commit_price,'target':target_price,'stop':stop_loss,'max_wait':max_wait,'max_hold':max_hold})
 		self.add_record(order)
-		return
+		return False
 	    else:
-		order.update({'localtime':time(),'book':'open','commit':commit_price,'target':target_price,'stop':stop_loss,'max_wait':max_wait,'max_hold':max_hold})
+		order.update({'localtime':time(),'pending_counter':5,'book':'open','commit':commit_price,'target':target_price,'stop':stop_loss,'max_wait':max_wait,'max_hold':max_hold})
 		self.add_record(order)
 		
 		print "buy: order confirmed"
-		return 1
+		return True
 		
 	else:
 	    print "buy: lack of funds or min qty not met, order not submitted:"
@@ -280,15 +277,15 @@ class bookie:
 	    print "\tfunds",self.usds
 	    return 0
 	
-    def cancel_order(self,oid):
-	print "cancel_order: canceling"
+    def cancel_buy_order(self,oid):
+	print "cancel_buy_order: canceling"
 	while 1:
 	    try:	
-		self.client.cancel_order(oid)
+		self.client.cancel_buy_order(oid)
 		self.save_records()
 		return
 	    except:
-		print "cancel_order: client error..retrying @ " + ctime()
+		print "cancel_buy_order: client error..retrying @ " + ctime()
 	
     
     def record_synch(self):
@@ -332,7 +329,7 @@ class bookie:
 		    if r['book'] != "open":
 			error_found = 1
 			print "\trecord_synch: record error found, canceling order"
-			self.cancel_order(r['oid'])
+			self.cancel_buy_order(r['oid'])
 			r['book'] += ": error"
 	    if order_found == 0:
 		
@@ -371,16 +368,18 @@ class bookie:
 		    dt = time() - r['localtime']
 		    #kill any buy orders where there are not enough funds
 		    if r['status'] == 2 and r['real_status'] == "pending":
-		    	print "\t\tupdate: canceling pending order (insuf funds?) (OID):",r['oid']
-			self.cancel_order(r['oid'])
-			r['book'] = "buy_cancel: pending state (insuf funds?)"
+			r['pending_counter'] -= 1
+			if r['pending_counter'] == 0:
+			    	print "\t\tupdate: canceling pending order (insuf funds?) (OID):",r['oid']
+				self.cancel_buy_order(r['oid'])
+				r['book'] = "buy_cancel: pending state (insuf funds?)"
 		    elif r['status'] == 2:
 			print "\t\tupdate: canceling order due to a lack of funds (OID):",r['oid']
-			self.cancel_order(r['oid'])
+			self.cancel_buy_order(r['oid'])
 			r['book'] = "buy_cancel:insuf funds"
 		    elif dt > r['max_wait']:
 			print "\t\tupdate: canceling order due to timeout (OID):",r['oid']
-			self.cancel_order(r['oid'])
+			self.cancel_buy_order(r['oid'])
 			r['book'] = "buy_cancel:max_wait"
 	
 	print "-" * 80
@@ -416,7 +415,7 @@ class bookie:
 		    time_left = str(int((r['max_hold'] - dt)/60.0))
 		    stop_delta = "%.2f"%(current_price - r['stop'])
 		    delta_target = "%.2f"%(r['target'] - current_price)
-		    print "update: OID:%s time left: %s stop_delta: %s delta_target: %s"%(oid,time_left)
+		    print "update: OID:%s time left: %s stop_delta: %s delta_target: %s"%(oid,time_left,stop_delta,delta_target)
 	
 	#save the updated records
 	self.save_records()
@@ -454,7 +453,7 @@ if __name__ == "__main__":
 
 		t = json.loads(server.get_target())
 		if monitor_mode == False:
-			commit = ((t['target'] - t['buy']) * 0.8) + t['buy'] #commit to sell at 80% to target
+			commit = ((t['target'] - t['buy']) * 0.8) + t['buy'] #commit sell order at 80% to target
 			if t['buy'] > 1 and t['buy'] < 20:
 			    b.buy(0.1,t['buy'],commit,t['target'],t['stop'],60 * 5,t['stop_age'])
 			    #maintain underbid orders
@@ -470,6 +469,6 @@ if __name__ == "__main__":
 	print "sleeping..."
 	print "_"*80
 	print "\n\n"  
-	sleep(20)	
+	sleep(60)	
 	
     

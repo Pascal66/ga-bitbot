@@ -111,10 +111,16 @@ while 1:
 	    #feed the input through the trade engine
 	    
 	    #preprocess the data
-	    te.classify_market(input)
-	    #selecct the quartile to test
+	    current_quartile = te.classify_market(input)
+	    #select the quartile to test
 	    te.test_quartile(quartile)
 	    te.net_worth_log = []
+
+	    print "_" * 40
+	    if current_quartile == quartile:
+	    	print "Quartile:",quartile, "+"
+	    else:
+	    	print "Quartile:",quartile
 
 	    #feed the data
 	    try:
@@ -126,48 +132,68 @@ while 1:
 
 		# Calc the next buy trigger point
 		if len(te.positions) > 0:
-		    target = te.input_log[-1][1] - (((te.macd_pct_log[-1][1] - te.macd_buy_trip) / 100.0) * te.input_log[-1][1]) - 0.001
+		    target = te.input_log[-1][1] - (abs(((te.macd_buy_trip - te.macd_pct_log[-1][1]) / 100.0) * te.input_log[-1][1]) * 2.0)
 		    if target > te.input_log[-1][1]:
 		    	target = te.input_log[-1][1]
 
-		    te.score()
-		    st = input[-1][0] + 2000
-		    te.input(st,target)
-		    p = te.positions[-1]
+		    #first check to see if the last price triggered a buy:
+		    if te.positions[-1]['buy_period'] == len(te.input_log):
+			    p = te.positions[-1]
+		    else:
+			    print "Last buy order was", len(te.input_log) - te.positions[-1]['buy_period'],"periods ago."
+			    #if not try to calculate the trigger point to get the buy orders in early...
+			    print "Trying to trigger with: ",target
+			    te.score()
+			    st = input[-1][0] + 2000
+			    te.input(st,target)
+			    p = te.positions[-1]
+			    #print p
 
 		    #te.classify_market(input)
 		    print "creating charts..."
-		    te.chart("./report/chart.templ","./report/chart_test_%s.html"%str(quartile))
+		    te.chart("./report/chart.templ","./report/chart_test_%s.html"%str(quartile),60*24*14)
 		    te.chart("./report/chart.templ","./report/chart_test_zoom_%s.html"%str(quartile),60*24)
 		    #print "Evaluating target price"
-		    if (target >= p['buy']) or (abs(target - p['buy']) < 0.01): #submit the order at or below target
-			    print "sending target buy order to server.."
-			    #format the orders
-			    p['buy'] = float("%.3f"%(p['buy'] - 0.01))
-			    p['target'] = float("%.3f"%p['target'])
-			    p.update({'stop_age':(60 * te.stop_age)})
-			    server.put_target(json.dumps(p))
-			    print "-" * 40
-			    print "Quartile  :",quartile
-		    	    print "Buy       :$", p['buy']
-		    	    print "Target    :$",p['target']
-			    print "Win Ratio :","%.3f"%((te.wins / float(te.wins + te.loss)) * 100),"%"
-		    	    print "-" * 40
-		    else:
-			print "Target out of range, no order set.",abs(target - p['buy'])
-			p['buy'] = 0
-			p['target'] = 0
-		    	server.put_target(json.dumps(p))
+		    if current_quartile == quartile:
+			    if (target >= p['buy']) or (abs(target - p['buy']) < 0.01): #submit the order at or below target
+				    #format the orders
+				    p['buy'] = float("%.3f"%(p['buy'] - 0.01))
+				    p['target'] = float("%.3f"%p['target'])
+				    p.update({'stop_age':(60 * te.stop_age)})
+				    if float("%.3f"%((te.wins / float(te.wins + te.loss)) * 100)) > 85.0:
+					#only submitt an order if the win/loss ratio is greater than 95%
+					print "sending target buy order to server.."
+				    	server.put_target(json.dumps(p))
+				    else:
+					print "underperforming trade strategy, order not submitted"
+				    print "-" * 40
+				    print "Quartile  :",quartile
+			    	    print "Buy       :$", p['buy']
+			    	    print "Target    :$",p['target']
+				    print "Win Ratio :","%.3f"%((te.wins / float(te.wins + te.loss)) * 100),"%"
+			    	    print "-" * 40
+			    else:
+				print "Target out of range, no order set."
+				print "Buy       :$", p['buy']
+				print "Target    :$",p['target']
+				print "Input Target :$",target
+				print "Last Price:$",input[-1][1]
+				print "MACD Log: ",te.macd_pct_log[-1][1]
+				print "MACD Trip: ",te.macd_buy_trip
+				p.update({'stop_age':(60 * te.stop_age)}) #DEBUG ONLY!! - delete when done.
+				p['buy'] = 0.00#DEBUG ONLY!! should be 0
+				p['target'] = 0.00#DEBUG ONLY!! should be 0
+			    	server.put_target(json.dumps(p))
 
-		    buys.append(p['buy'])
-		    targets.append(p['target'])
+			    buys.append(p['buy'])
+			    targets.append(p['target'])
     #log the orders
-    f = open("./report/rg_buys.csv",'a')
-    f.write(",".join(map(str,buys)) + ",")
-    f.write(",".join(map(str,targets)) + "\n")
-    f.close()
+    #f = open("./report/rg_buys.csv",'a')
+    #f.write(",".join(map(str,buys)) + ",")
+    #f.write(",".join(map(str,targets)) + "\n")
+    #f.close()
 
-    #print "sleeping..."
+    print "sleeping..."
     print "_" * 80
     print "\n"
     time.sleep(60) #generate a report every 20 seconds
