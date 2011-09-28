@@ -457,35 +457,46 @@ class trade_engine:
 		self.order_history +="</tr>\n"
 
 		#only htmlize the last positions so the browser doesn't blow up ;)
-		if len(self.positions) > 20:
-			last_positions = self.positions[:20]
-		else:
-			last_positions = self.positions
-		for p in last_positions:
-			self.order_history +="<tr>"
+		reported_position_count_limit = 20
+		reported_position_count = 0
+
+		for p in self.positions:
+			if reported_position_count >= reported_position_count_limit:
+				break
+
+			#I dont care about the dumped positions, they're not real transactions anyway.
+			#They're only generated to calculate/report the current account value.
+			if p['status']!='dumped':
+				reported_position_count += 1
+				self.order_history +="<tr>"
+
 			for key in keys:
 				if p.has_key(key):
-					if p['status']=='stop':
-						color = 'r'
-					elif p['status']=='dumped':
-						color = 'y'
-					elif p['status']=='sold':
-						color = 'g'
-					else:
-						color = 'b'
-					self.order_history +="<td class='%s'>"%color
-					if type(p[key]) == type(1.0):
-						self.order_history += "%.2f"% round(p[key],2)				
-					else:	
-						self.order_history += str(p[key])
 					#I dont care about the dumped positions, they're not real transactions anyway.
 					#They're only generated to calculate/report the current account value.
 					if p['status']!='dumped':
+						if p['status']=='stop':
+							color = 'r'
+						elif p['status']=='dumped': #Im leaving this here in case I want to turn it back on.
+							color = 'y'
+						elif p['status']=='sold':
+							color = 'g'
+						else:
+							color = 'b'
+						self.order_history +="<td class='%s'>"%color
+						if type(p[key]) == type(1.0):
+							self.order_history += "%.2f"% round(p[key],2)				
+						else:	
+							self.order_history += str(p[key])
+						
 						self.order_history +="</td>"
-				else:
+				
+				elif p['status']!='dumped':
 					self.order_history +="<td>N/A</td>"
+			
+			if p['status']!='dumped':
+				self.order_history +="</tr>\n"	
 
-			self.order_history +="</tr>\n"	
 		self.order_history += "</table>"
 		return
 	
