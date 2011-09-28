@@ -478,7 +478,10 @@ class trade_engine:
 						self.order_history += "%.2f"% round(p[key],2)				
 					else:	
 						self.order_history += str(p[key])
-					self.order_history +="</td>"
+					#I dont care about the dumped positions, they're not real transactions anyway.
+					#They're only generated to calculate/report the current account value.
+					if p['status']!='dumped':
+						self.order_history +="</td>"
 				else:
 					self.order_history +="<td>N/A</td>"
 
