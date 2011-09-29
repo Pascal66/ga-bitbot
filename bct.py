@@ -340,7 +340,7 @@ class trade_engine:
 					self.loss += 1
 					self.buy_delay += self.buy_wait_after_stop_loss
 				else:
-					self.wins += current_price / position['target'] 
+					self.wins += (current_price / position['target']) / 2.0 #fractional win penalized by 50%
 
 				self.balance += position['actual'] * (position['shares'] - (position['shares'] * self.commision))
 				self.score_balance += ((position['actual'] * (position['shares'] - (position['shares'] * self.commision))) / (position['buy'] * position['shares'])) * (pow(position['age'],self.stbf) / position['age'] )
