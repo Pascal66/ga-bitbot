@@ -69,8 +69,10 @@ def pwdict(d,filename):
 for quartile in [1,2,3,4]:
 	print "-"*80
 	print "Quartile:",quartile
-	ag = json.loads(server.get(60*20,quartile))
+	ag = json.loads(server.get(60*20,quartile))	
 	ppdict(ag)
+	pwdict(ag,'./test_data/gene_high_score_' + str(quartile))
+
 
 
 
