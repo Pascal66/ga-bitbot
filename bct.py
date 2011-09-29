@@ -316,6 +316,7 @@ class trade_engine:
 		stop = current_price * -1
 		updated = False
 		for position in self.positions_open:
+			#handle sold positions
 			if position['status'] == "active" and position['target'] <= current_price: #and self.i_neg >= self.min_i_neg:
 				updated = True
 				position['status'] = "sold"
@@ -330,6 +331,7 @@ class trade_engine:
 				#self.positions = filter(lambda x: x.get('buy_period') != buy_period, self.positions) #delete the old record
 				#self.positions.append(position.copy()) #and add the updated record
 				self.positions[position['master_index']] = position.copy()
+			#handle the stop orders
 			elif position['status'] == "active" and (position['stop'] >= current_price or position['age'] >= self.stop_age):
 				updated = True
 				position['status'] = "stop"
@@ -340,8 +342,8 @@ class trade_engine:
 					self.loss += 1
 					self.buy_delay += self.buy_wait_after_stop_loss
 				else:
-					self.wins += (current_price / position['target']) / 2.0 #fractional win penalized by 50%
-
+					self.loss += 1 - (position['actual'] / position['target']) / 4.0 #fractional loss
+					self.buy_delay += self.buy_wait_after_stop_loss
 				self.balance += position['actual'] * (position['shares'] - (position['shares'] * self.commision))
 				self.score_balance += ((position['actual'] * (position['shares'] - (position['shares'] * self.commision))) / (position['buy'] * position['shares'])) * (pow(position['age'],self.stbf) / position['age'] )
 				#update the position in the master list
@@ -349,7 +351,7 @@ class trade_engine:
 				#self.positions = filter(lambda x: x.get('buy_period') != buy_period, self.positions) #delete the old record
 				#self.positions.append(position.copy()) #and add the updated record
 				self.positions[position['master_index']] = position.copy()
-				
+			#handle active (open) positions	
 			elif position['status'] == "active":
 				#position remains open, capture the current value
 				current_net_worth += current_price * (position['shares'] - (position['shares'] * self.commision))

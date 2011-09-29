@@ -166,6 +166,9 @@ while 1:
 				    	server.put_target(json.dumps(p))
 				    else:
 					print "underperforming trade strategy, order not submitted"
+					p['buy'] = 0.00
+					p['target'] = 0.00
+			    		server.put_target(json.dumps(p))
 				    print "-" * 40
 				    print "Quartile  :",quartile
 			    	    print "Buy       :$", p['buy']
@@ -181,8 +184,8 @@ while 1:
 				print "MACD Log: ",te.macd_pct_log[-1][1]
 				print "MACD Trip: ",te.macd_buy_trip
 				p.update({'stop_age':(60 * te.stop_age)}) #DEBUG ONLY!! - delete when done.
-				p['buy'] = 0.00#DEBUG ONLY!! should be 0
-				p['target'] = 0.00#DEBUG ONLY!! should be 0
+				p['buy'] = 0.00
+				p['target'] = 0.00
 			    	server.put_target(json.dumps(p))
 
 			    buys.append(p['buy'])

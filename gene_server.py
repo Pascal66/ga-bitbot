@@ -127,7 +127,7 @@ def put_bob(d,quartile):
 	print "put bob",d['time'],d['score']
 	#prune the dictionary list
 	if len(g_bobs[quartile - 1]) > max_bobs:
-		g_bobs[quartile - 1] = g_bobs[quartile - 1][:max_len]
+		g_bobs[quartile - 1] = g_bobs[quartile - 1][:max_bobs]
 	return "OK"
 
 
