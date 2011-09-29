@@ -393,7 +393,7 @@ class bookie:
 		#check commit price
 		if current_price >= r['commit']:
 		    print "\t+++ update: selling position: price commit target met: (OID):",r['oid']
-		    self.sell(r['amount'],current_price - 0.001)
+		    self.sell(r['amount'],r['target'])
 		    r['book'] = "closed:commit"
 		    put_for_sale = 1
 		#check max age  
