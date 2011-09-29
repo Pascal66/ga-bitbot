@@ -59,6 +59,7 @@ class trade_engine:
 		
 		self.quartile = 1		#define which market detection quartile to trade on (1-4)
 		self.market_class = []
+		self.classified_market_data = False
 		self.reset()
 		return
 
@@ -176,7 +177,7 @@ class trade_engine:
 				self.market_class[i][1] = 1.0
 			if i < atr_depth + 1:
 				self.market_class[i][1] = 0.0	#ignore early (uncalculated) data 
-
+		self.classified_market_data = True
 		return int(self.market_class[len(self.market_class)-1][1] * 4)	#return the current quartile (1-4)
 
 	def metrics_report(self):
@@ -286,23 +287,26 @@ class trade_engine:
 		current_price = self.history[0]
 		#if the balance is sufficient to place an order and there is no buy delay
 		buy = current_price * -1
-		if self.balance > (current_price * self.shares) and self.buy_delay == 0 and self.quartile == self.market_class[self.period][1]:
-			if self.macd_pct < self.macd_buy_trip:
-				#set delay until next buy order
-				self.buy_delay = self.buy_wait
-				self.balance -= (current_price * self.shares)
-				actual_shares  = self.shares - (self.shares * self.commision)
-				buy = current_price
-				target = (buy * self.markup) + buy
-				stop = buy - (buy * self.stop_loss)
-				self.buy_log.append([self.time,buy])
+		#but only if the classified input data matches the quartile assigned 
+		#OR if the input data was not pre-classified in which case quartile partitioning is disabled. 
+		if self.classified_market_data == False or self.quartile == self.market_class[self.period][1]:
+			if self.balance > (current_price * self.shares) and self.buy_delay == 0 :
+				if self.macd_pct < self.macd_buy_trip:
+					#set delay until next buy order
+					self.buy_delay = self.buy_wait
+					self.balance -= (current_price * self.shares)
+					actual_shares  = self.shares - (self.shares * self.commision)
+					buy = current_price
+					target = (buy * self.markup) + buy
+					stop = buy - (buy * self.stop_loss)
+					self.buy_log.append([self.time,buy])
 
-				new_position = {'master_index':len(self.positions),'age':0,'buy_period':self.period,'sell_period':0,'trade_pos': self.balance,'shares':actual_shares,'buy':buy,'cost':self.shares*buy,'target':target,'stop':stop,'status':"active",'actual':0,'score':0}
-				self.positions.append(new_position.copy())
-				#maintain a seperate subset of open positions to speed up the search to close the open positions
-				#after a long run there may be thousands of closed positions 
-				#it was killing performance searching all of them for the few open positions at any given time
-				self.positions_open.append(new_position.copy()) 
+					new_position = {'master_index':len(self.positions),'age':0,'buy_period':self.period,'sell_period':0,'trade_pos': self.balance,'shares':actual_shares,'buy':buy,'cost':self.shares*buy,'target':target,'stop':stop,'status':"active",'actual':0,'score':0}
+					self.positions.append(new_position.copy())
+					#maintain a seperate subset of open positions to speed up the search to close the open positions
+					#after a long run there may be thousands of closed positions 
+					#it was killing performance searching all of them for the few open positions at any given time
+					self.positions_open.append(new_position.copy()) 
 				
 		
 		current_net_worth = 0
@@ -336,7 +340,7 @@ class trade_engine:
 					self.loss += 1
 					self.buy_delay += self.buy_wait_after_stop_loss
 				else:
-					self.win += current_price / position['target'] 
+					self.wins += current_price / position['target'] 
 
 				self.balance += position['actual'] * (position['shares'] - (position['shares'] * self.commision))
 				self.score_balance += ((position['actual'] * (position['shares'] - (position['shares'] * self.commision))) / (position['buy'] * position['shares'])) * (pow(position['age'],self.stbf) / position['age'] )
@@ -632,9 +636,13 @@ def test():
 if __name__ == "__main__":
 
     __appversion__ = "0.02a"
-    print "Bitcoin trade simulator v%s"%__appversion__
+    print "Bitcoin trade simulator profiler v%s"%__appversion__
     
-    
+    print " -- this is a test script to profile the performance of bct.py"
+    print " -- the trade results should be ignored as the trade strategy inputs"
+    print "     are designed to stress the module with many trade positions"
+    print ""
+    print "Profiling bct...(This is going to take a while)"
     #open the history file
     f = open("./datafeed/bcfeed_mtgoxUSD_1min.csv",'r')
     d = f.readlines()
@@ -655,7 +663,11 @@ if __name__ == "__main__":
     print "Score:",te.score()
     print "Closing Balance:",te.balance
     print "Transaction Count: ",len(te.positions)
+    
+    #Commented out the follwing reports -- they generate very large files and in the case of this test script of limited use.
+    #print "Generating reports..."
+    #te.log_transactions('./report/profile_transactions.csv')
+    #te.log_orders('./report/profile_orders.csv')
+    #te.chart("./report/chart.templ","./report/chart_profile.html")
+    print "Done."
 
-    te.log_transactions('transactions.csv')
-    te.log_orders('orders.csv')
-    te.chart("/home/emfb/public_html/bc/chart.templ","/home/emfb/public_html/bc/chart_test.html")
