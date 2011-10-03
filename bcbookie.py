@@ -247,11 +247,11 @@ class bookie:
 		self.funds()
 		if self.btcs > last_btc_balance:
 			print 'buy: instant order verified'
-			order = {'price':buy_price,'oid':'none','localtime':time(),'pending_counter':5,'book':'closed:instant','commit':commit_price,'target':target_price,'stop':stop_loss,'max_wait':max_wait,'max_hold':max_hold}
+			order = {'price':buy_price,'oid':'none','localtime':time(),'pending_counter':10,'book':'closed:instant','commit':commit_price,'target':target_price,'stop':stop_loss,'max_wait':max_wait,'max_hold':max_hold}
 			self.sell(qty, target_price)
 		else:
 			print 'buy: third level order verification failed'
-			order = {'price':buy_price,'oid':'none','localtime':time(),'pending_counter':5,'book':'closed: order not acknowledged','commit':commit_price,'target':target_price,'stop':stop_loss,'max_wait':max_wait,'max_hold':max_hold}
+			order = {'price':buy_price,'oid':'none','localtime':time(),'pending_counter':10,'book':'closed: order not acknowledged','commit':commit_price,'target':target_price,'stop':stop_loss,'max_wait':max_wait,'max_hold':max_hold}
 		self.add_record(order)
 		#print 'buy: posting instant order for sale @ target (off book)'
 		#self.sell(qty, target_price)
@@ -260,11 +260,11 @@ class bookie:
 	    elif order['status'] == 2 and order['real_status'] != 'pending':
 		self.cancel_buy_order(order['oid'])
 		print 'buy: insuf funds'
-		order.update({'localtime':time(),'pending_counter':5,'book':'closed:insuf','commit':commit_price,'target':target_price,'stop':stop_loss,'max_wait':max_wait,'max_hold':max_hold})
+		order.update({'localtime':time(),'pending_counter':10,'book':'closed:insuf','commit':commit_price,'target':target_price,'stop':stop_loss,'max_wait':max_wait,'max_hold':max_hold})
 		self.add_record(order)
 		return False
 	    else:
-		order.update({'localtime':time(),'pending_counter':5,'book':'open','commit':commit_price,'target':target_price,'stop':stop_loss,'max_wait':max_wait,'max_hold':max_hold})
+		order.update({'localtime':time(),'pending_counter':10,'book':'open','commit':commit_price,'target':target_price,'stop':stop_loss,'max_wait':max_wait,'max_hold':max_hold})
 		self.add_record(order)
 		
 		print "buy: order confirmed"
@@ -455,12 +455,12 @@ if __name__ == "__main__":
 		if monitor_mode == False:
 			commit = ((t['target'] - t['buy']) * 0.8) + t['buy'] #commit sell order at 80% to target
 			if t['buy'] > 1 and t['buy'] < 20:
-			    b.buy(0.1,t['buy'],commit,t['target'],t['stop'],60 * 5,t['stop_age'])
+			    b.buy(0.5,t['buy'],commit,t['target'],t['stop'],60 * 5,t['stop_age'])
 			    #maintain underbid orders
 			    u_bids = 10
 			    for u_bid in range(2,u_bids,2):
 				bid_modifier = 1 - (u_bid/300.0)
-			    	b.buy(0.1 * u_bid,t['buy'] * bid_modifier,commit,t['target'],t['stop'],60 * (u_bids + 5),t['stop_age'])
+			    	b.buy(0.25 * u_bid,t['buy'] * bid_modifier,commit,t['target'],t['stop'],60 * (u_bids + 5),t['stop_age'])
 			    pass
 			else:
 			    print "main: No GA order available."

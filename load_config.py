@@ -23,7 +23,6 @@ This file is part of ga-bitbot.
 """
 
 import json
-import genetic
 
 config_path = "./config/"
 
@@ -81,6 +80,7 @@ def load_config_file_into_object(config_file,obj):
 
 if __name__ == "__main__":
 	#just some test code
+	import genetic
 
 	print load_config_from_file.__doc__
 
