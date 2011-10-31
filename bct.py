@@ -233,6 +233,7 @@ class trade_engine:
 			exp_scale = self.nlsf / float(self.positions[-1]['buy_period'])	
 			final_score_balance = 0
 			for p in self.positions:
+				p['score'] = 0
 				if p['status'] == "sold":
 					p['age'] = float(p['age'])
 					p['score'] = (((p['target'] - p['buy']) / p['buy']) * 100.0 ) * self.shares
@@ -240,12 +241,26 @@ class trade_engine:
 					#favors a faster turn around time on positions
 					p['score'] /= (pow(p['age'],self.stbf) / p['age'] )
 					p['score'] *= 100.0
-					if p['age'] < 5.0:
-						p['score'] *= p['age'] * (1/5.0) #I'm knocking down short trades because theres a chance the system will miss them
+					if p['age'] < 4.0:
+						p['score'] *= p['score'] * (1/4.0) #I'm knocking down very short term trades because theres a chance the system will miss them
 				if p['status'] == "stop":
-					if p['actual'] > p['buy']: 
-						#only add stop orders to the score if there was a loss
+					if p['actual'] > p['buy']:
+						age = float(self.stop_age) 
+						#only add stop orders to the score if there wasn't a loss
 						p['score'] = (((p['actual'] - p['buy']) / p['buy']) * 100.0)  * self.shares
+						#apply non-linear scaling to the trade based on the round trip time (age)
+						#favors a faster turn around time on positions
+						p['score'] /= (pow(age,self.stbf) / age )
+						p['score'] *= 100.0
+					else:
+						#losing position gets a negative score
+						age = float(self.stop_age) 
+						p['score'] = (((p['actual'] - p['buy']) / p['buy']) * 100.0)  * self.shares
+						#apply non-linear scaling to the trade based on the round trip time (age)
+						#favors a faster turn around time on positions
+						p['score'] /= (pow(age,self.stbf) / age )
+						p['score'] *= 500.0	#increase weighting for losing positions
+
 				#apply e^0 to e^1 weighting to favor the latest trade results
 				p['score'] *= exp(exp_scale * p['buy_period']) 
 				final_score_balance += p['score']
@@ -339,10 +354,12 @@ class trade_engine:
 				stop = current_price
 				position['sell_period'] = self.period
 				if position['stop'] >= current_price:
+					#stop loss
 					self.loss += 1
 					self.buy_delay += self.buy_wait_after_stop_loss
 				else:
-					self.loss += 1 - (position['actual'] / position['target']) / 4.0 #fractional loss
+					#stop wait
+					self.loss += 1 - (position['actual'] / position['target'])  #fractional loss
 					self.buy_delay += self.buy_wait_after_stop_loss
 				self.balance += position['actual'] * (position['shares'] - (position['shares'] * self.commision))
 				self.score_balance += ((position['actual'] * (position['shares'] - (position['shares'] * self.commision))) / (position['buy'] * position['shares'])) * (pow(position['age'],self.stbf) / position['age'] )

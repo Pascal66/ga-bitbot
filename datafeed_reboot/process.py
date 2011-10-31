@@ -1,6 +1,9 @@
 #converts bitcoincharts csv download into the 
 #1min format used by the genetic trade framework
 from time import *
+import urllib2
+import sys
+
 
 __app_version__ = "0.01a"
 
@@ -11,7 +14,25 @@ Bitcoin Charts Data Download (CSV) Processor v%s
 
 \t- the download file must be edited to remove any html formating.
 
+to automaticaly download the mtgox usd historic data run with the following option:
+python process -d
+
 """%(__app_version__)
+
+
+link = """http://bitcoincharts.com/t/trades.csv?symbol=mtgoxUSD&start=0"""
+
+if len(sys.argv) >= 2:
+	if sys.argv[1] == '-d':
+		print "downloading mtgox historic data..."
+		data = urllib2.urlopen(link).read()
+		f = open("download_mtgoxUSD.csv",'w')
+		f.write(data)
+		f.close()
+		print "download complete."
+	else:
+		print "invalid argument",sys.argv[1]
+
 
 
 f = open("download_mtgoxUSD.csv",'r')
