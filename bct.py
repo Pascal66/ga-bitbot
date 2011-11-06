@@ -48,14 +48,14 @@ class trade_engine:
 		self.min_i_neg = 0		#min periods of declining price
 						#before sell order placed
 		
-		self.stbf = 1.97		#short trade biasing factor
+		self.stbf = 2.08		#short trade biasing factor
 						#-- increase to favor day trading
-						#-- decrease to 1 to eliminate bias
+						#-- decrease to 2 to eliminate bias
 
-		self.nlsf = 5.0			#non-linear scoring factor - favor the latest trades
+		self.nlsf = 3.0			#non-linear scoring factor - favor the latest trades
 						#max factor = exp(self.nlsf) @ the last sample periord 
 		
-		self.commision = 0.006	#mt.gox commision
+		self.commision = 0.006		#mt.gox commision
 		
 		self.quartile = 1		#define which market detection quartile to trade on (1-4)
 		self.market_class = []
@@ -240,26 +240,26 @@ class trade_engine:
 					#apply non-linear scaling to the trade based on the round trip time (age)
 					#favors a faster turn around time on positions
 					p['score'] /= (pow(p['age'],self.stbf) / p['age'] )
-					p['score'] *= 100.0
+					p['score'] *= 10.0
 					if p['age'] < 4.0:
-						p['score'] *= p['score'] * (1/4.0) #I'm knocking down very short term trades because theres a chance the system will miss them
+						p['score'] *= (1/4.0) #I'm knocking down very short term trades because theres a chance the system will miss them
 				if p['status'] == "stop":
 					if p['actual'] > p['buy']:
 						age = float(self.stop_age) 
-						#only add stop orders to the score if there wasn't a loss
-						p['score'] = (((p['actual'] - p['buy']) / p['buy']) * 100.0)  * self.shares
+						#if there wasn't a loss caused by the stop order
+						p['score'] = (((p['buy'] - p['actual']) / p['buy']) * 100.0)  * self.shares
 						#apply non-linear scaling to the trade based on the round trip time (age)
 						#favors a faster turn around time on positions
-						p['score'] /= (pow(age,self.stbf) / age )
-						p['score'] *= 100.0
+						#p['score'] /= (pow(age,self.stbf) / age )
+						#p['score'] *= 10.0
 					else:
 						#losing position gets a negative score
 						age = float(self.stop_age) 
 						p['score'] = (((p['actual'] - p['buy']) / p['buy']) * 100.0)  * self.shares
 						#apply non-linear scaling to the trade based on the round trip time (age)
 						#favors a faster turn around time on positions
-						p['score'] /= (pow(age,self.stbf) / age )
-						p['score'] *= 500.0	#increase weighting for losing positions
+						#p['score'] /= (pow(age,self.stbf) / age )
+						#p['score'] *= 10.0	#increase weighting for losing positions
 
 				#apply e^0 to e^1 weighting to favor the latest trade results
 				p['score'] *= exp(exp_scale * p['buy_period']) 
@@ -480,7 +480,7 @@ class trade_engine:
 		self.order_history +="</tr>\n"
 
 		#only htmlize the last positions so the browser doesn't blow up ;)
-		reported_position_count_limit = 20
+		reported_position_count_limit = 10000
 		reported_position_count = 0
 
 		for p in self.positions:

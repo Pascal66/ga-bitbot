@@ -55,6 +55,7 @@ if __name__ == "__main__":
 	print "Genetic Bitcoin Trade Simulator v%s"%__appversion__
 
 	max_length = 60 * 24 * 360
+	load_throttle = 1 #go easy on cpu usage
 	calibrate = 1	#set to one to adjust the population size to maintain a one min test cycle
 
 	def load():
@@ -160,7 +161,8 @@ if __name__ == "__main__":
 		#periodicaly reload the data set
 		test_count += 1
 		total_count += 1
-
+		if load_throttle == 1:
+			time.sleep(0.35)
 		    
 		if total_count%g.pool_size == 0:
 			#benchmark the cycle speed
@@ -175,7 +177,7 @@ if __name__ == "__main__":
 					cycle_time = min_cycle_time
 				if g.pool_size > 10000:
 					g.pool_size = 10000
-			print "Genes/Sec Processed: ","%.2f"%gps,"Pool Size: ",g.pool_size,"Total Processed: ",total_count
+			print "%.2f"%gps,"G/S; ","%.2f"%((gps*len(input))/1000.0),"KS/S;","  Pool Size: ",g.pool_size,"  Total Processed: ",total_count
 			#load the latest trade data
 			#print "Loading the lastest trade data..."
 			input = load()
