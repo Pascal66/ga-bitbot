@@ -22,6 +22,7 @@ python process -d
 
 link = """http://bitcoincharts.com/t/trades.csv?symbol=mtgoxUSD&start=0"""
 
+auto_move_output = 0
 if len(sys.argv) >= 2:
 	if sys.argv[1] == '-d':
 		print "downloading mtgox historic data..."
@@ -29,6 +30,7 @@ if len(sys.argv) >= 2:
 		f = open("download_mtgoxUSD.csv",'w')
 		f.write(data)
 		f.close()
+		auto_move_output = 1
 		print "download complete."
 	else:
 		print "invalid argument",sys.argv[1]
@@ -66,7 +68,13 @@ for r in d:
 	last_m = ctime(last_t).split(':')[1]
 
 print "Writing output file..."
-f = open('bcfeed_mtgoxUSD_1min.csv','w')
+if auto_move_output == 1 :
+	print "updating the datafeed directory directly...no need to manualy move the output file"
+	f = open('../datafeed/bcfeed_mtgoxUSD_1min.csv','w')
+else:
+	f = open('bcfeed_mtgoxUSD_1min.csv','w')
+
+	
 for t,p,v in one_min:
 	f.write(",".join(map(str,[t,p,v])) + '\n')
 f.close()
