@@ -54,7 +54,7 @@ if __name__ == "__main__":
 	__appversion__ = "0.01a"
 	print "Genetic Bitcoin Trade Simulator v%s"%__appversion__
 
-	max_length = 60 * 24 * 360
+	max_length = 60 * 24
 	load_throttle = 1 #go easy on cpu usage
 	calibrate = 1	#set to one to adjust the population size to maintain a one min test cycle
 
@@ -68,7 +68,7 @@ if __name__ == "__main__":
 	
 		if len(d) > max_length:
 			#truncate the dataset
-			d [max_length * -1:]
+			d = d[max_length * -1:]
 
 		#load the backtest dataset
 		input = []
@@ -192,7 +192,18 @@ if __name__ == "__main__":
 			max_gene = g.get_by_id(max_score_id)
 			if max_gene != None:
 				print "--\tSubmit BOB for id:%s to server (%.2f)"%(str(max_gene['id']),max_gene['score'])
-			server.put_bob(json.dumps(max_gene),quartile)
+				server.put_bob(json.dumps(max_gene),quartile)
+			else:
+				print "**WARNING** MAX_GENE is gone.: ID",max_score_id
+				print "*"*80
+				print "GENE DUMP:"
+				for ag in g.pool:
+					print ag['id'],ag['score']
+				print "*"*80
+				print "HALTED."
+				while 1:
+					pass
+
 			if bob_simulator:
 				#after a local optima is reached, sleep for some time to allow extra processing power to
 				#the other clients so they can find potentialy better genes

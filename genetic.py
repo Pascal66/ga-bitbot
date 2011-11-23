@@ -24,6 +24,7 @@ import random
 import time
 from operator import itemgetter
 import pdb
+import hashlib
 
 #seed the random number generator
 random.seed(time.time())
@@ -34,6 +35,10 @@ def zero(a):
 #create a gene pool
 class genepool:
     def __init__(self):
+	#generate a unique gene pool id
+	md = hashlib.md5()
+	md.update(str(time.time()) + str(random.random() * 1000000))
+	self.id = md.hexdigest()[0:8]
 	self.prune_threshold = 0.30	#score threshold - percentile (top n%)
 	self.max_prune_threshold = 0.20	#score threshold - percentile (top n%)
 	self.min_prune_threshold = 0.03	#score threshold - percentile (top n%)
@@ -46,6 +51,7 @@ class genepool:
 
 	self.multiple_parent = 0.05	#multiple parent rate
 	self.max_multiple_parents = 7	#maximum number of multi parent merge (per parent)
+	self.enable_niche_filter = False
 	self.niche_trigger = 3		#trigger niche filter when n bits or less don't match
 	self.niche_threshold = 0.95	#(calculated!) niche filter threshold for fitering similar genes
 	self.niche_min_iteration = 7	#min iteration before the niche filter starts
@@ -65,6 +71,9 @@ class genepool:
 	self.local_optima_reached = False	#flag to indicate when a local optima has been reached
 	self.local_optima_trigger = 10		#number of iterations with no increase in score required to trigger
 	self.local_optima_buffer = [] 		#the local optima flag. The buffer maintains the last high scores
+
+	self.next_index = 0		#get next index (needed for opencl batch processing)
+	self.id_index = 10000
 
     def step_prune(self):
 	if self.prune_threshold > self.min_prune_threshold:
@@ -103,9 +112,9 @@ class genepool:
 
     def reset_scores(self):
 	#Reset the scores in the gene pool
-	for g in self.pool:
-	    g['score'] = None
-	    g['time'] = None
+	for i in range(len(self.pool)):
+	    self.pool[i]['score'] = None
+	    self.pool[i]['time'] = None
 		
     def mutate_gene(self,c):
 	self.step_mutate()
@@ -204,6 +213,7 @@ class genepool:
     def next_gen(self):
 	#populate the pool with the next generation
 	self.iteration += 1
+	self.next_index = 0
 	scores = []
 	max_score = -99999
 	winning_gene = ""
@@ -213,8 +223,20 @@ class genepool:
 	if len(self.pool) < 2:
 		self.seed()
 
+	#DEBUG
+	c = 0
+	print "Top 10:" + "-" * 73
+	for g in self.pool:
+		c += 1
+		if c > 10:
+			break
+		print g['score'],g['id']
+
+	print "-" * 80
 
 	winning_gene = self.pool[0]
+	print "Genetic: Pool Length: ",len(self.pool)
+	print "Genetic: HIGH SCORE: ",winning_gene['id']
 	max_score = winning_gene['score']
 	self.log_dict(winning_gene)
 
@@ -227,7 +249,7 @@ class genepool:
 	if len(self.local_optima_buffer) == self.local_optima_trigger:
 		#print sum(self.local_optima_buffer),self.local_optima_trigger,max_score
 		#print (sum(self.local_optima_buffer) / self.local_optima_trigger) - max_score
-		if abs((sum(self.local_optima_buffer) / self.local_optima_trigger) - max_score) < 0.000001:
+		if abs((sum(self.local_optima_buffer) / self.local_optima_trigger) - max_score) < 0.001:
 			#local optima reached
 			print "#"*25,"local optima reached","#"*25
 			self.local_optima_reached = True
@@ -251,13 +273,21 @@ class genepool:
 	gen = gen[:threshold]
 
 	#apply the niche filter
-	if self.iteration > self.niche_min_iteration:
-		gen = self.niche_filter(gen)
+	if self.enable_niche_filter == True:
+		if self.iteration > self.niche_min_iteration:
+			gen = self.niche_filter(gen)
+
+
+	#filter out the kill_score genes
+	tgen = []
+	for i in range(len(gen)):
+		if gen[i]['score'] > self.kill_score or gen[i]['score'] == None:
+			tgen.append(gen[i])
+	gen = tgen
 
 	#make sure there are at least three genes available (even if they're twins)
 	if len(gen) < 3:
 		gen = self.pool[0:3]
-
 
 	#generate offspring
 	os = []
@@ -288,7 +318,7 @@ class genepool:
 			m = int(random.random() * len(gen))
 			f = int(random.random() * len(gen))
 			new_g = self.mate(gen[m]['gene'],gen[f]['gene'])
-		gdict = {"gene":new_g,"score":None,"time":None,"generation":gen[m]["generation"] + 1,"id":int(random.random()*999999999),"msg":""}
+		gdict = {"gene":new_g,"score":None,"time":None,"generation":gen[m]["generation"] + 1,"id":self.create_id(),"msg":""}
 		os.append(gdict)
 
 	#bit sweep (bit level hill climbing)
@@ -300,7 +330,7 @@ class genepool:
 		#index = int(random.random() * (len(gen) - 1)) + 1
 		#bsl += self.bit_sweep(gen[index]['gene'])
 		for new_g in bsl:
-			gdict = {"gene":new_g,"score":None,"time":None,"generation":winning_gene["generation"] + 1,"id":int(random.random()*999999999),"msg":""}
+			gdict = {"gene":new_g,"score":None,"time":None,"generation":winning_gene["generation"] + 1,"id":self.create_id(),"msg":""}
 			os.append(gdict)
 
 		
@@ -316,12 +346,18 @@ class genepool:
 	
 	
 	self.pool = gen + os
-	
+	print "Genetic: Post Filter HIGH SCORE:", self.pool[0]['id']
 	#create some fresh genes if pool space is available
 	new_gene_count = 0
 	while len(self.pool) < self.pool_size:
 	    new_gene_count += 1
 	    self.pool.append(self.create_gene())
+
+	#DEBUG
+	#self.pool = sorted(self.pool, key=itemgetter('score'))
+	#for some reason the top list item is getting deleted ????
+	#for now just insert a new gene at the top of the list...
+	#self.pool.insert(0,self.create_gene())
 	
 	#decode the genes 
 	self.decode()	 
@@ -332,16 +368,32 @@ class genepool:
 	print "Pool Size:",len(self.pool)
 	print "Threshold:",self.prune_threshold
 	print "Mutate:",self.mutate
+	print "Local Optima Buffer:",self.local_optima_buffer
 	print "-" * 80
 	
     def get_next(self):
 	#get the next available unscored gene
 	#if none are available the create the
 	#next generation
-	for g in self.pool:
-	    if g['score'] == None:
-		return g
-	#out of unscored genes
+	if self.next_index >= len(self.pool) - 1:
+		self.next_index = 0
+
+	index = self.next_index + 1
+	get_next_gen = 0
+	while not get_next_gen and len(self.pool) > 0:
+		if self.pool[index]['score'] == None:
+			self.next_index = index
+			#print index,self.next_index,'<---------------'
+			return self.pool[index]
+		if index == self.next_index:
+			self.next_index = 0
+			get_next_gen = 1
+		#print index,self.next_index,get_next_gen,self.pool[index]['id'],self.pool[index]['score']		
+		index += 1
+		if index >= len(self.pool):
+			index = 0	
+		
+	print "GENETIC: NEXT GEN " + "#"*80
 	self.next_gen()
 	return self.get_next()
     
@@ -410,24 +462,34 @@ class genepool:
 		g_d[name] = n
 	return g_d
 
+    def create_id(self):
+	self.id_index += 1
+	if self.id_index > 99999:
+		self.id_index = 9999
+	return str(int(time.time())).replace('.','')[4:] + str(self.id_index) + '-' + self.id
+    	#return str(int(time.time())).replace('.','')[4:] + str(self.id_index)
 
-    
     def create_gene(self):
 	gene = ""
 	for j in range(self.genelen):
 	    gene += self.rbit()
-	gdict = {"gene":gene,"score":None,"time":None,"generation":1,"id":int(random.random()*999999999),"msg":""}
+	gdict = {"gene":gene,"score":None,"time":None,"generation":1,"id":self.create_id(),"msg":""}
 	for v in self.contains:
 	    gdict.update({v[0]:0})
 	return gdict
 
     def insert_genedict(self,g_d):
+	g_d['score'] = None
 	self.pool.append(g_d)
 	return
 
     def insert_genedict_list(self,g_dl):
+	print "inserting gene dicts..."
 	for g_d in g_dl:
+		print g_d['id'],g_d['score']
+		g_d['score'] = None
 		self.pool.append(g_d)
+	print "done."
 	return
 
 
@@ -440,12 +502,13 @@ class genepool:
 
     def insert_genestr_list(self,gene_list):
 	for gene in gene_list:
-		self.insert_gene(gene)
+		self.insert_genestr(gene)
 	return
 
     def seed(self):
 	self.pool = []
 	self.iteration = 0
+	self.next_index = 0
 	self.mutate = self.max_mutate
 	self.prune_threshold = self.max_prune_threshold
 	self.local_optima_reached = False

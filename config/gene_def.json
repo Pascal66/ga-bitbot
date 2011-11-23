@@ -15,7 +15,7 @@
 		"niche_min_iteration" : 7,
 		"bit_sweep_rate" : 0.99, 
 		"bit_sweep_min_iteration" : 3,
-		"pool_size" : 500,
+		"pool_size" : 50,
 		"pool_family_ratio" : 0.99,
 		"pool_max_survivor_ratio" : 0.3,
 		"kill_score" : -10000,
