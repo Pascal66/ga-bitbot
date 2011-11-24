@@ -51,7 +51,7 @@ class genepool:
 
 	self.multiple_parent = 0.05	#multiple parent rate
 	self.max_multiple_parents = 7	#maximum number of multi parent merge (per parent)
-	self.enable_niche_filter = False
+	self.enable_niche_filter = True
 	self.niche_trigger = 3		#trigger niche filter when n bits or less don't match
 	self.niche_threshold = 0.95	#(calculated!) niche filter threshold for fitering similar genes
 	self.niche_min_iteration = 7	#min iteration before the niche filter starts

@@ -69,13 +69,12 @@ if __name__ == "__main__":
 	#init pyopencl
 	ctx = cl.create_some_context()
 	queue = cl.CommandQueue(ctx,None,cl.command_queue_properties.OUT_OF_ORDER_EXEC_MODE_ENABLE)
-	#queue.set_property(cl.command_queue_properties.OUT_OF_ORDER_EXEC_MODE_ENABLE,True)
 	mf = cl.mem_flags
 	#read in the OpenCL source file as a string
 	f = open("gkernel.cl", 'r')
 	fstr = "".join(f.readlines())
 	#create the program
-	ocl_program = cl.Program(ctx, fstr).build('-cl-opt-disable -w')
+	ocl_program = cl.Program(ctx, fstr).build('-w') #'-cl-opt-disable -w'
 	kernel = ocl_program.fitness
 
 	def load():
@@ -153,7 +152,6 @@ if __name__ == "__main__":
 			g.insert_genedict_list(bootstrap_bobs)
 			g.insert_genedict_list(bootstrap_all)	
 			g.reset_scores()
-			#g.pool = sorted(g.pool, key=itemgetter('score'),reverse = True)
 		else: #if no BOBS or high scores..seed with a new population
 			print "no BOBs or high scores available...seeding new pool."
 			g.seed()
@@ -169,8 +167,8 @@ if __name__ == "__main__":
 		print "Seeding the initial population"
 		g.seed()
 
-	cycle_time = 30 * 1#time in seconds to test the entire population
-	min_cycle_time = 20
+	cycle_time = 60 * 1#time in seconds to test the entire population
+	min_cycle_time = 50
 	cycle_time_step = 1
 
 	test_count = 0
@@ -180,7 +178,6 @@ if __name__ == "__main__":
 	start_time = time.time()
 	print "Running the simulator"
 	while 1:
-		#print test_count #debug 
 		#periodicaly reload the data set
 		test_count += work_group_size
 		total_count += work_group_size
@@ -205,16 +202,16 @@ if __name__ == "__main__":
 				else:
 					g.pool_size = suggested_size
 
-			print "%.2f"%gps,"G/S; ","%.2f"%((gps*len(input))/1000.0),"KS/S;","  Pool Size: ",g.pool_size,"  Total Processed: ",total_count
+			print "%.2f"%gps,"G/S; ","%.2f"%((gps*len(input))/1000.0),"KS/S;","  Pool Size: ",g.pool_size,"  Total Processed: ",total_count, " Quartile: ",quartile
 			#load the latest trade data
-			#print "Loading the lastest trade data..."
-			#te = trade_engine()
-			#te.score_only = True
-			#input = load()
+			print "Loading the lastest trade data..."
+			te = trade_engine()
+			te.score_only = True
+			input = load()
 			#preprocess input data
-			#te.classify_market(input)
-			#wg_market_classification = [int(i[1] * 4) for i in te.market_class] #use the python based bct trade engine market classification
-			#wg_input = [i[1] for i in input]
+			te.classify_market(input)
+			wg_market_classification = [int(i[1] * 4) for i in te.market_class] #use the python based bct trade engine market classification
+			wg_input = [i[1] for i in input]
 
 		if g.local_optima_reached:
 			print '#'*10, " Local optima reached...sending bob to the gene_server ", '#'*10		
@@ -228,30 +225,27 @@ if __name__ == "__main__":
 			else:
 				print "--\tNo BOB to submit"
 			if bob_simulator == True:
-				#after a local optima is reached, sleep for some time to allow extra processing power to
-				#the other clients so they can find potentialy better genes
-				#print "going to sleep..."
-				#time.sleep(60*15)
 				bootstrap_bobs = json.loads(server.get_bobs(quartile))
 			    	bootstrap_all = json.loads(server.get_all(quartile))
 				if (type(bootstrap_bobs) == type([])) and (type(bootstrap_all) == type([])):
 					g.seed()
-					#g.pool = []		
+					g.pool = []		
 					g.insert_genedict_list(bootstrap_bobs)
 					g.insert_genedict_list(bootstrap_all)	
 					g.reset_scores()			
 					print "BOBs loaded...",len(g.pool)
-					g.pool = sorted(g.pool, key=itemgetter('score'),reverse = False)
 				else: #if no BOBS or high scores..seed with a new population
 					print "no BOBs or high scores available...seeding new pool."
-					g.seed() #not sure if I need this
+					g.seed()
 			else:
-				#print "slicing the gene pool"
-				#g.pool = g.pool[int(g.pool_size * 70):]
-				g.pool = []
 				g.seed()
-				g.local_optima_reached = False
-				#g.local_optima_buffer = []
+
+			#automaticaly cycle through the four quartiles
+			quartile += 1
+			if quartile > 4:
+				quartile = 1
+
+
 
 		if test_count > (g.pool_size * 10):
 			test_count = 0
@@ -262,9 +256,6 @@ if __name__ == "__main__":
 					#the latest price data
 			g.next_gen()
 			g.reset_scores()
-
-		#create/reset the trade engine
-		#te.reset()
 
 		#build the opencl workgroup
 		wg_id = []
@@ -280,6 +271,7 @@ if __name__ == "__main__":
 		wg_macd_buy_trip = []
 		wg_buy_wait_after_stop_loss = []
 		wg_quartile = []
+		#the following lists are only populated (elsewhere) when new data is loaded:
 		#wg_market_classification = [int(i[1] * 4) for i in te.market_class] #use the python based bct trade engine market classification
 		#wg_input = [i[1] for i in input]
 
@@ -319,12 +311,12 @@ if __name__ == "__main__":
 		mb_wg_orders = numpy.array(range(work_group_size * max_open_orders * order_array_size), dtype=numpy.float32)
 		#create OpenCL buffers
 
-		#mapped
+		#mapped - makes sure the data is completly loaded before processing begins
 		ocl_mb_wg_market_classification = cl.Buffer(ctx, mf.READ_ONLY | mf.ALLOC_HOST_PTR | mf.COPY_HOST_PTR, hostbuf=mb_wg_market_classification)
 		ocl_mb_wg_input = cl.Buffer(ctx, mf.READ_ONLY | mf.ALLOC_HOST_PTR | mf.COPY_HOST_PTR, hostbuf=mb_wg_input)
 		ocl_mb_wg_orders = cl.Buffer(ctx, mf.READ_WRITE | mf.ALLOC_HOST_PTR | mf.COPY_HOST_PTR, hostbuf=mb_wg_orders)#mb_wg_orders.nbytes
 		
-		#unmapped
+		#unmapped - can be transferred on demand
 		ocl_mb_wg_quartile = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=mb_wg_quartile)
 		ocl_mb_wg_score = cl.Buffer(ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=mb_wg_score)
 		ocl_mb_wg_shares = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=mb_wg_shares)
@@ -338,7 +330,7 @@ if __name__ == "__main__":
 		ocl_mb_wg_buy_wait_after_stop_loss = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=mb_wg_buy_wait_after_stop_loss)
 		
 
-		#debug - make sure the datasets are constant
+		#debug - used to make sure the datasets are constant (when input reloading is disabled)
 		#m = hashlib.md5()
 		#m.update(str(mb_wg_input))
 		#m.update(str(mb_wg_market_classification))
@@ -364,17 +356,12 @@ if __name__ == "__main__":
 		#execute the workgroup
 		event = cl.enqueue_nd_range_kernel(queue,kernel,mb_wg_score.shape,(1,))
 		event.wait()
-		"""
-		ocl_program.fitness(queue, mb_wg_score.shape, None,\
-			ocl_mb_wg_shares,ocl_mb_wg_wll,ocl_mb_wg_wls,ocl_mb_wg_buy_wait,ocl_mb_wg_markup,ocl_mb_wg_stop_loss,\
-			ocl_mb_wg_stop_age,ocl_mb_wg_macd_buy_trip,ocl_mb_wg_buy_wait_after_stop_loss,ocl_mb_wg_quartile,\
-			ocl_mb_wg_market_classification,ocl_mb_wg_input,\
-			ocl_mb_wg_score,numpy.uint64(len(input)))
-		"""
+
+		#copy the result buffer (scores) back to the host
 		scores = numpy.empty_like(mb_wg_score)
 		cl.enqueue_read_buffer(queue, ocl_mb_wg_score, scores).wait()
 		
-
+		#dumps the orders array - used for debug
 		if deep_logging_enable == True:
 			#write out the orders array
 			orders = numpy.empty_like(mb_wg_orders)
@@ -386,6 +373,7 @@ if __name__ == "__main__":
 					f.write('\n')
 			f.close()
 
+		#release all the buffers
 		ocl_mb_wg_shares.release()
 		ocl_mb_wg_wll.release()
 		ocl_mb_wg_wls.release()
@@ -400,10 +388,11 @@ if __name__ == "__main__":
 		ocl_mb_wg_input.release()
 		ocl_mb_wg_score.release()
 
+		#process the results
 		for i in range(work_group_size):
-			#return the score to the gene pool
 			score = float(scores[i])
-			
+
+			#dump the scores buffer to a file - used for debugging			
 			if deep_logging_enable == True:
 				#write out the scores
 				if score > 0.1 or 1:
@@ -429,9 +418,11 @@ if __name__ == "__main__":
 				if max_score <= score:
 					indicator = "<------------------"
 				print wg_id[i],wg_gene[i],"\t".join(["%.5f"%max_score,"%.5f"%score]),indicator
+
+			#submit the score to the gene pool
 			g.set_score(wg_id[i],score)
 
-			#if a new high score is found (or revisited) submitt the gene to
+			#if a new high score is found (or revisited) submit the gene to
 			#the server
 			if score > max_score and score > -1000.00:
 				print "--\tSubmit high score for id:%s to server (%.2f)"%(str(wg_id[i]),score)
