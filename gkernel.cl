@@ -53,7 +53,7 @@ __kernel void fitness(__global float* shares,__global uint* wll,__global uint* w
 	__private bool sell = false;
 	__private bool proceed_with_order = false;
 	__private uint k = 0;
-	__private uint j = 0;
+	__private ulong j = 0;
 
 	/*zero the orders array*/
 	for (k=0; k < MAX_OPEN_ORDERS * ORDER_RECORD_LENGTH; k++){orders[k + (gid * MAX_OPEN_ORDERS * ORDER_RECORD_LENGTH)] = -1.0 * (float)gid;}
