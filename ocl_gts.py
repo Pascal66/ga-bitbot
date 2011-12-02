@@ -60,10 +60,10 @@ if __name__ == "__main__":
 
 
 	deep_logging_enable = False;
-	max_length = 60 * 24 * 360
+	max_length = 60 * 24 * 90
 	load_throttle = 0 #go easy on cpu usage
 	calibrate = 1	#set to one to adjust the population size to maintain a one min test cycle
-	work_group_size = 224
+	work_group_size = 32
 	max_open_orders = 256	#MUST MATCH THE OPENCL KERNEL !!!!
 	order_array_size = 16	#MUST MATCH THE OPENCL KERNEL !!!!
 	#init pyopencl
@@ -74,7 +74,7 @@ if __name__ == "__main__":
 	f = open("gkernel.cl", 'r')
 	fstr = "".join(f.readlines())
 	#create the program
-	ocl_program = cl.Program(ctx, fstr).build('-w') #'-cl-opt-disable -w'
+	ocl_program = cl.Program(ctx, fstr).build('-w') #'-g -O0 -cl-opt-disable -w'
 	kernel = ocl_program.fitness
 
 	def load():
@@ -97,7 +97,7 @@ if __name__ == "__main__":
 			input.append([int(float(t)),float(r)])
 		#print "done loading:", str(len(input)),"records."
 		return input
-	   
+
 	#configure the gene pool
 	g = genepool()
 	g = load_config_into_object(load_config_from_file("gene_def.json"),g)
@@ -127,14 +127,13 @@ if __name__ == "__main__":
 		if len(sys.argv) == 4:
 			if sys.argv[3] == 'v':
 				verbose = True
-			
-	
+		
+
 	#which quartile group to test
 	while not (quartile in ['1','2','3','4']):
 		print "Which quartile group to test? (1,2,3,4):"
 		quartile = raw_input()
 	quartile = int(quartile)
-    
 
 	#bootstrap the population with the winners available from the gene_pool server
 	while not(bs == 'y' or bs == 'n'):
@@ -183,13 +182,13 @@ if __name__ == "__main__":
 		total_count += work_group_size
 		if load_throttle == 1:
 			time.sleep(0.35)
-		    
+
 		if test_count > g.pool_size:
 			test_count = 0
 			#benchmark the cycle speed
 			current_time = time.time()
 			elapsed_time = current_time - start_time
-			gps = total_count / elapsed_time
+			gps = total_count / (elapsed_time + 0.0001)
 			if calibrate == 1:
 				#print "Recalibrating pool size..."
 				suggested_size = int(gps * cycle_time)
@@ -226,7 +225,7 @@ if __name__ == "__main__":
 				print "--\tNo BOB to submit"
 			if bob_simulator == True:
 				bootstrap_bobs = json.loads(server.get_bobs(quartile))
-			    	bootstrap_all = json.loads(server.get_all(quartile))
+				bootstrap_all = json.loads(server.get_all(quartile))
 				if (type(bootstrap_bobs) == type([])) and (type(bootstrap_all) == type([])):
 					g.seed()
 					g.pool = []		
@@ -284,7 +283,7 @@ if __name__ == "__main__":
 			wg_gene.append(ag['gene'])
 			wg_shares.append(ag['shares'])
 			wg_wll.append(ag['wll'] + ag['wls'] + 2) 	#add the two together to make sure
-							    		#the macd moving windows dont get inverted
+									#the macd moving windows dont get inverted
 			wg_wls.append(ag['wls'] + 1)
 			wg_buy_wait.append(ag['buy_wait'])
 			wg_markup.append(ag['markup'] + (te.commision * 3.0)) #+ 0.025
@@ -355,9 +354,10 @@ if __name__ == "__main__":
 		kernel.set_arg(14,input_len)
 
 		#execute the workgroup
+		print "executing the workgroup"
 		event = cl.enqueue_nd_range_kernel(queue,kernel,mb_wg_score.shape,(1,))
 		event.wait()
-
+		print "execution complete"
 		#copy the result buffer (scores) back to the host
 		scores = numpy.empty_like(mb_wg_score)
 		cl.enqueue_read_buffer(queue, ocl_mb_wg_score, scores).wait()
@@ -390,7 +390,7 @@ if __name__ == "__main__":
 		ocl_mb_wg_quartile.release()
 		ocl_mb_wg_market_classification.release()
 		ocl_mb_wg_input.release()
-		ocl_mb_wg_score.release()
+		ocl_mb_wg_score.release() 
 
 		#process the results
 		for i in range(work_group_size):
