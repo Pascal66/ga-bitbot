@@ -63,7 +63,7 @@ if __name__ == "__main__":
 	max_length = 60 * 24 * 360
 	load_throttle = 0 #go easy on cpu usage
 	calibrate = 1	#set to one to adjust the population size to maintain a one min test cycle
-	work_group_size = 256
+	work_group_size = 224
 	max_open_orders = 256	#MUST MATCH THE OPENCL KERNEL !!!!
 	order_array_size = 16	#MUST MATCH THE OPENCL KERNEL !!!!
 	#init pyopencl
@@ -256,6 +256,7 @@ if __name__ == "__main__":
 					#the latest price data
 			g.next_gen()
 			g.reset_scores()
+		
 
 		#build the opencl workgroup
 		wg_id = []
@@ -275,7 +276,7 @@ if __name__ == "__main__":
 		#wg_market_classification = [int(i[1] * 4) for i in te.market_class] #use the python based bct trade engine market classification
 		#wg_input = [i[1] for i in input]
 
-		#print "Batch processing",work_group_size,"genes from a pool of",len(g.pool)
+		print "Batch processing",work_group_size,"genes from a pool of",len(g.pool)
 		for i in range(work_group_size):
 			ag = g.get_next()
 
@@ -361,6 +362,9 @@ if __name__ == "__main__":
 		scores = numpy.empty_like(mb_wg_score)
 		cl.enqueue_read_buffer(queue, ocl_mb_wg_score, scores).wait()
 		
+
+		#time.sleep(0.01)
+
 		#dumps the orders array - used for debug
 		if deep_logging_enable == True:
 			#write out the orders array
