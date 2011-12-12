@@ -86,6 +86,10 @@ if __name__ == "__main__":
 	g = genepool()
 	g = load_config_into_object(load_config_from_file("gene_def.json"),g)
 
+	#reset the process watchdog using the gene pool id as the PID
+	server.pid_alive(g.id)
+
+
 	#g.set_log("winners.txt")
 	print "Creating the trade engine"
 	te = trade_engine()
@@ -150,8 +154,11 @@ if __name__ == "__main__":
 	min_cycle_time = 30
 	cycle_time_step = 2
 
-	test_count = 0
-	total_count = 0
+	#the counters are all incremented at the same time but are reset by different events:
+	test_count = 0  #used to reset the pool after so many loop cycles
+	total_count = 0 #used to calculate overall performance
+	loop_count = 0  # used to trigger pool size calibration and data reload
+
 	max_score = -10000
 	max_score_id = -1
 	start_time = time.time()
@@ -161,10 +168,14 @@ if __name__ == "__main__":
 		#periodicaly reload the data set
 		test_count += 1
 		total_count += 1
+		loop_count += 1
 		if load_throttle == 1:
 			time.sleep(0.35)
 		    
-		if total_count%g.pool_size == 0:
+		if loop_count > g.pool_size:
+			loop_count = 0
+			#reset the watchdog monitor
+			server.pid_alive(g.id)
 			#benchmark the cycle speed
 			current_time = time.time()
 			elapsed_time = current_time - start_time
@@ -177,7 +188,10 @@ if __name__ == "__main__":
 					cycle_time = min_cycle_time
 				if g.pool_size > 10000:
 					g.pool_size = 10000
-			print "%.2f"%gps,"G/S; ","%.2f"%((gps*len(input))/1000.0),"KS/S;","  Pool Size: ",g.pool_size,"  Total Processed: ",total_count
+			performance_metrics = "%.2f"%gps,"G/S; ","%.2f"%((gps*len(input))/1000.0),"KS/S;","  Pool Size: ",g.pool_size,"  Total Processed: ",total_count
+			performance_metrics = " ".join(map(str,performance_metrics))
+			print performance_metrics
+			server.pid_msg(g.id,performance_metrics)
 			#load the latest trade data
 			#print "Loading the lastest trade data..."
 			input = load()
@@ -187,7 +201,7 @@ if __name__ == "__main__":
 		if g.local_optima_reached:
 			#print '#'*10, " Local optima reached...sending bob to the gene_server ", '#'*10		
 			max_score = 0
-			test_count = 0
+			test_count = 0	
 
 			max_gene = g.get_by_id(max_score_id)
 			if max_gene != None:
@@ -228,7 +242,7 @@ if __name__ == "__main__":
 				g.local_optima_reached = False
 				#g.local_optima_buffer = []
 
-		if test_count > (g.pool_size * 3):
+		if test_count > (g.pool_size * 10):
 			test_count = 0
 			print "Reset scores to force retest of winners..."
 			test_count = 0

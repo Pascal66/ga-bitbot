@@ -25,7 +25,7 @@ This file is part of ga-bitbot.
 
 # 
 #   gene server
-#	- a xmlrpc server providing a storage/query service for the GA trade system
+#	- a xmlrpc server providing a storage/query/configuration/monitoring service for the GA trade system
 #
 
 import gene_server_config
@@ -41,12 +41,18 @@ from SimpleXMLRPCServer import SimpleXMLRPCServer
 from SimpleXMLRPCServer import SimpleXMLRPCRequestHandler
 from operator import itemgetter, attrgetter
 
+
+MAX_PID_MESSAGE_BUFFER_SIZE = 2048
+
 max_len = 600
 max_bobs = 1000
 g_d = [[],[],[],[]]
 g_trgt = []
 
 g_bobs = [[],[],[],[]]
+
+g_pids = {}
+
 
 def echo(msg):
 	return msg
@@ -130,6 +136,57 @@ def put_bob(d,quartile):
 		g_bobs[quartile - 1] = g_bobs[quartile - 1][:max_bobs]
 	return "OK"
 
+### watchdog services ###
+def pid_alive(pid):
+	global g_pids
+	#track the last time a process checked in (watchdog reset)
+	if pid in g_pids.keys(): #existing pid
+		g_pids[pid]['watchdog_reset'] = time.time()
+	else: #new pid
+		g_pids.update({pid:{'watchdog_reset':time.time(),'msg_buffer':''}})
+	return "OK"
+
+def pid_check(pid,time_out):
+	global g_pids
+	#check for PID watchdog timeout (seconds)
+	if pid in g_pids.keys():
+		dt = time.time() - g_pids[pid]['watchdog_reset']
+		if dt > time_out:
+			return "NOK"
+		else:
+			return "OK"
+	else:
+		return "NOK"
+
+def pid_remove(pid):
+	global g_pids
+	try:
+		g_pids.pop(pid)
+	except:
+		pass
+	return "OK"
+
+
+def pid_msg(pid,msg):
+	global g_pids
+	#append a message to the PID buffer
+	if pid in g_pids.keys(): #existing pid
+		g_pids[pid]['msg_buffer'] += msg + '\n'
+		#limit the message buffer size
+		if len(g_pids[pid]['msg_buffer']) > MAX_PID_MESSAGE_BUFFER_SIZE:
+			g_pids[pid]['msg_buffer'] = g_pids[pid]['msg_buffer'][-1 * MAX_PID_MESSAGE_BUFFER_SIZE:]
+		return "OK"
+	else:
+		return "NOK"
+
+def get_pids():
+	global g_pids
+	js_pids = json.dumps(g_pids)
+	#clear the message buffers
+	for pid in g_pids.keys():
+		g_pids[pid]['msg_buffer'] = ''
+	return js_pids
+		
 
 #set the service url
 class RequestHandler(SimpleXMLRPCRequestHandler):
@@ -139,6 +196,7 @@ class RequestHandler(SimpleXMLRPCRequestHandler):
 server = SimpleXMLRPCServer((__server__, __port__),requestHandler = RequestHandler,logRequests = True, allow_none = True)
 
 #register the functions
+#client services
 server.register_function(get_target,'get_target')
 server.register_function(put_target,'put_target')
 server.register_function(get_gene,'get')
@@ -146,6 +204,13 @@ server.register_function(get_all_genes,'get_all')
 server.register_function(put_gene,'put')
 server.register_function(put_bob,'put_bob')
 server.register_function(get_bobs,'get_bobs')
+#process monitoring services
+server.register_function(pid_alive,'pid_alive')
+server.register_function(pid_check,'pid_check')
+server.register_function(pid_remove,'pid_remove')
+server.register_function(pid_msg,'pid_msg')
+server.register_function(get_pids,'get_pids')
+#debug services
 server.register_function(echo,'echo')
 server.register_introspection_functions()
 
