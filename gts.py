@@ -54,8 +54,8 @@ if __name__ == "__main__":
 	__appversion__ = "0.01a"
 	print "Genetic Bitcoin Trade Simulator v%s"%__appversion__
 
-	max_length = 60 * 24
-	load_throttle = 1 #go easy on cpu usage
+	max_length = 60 * 24 * 60
+	load_throttle = 0 #go easy on cpu usage
 	calibrate = 1	#set to one to adjust the population size to maintain a one min test cycle
 
 	def load():

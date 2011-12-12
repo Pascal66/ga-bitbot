@@ -63,14 +63,14 @@ def load_config_into_object(config_dict,obj):
 		for key in obj.__dict__:
 			if key in config_dict['set']:
 				obj.__dict__[key] = config_dict['set'][key]
-				print "load_config_into_object: %s set to %s"%(key,str(config_dict['set'][key]))
+				#print "load_config_into_object: %s set to %s"%(key,str(config_dict['set'][key]))
 	if 'call' in config_dict:
 		for func in config_dict['call']:
 			#print type(func),func
 			for args in config_dict['call'][func]:
 				#print type(args),args
 				apply(getattr(obj,func),args)
-				print "load_config_into_object: called func: %s with args: %s"%(func,args)
+				#print "load_config_into_object: called func: %s with args: %s"%(func,args)
 
 	return obj
 
