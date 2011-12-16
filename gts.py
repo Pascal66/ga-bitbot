@@ -78,16 +78,16 @@ if __name__ == "__main__":
 			input.append([int(float(t)),float(r)])
 		#print "done loading:", str(len(input)),"records."
 		return input
-	
-	#load the inital data
-	input = load()
-    
+	    
 	#configure the gene pool
 	g = genepool()
 	g = load_config_into_object(load_config_from_file("gene_def.json"),g)
 
-	#reset the process watchdog using the gene pool id as the PID
+	#reset the process watchdog using the gene pool id as the PID (GUID)
 	server.pid_alive(g.id)
+
+	#load the inital data
+	input = load()
 
 
 	#g.set_log("winners.txt")

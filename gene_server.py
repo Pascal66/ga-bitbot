@@ -41,7 +41,7 @@ from SimpleXMLRPCServer import SimpleXMLRPCServer
 from SimpleXMLRPCServer import SimpleXMLRPCRequestHandler
 from operator import itemgetter, attrgetter
 
-
+quit = 0
 MAX_PID_MESSAGE_BUFFER_SIZE = 2048
 
 max_len = 600
@@ -179,6 +179,10 @@ def pid_msg(pid,msg):
 	else:
 		return "NOK"
 
+def pid_list():
+	global g_pids
+	return json.dumps(g_pids.keys())
+
 def get_pids():
 	global g_pids
 	js_pids = json.dumps(g_pids)
@@ -187,6 +191,10 @@ def get_pids():
 		g_pids[pid]['msg_buffer'] = ''
 	return js_pids
 		
+def shutdown():
+	global quit
+	quit = 1
+	return 1
 
 #set the service url
 class RequestHandler(SimpleXMLRPCRequestHandler):
@@ -210,12 +218,15 @@ server.register_function(pid_check,'pid_check')
 server.register_function(pid_remove,'pid_remove')
 server.register_function(pid_msg,'pid_msg')
 server.register_function(get_pids,'get_pids')
+server.register_function(pid_list,'pid_list')
 #debug services
 server.register_function(echo,'echo')
+#system services
+server.register_function(shutdown,'shutdown')
 server.register_introspection_functions()
 
 if __name__ == "__main__":
 	print "gene_server: running on port %s"%__port__
-	while 1:
+	while not quit:
 		server.handle_request()
 

@@ -87,5 +87,5 @@ print "PID Watchdog Check (90 sec): "
 for pid in pid_status.keys():
 	print pid,server.pid_check(pid,90)
 
-
+print server.shutdown()
 
