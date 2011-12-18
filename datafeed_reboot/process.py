@@ -19,21 +19,34 @@ python process -d
 
 """%(__app_version__)
 
+link = """http://bitcoincharts.com/t/trades.csv?symbol=mtgoxUSD&start={START_TIME}"""
+start_time = 0 		#don't change these variables - they are automaticaly configured
+incremental_update = 0  #based on command line options
+auto_move_output = 0    #
 
-link = """http://bitcoincharts.com/t/trades.csv?symbol=mtgoxUSD&start=0"""
-
-auto_move_output = 0
 if len(sys.argv) >= 2:
 	if sys.argv[1] == '-d':
-		print "downloading mtgox historic data..."
+		try:
+			print "Checking potential for incremental update..."
+			for line in open('../datafeed/bcfeed_mtgoxUSD_1min.csv'):pass
+			line = line.split(',')[0]
+			line = line.split('.')[0]
+			start_time = int(line) + 60
+			incremental_update = 1
+			link = link.replace('{START_TIME}',str(start_time))
+				
+		except:
+			print "Incremental update not possible."
+			pass
+		print "Downloading mtgox historic data..."
 		data = urllib2.urlopen(link).read()
 		f = open("download_mtgoxUSD.csv",'w')
 		f.write(data)
 		f.close()
 		auto_move_output = 1
-		print "download complete."
+		print "Download complete."
 	else:
-		print "invalid argument",sys.argv[1]
+		print "Invalid argument",sys.argv[1]
 
 
 
@@ -69,8 +82,13 @@ for r in d:
 
 print "Writing output file..."
 if auto_move_output == 1 :
-	print "updating the datafeed directory directly...no need to manualy move the output file"
-	f = open('../datafeed/bcfeed_mtgoxUSD_1min.csv','w')
+	print "Updating the datafeed directory directly...no need to manualy move the output file"
+	if incremental_update == 1:
+		print "Writing incremental update..."
+		f = open('../datafeed/bcfeed_mtgoxUSD_1min.csv','a')
+	else:
+		f = open('../datafeed/bcfeed_mtgoxUSD_1min.csv','w')
+
 else:
 	f = open('bcfeed_mtgoxUSD_1min.csv','w')
 
@@ -78,5 +96,5 @@ else:
 for t,p,v in one_min:
 	f.write(",".join(map(str,[t,p,v])) + '\n')
 f.close()
-
+print "Done."
 	
