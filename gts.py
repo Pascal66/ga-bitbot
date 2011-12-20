@@ -198,25 +198,25 @@ if __name__ == "__main__":
 			#preprocess input data
 			te.classify_market(input)
 			#print g.local_optima_reached
-		if g.local_optima_reached:
-			#print '#'*10, " Local optima reached...sending bob to the gene_server ", '#'*10		
-			max_score = 0
-			test_count = 0	
+		if g.local_optima_reached:	
+			max_score = -10000
+			test_count = 0
 
 			max_gene = g.get_by_id(max_score_id)
 			if max_gene != None:
 				print "--\tSubmit BOB for id:%s to server (%.2f)"%(str(max_gene['id']),max_gene['score'])
 				server.put_bob(json.dumps(max_gene),quartile)
 			else:
-				print "**WARNING** MAX_GENE is gone.: ID",max_score_id
-				print "*"*80
-				print "GENE DUMP:"
-				for ag in g.pool:
-					print ag['id'],ag['score']
-				print "*"*80
-				print "HALTED."
-				while 1:
-					pass
+				if max_score > -10000:
+					print "**WARNING** MAX_GENE is gone.: ID",max_score_id
+					print "*"*80
+					print "GENE DUMP:"
+					for ag in g.pool:
+						print ag['id'],ag['score']
+					print "*"*80
+					print "HALTED."
+					while 1:
+						pass
 
 			if bob_simulator:
 				#after a local optima is reached, sleep for some time to allow extra processing power to
@@ -233,14 +233,9 @@ if __name__ == "__main__":
 					g.reset_scores()			
 				else: #if no BOBS or high scores..seed with a new population
 					#print "no BOBs or high scores available...seeding new pool."
-					g.seed() #not sure if I need this
+					g.seed()
 			else:
-				#print "slicing the gene pool"
-				#g.pool = g.pool[int(g.pool_size * 70):]
-				g.pool = []
 				g.seed()
-				g.local_optima_reached = False
-				#g.local_optima_buffer = []
 
 		if test_count > (g.pool_size * 10):
 			test_count = 0
@@ -290,8 +285,7 @@ if __name__ == "__main__":
 			g.set_score(ag['id'],score)
 			g.set_message(ag['id'],"Balance: " + str(te.balance) +"; Wins: " + str(te.wins)+ "; Loss:" + str(te.loss) +  "; Positions: " + str(len(te.positions)))
 
-			#if a new high score is found (or revisited) submitt the gene to
-			#the server
+			#if a new high score is found submit the gene to the server
 			if score > max_score:
 				print "--\tSubmit high score for id:%s to server (%.2f)"%(str(ag['id']),score)
 				max_score = score
