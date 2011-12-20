@@ -89,6 +89,15 @@ for cmd_line in launch:
 	monitor.update({npl[0]:cmd_line})	#store the pid/cmd_line combination
 	print "Process Launched (PID:",npl[0],"CMD:",cmd_line,")"
 
+#start unmonitored processes
+unmonitored_launch = ['python wc_server.py','python report_gen.py']
+for cmd_line in unmonitored_launch:
+	Popen(shlex.split(cmd_line),stdin=fnull, stdout=fnull, stderr=fnull)
+	print "Unmonitored Process Launched (CMD:",cmd_line,")"
+	sleep(90) #wait a while before starting the report_gen script
+
+
+
 print "\nMonitoring Processes..."
 while 1:
 	#process monitor loop
