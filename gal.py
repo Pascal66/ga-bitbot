@@ -39,11 +39,15 @@ from time import *
 #open a null file to redirect output from the subprocesses 
 fnull = open(os.devnull,'w')
 
+#update the dataset
+#Popen(shlex.split('python ./datafeed_reboot/process.py -d')).wait()
+
+#launch the bcfeed script to collect data from the live feed
+#Popen(shlex.split('python bcfeed.py'),stdin=fnull, stdout=fnull, stderr=fnull)
+
 print "Launching the xmlrpc server..."
 Popen(shlex.split('python gene_server.py'),stdin=fnull, stdout=fnull, stderr=fnull)
 sleep(3) #give the server time to start
-
-
 
 
 # connect to the xml server
@@ -82,7 +86,7 @@ launch = ['pypy gts.py 1 n','pypy gts.py 2 n','pypy gts.py 3 n','pypy gts.py 4 n
 
 for cmd_line in launch:
 	Popen(shlex.split(cmd_line),stdin=fnull, stdout=fnull, stderr=fnull)
-	sleep(2)
+	sleep(3)
 	cpl = json.loads(server.pid_list())	#get the current pid list
 	npl = list(set(epl) ^ set(cpl)) 	#find the new pid(s)
 	epl = cpl				#update the existing pid list
