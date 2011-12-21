@@ -153,8 +153,8 @@ while 1:
 
 		    #te.classify_market(input)
 		    print "creating charts..."
-		    te.chart("./report/chart.templ","./report/chart_test_%s.html"%str(quartile),60*24*14)
-		    te.chart("./report/chart.templ","./report/chart_test_zoom_%s.html"%str(quartile),60*24)
+		    te.chart("./report/chart.templ","./report/chart_test_%s.html"%str(quartile))
+		    te.chart("./report/chart.templ","./report/chart_test_zoom_%s.html"%str(quartile),60*48)
 		    #print "Evaluating target price"
 		    if current_quartile == quartile:
 			    if (target >= p['buy']) or (abs(target - p['buy']) < 0.01): #submit the order at or below target
