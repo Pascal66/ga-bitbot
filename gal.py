@@ -27,6 +27,8 @@ __appversion__ = "0.01a"
 print "ga-bitbot system launcher v%s"%__appversion__
 
 WATCHDOG_TIMEOUT = 180 #seconds
+monitored_launch = ['pypy gts.py 1 n','pypy gts.py 2 n','pypy gts.py 3 n','pypy gts.py 4 n','pypy gts.py 1 y','pypy gts.py 2 y','pypy gts.py 3 y','pypy gts.py 4 y']
+unmonitored_launch = ['python wc_server.py','python report_gen.py']
 
 import atexit
 import sys
@@ -60,19 +62,23 @@ __port__ = str(gene_server_config.__port__)
 server = xmlrpclib.Server('http://' + __server__ + ":" + __port__)  
 print "Connected to",__server__,":",__port__
 
-# create and register callback function to
-# shutdown the system on exit.
-# - after the xmlrpc server shuts down the clients
-# will silently crash due to failed connections (not pretty but it works)
+
+monitor = {}
+no_monitor = []
+
+# create and register callback function to do a clean shutdown of the system on exit.
 def shutdown():
+	global monitor
+	global no_monitor
+	for p in no_monitor:
+		p.terminate()
+	for pid in monitor.keys():
+		monitor[pid]['process'].terminate()
 	sys.stderr = fnull
 	server.shutdown()
 
 atexit.register(shutdown)
 
-
-
-monitor = {}
 
 print "Launching GA Clients..."
 
@@ -81,25 +87,22 @@ print "Launching GA Clients..."
 #(not the same as system OS PIDs -- They are more like GUIDs as this is a multiclient distributed system) 
 epl = json.loads(server.pid_list()) #get the existing pid list
 
-
-launch = ['pypy gts.py 1 n','pypy gts.py 2 n','pypy gts.py 3 n','pypy gts.py 4 n','pypy gts.py 1 y','pypy gts.py 2 y','pypy gts.py 3 y','pypy gts.py 4 y']
-
-for cmd_line in launch:
-	Popen(shlex.split(cmd_line),stdin=fnull, stdout=fnull, stderr=fnull)
+#start the monitored processes
+for cmd_line in monitored_launch:
+	p = Popen(shlex.split(cmd_line),stdin=fnull, stdout=fnull, stderr=fnull)
 	sleep(3)
 	cpl = json.loads(server.pid_list())	#get the current pid list
 	npl = list(set(epl) ^ set(cpl)) 	#find the new pid(s)
 	epl = cpl				#update the existing pid list
-	monitor.update({npl[0]:cmd_line})	#store the pid/cmd_line combination
+	monitor.update({npl[0]:{'cmd':cmd_line,'process':p}})	#store the pid/cmd_line/process
 	print "Monitored Process Launched (PID:",npl[0],"CMD:",cmd_line,")"
 
 #start unmonitored processes
-unmonitored_launch = ['python wc_server.py','python report_gen.py']
 for cmd_line in unmonitored_launch:
-	Popen(shlex.split(cmd_line),stdin=fnull, stdout=fnull, stderr=fnull)
+	p = Popen(shlex.split(cmd_line),stdin=fnull, stdout=fnull, stderr=fnull)
 	print "Unmonitored Process Launched (CMD:",cmd_line,")"
+	no_monitor.append(p)	#store the popen instance
 	sleep(90) #wait a while before starting the report_gen script
-
 
 
 print "\nMonitoring Processes..."
@@ -113,35 +116,20 @@ while 1:
 			#remove the expired PID
 			server.pid_remove(pid)
 			epl = json.loads(server.pid_list()) 	#get the current pid list
-			cmd_line = monitor[pid]
+			cmd_line = monitor[pid]['cmd']
+			#terminate the process
+			monitor[pid]['p'].terminate()
 			monitor.pop(pid)
 			#launch new process
-			Popen(shlex.split(cmd_line),stdin=fnull, stdout=fnull, stderr=fnull)
+			p = Popen(shlex.split(cmd_line),stdin=fnull, stdout=fnull, stderr=fnull)
 			sleep(2)
 			#store new PID
 			cpl = json.loads(server.pid_list())	#get the current pid list
 			npl = list(set(epl) ^ set(cpl)) 	#find the new pid(s)
 			epl = cpl				#update the existing pid list
-			monitor.update({npl[0]:cmd_line})	#store the pid/cmd_line combination
+			monitor.update({npl[0]:{'cmd':cmd_line,'process':p}})	#store the pid/cmd_line/process
 			print "Process Launched (PID:",npl[0],"CMD:",cmd_line,")"
 
 
 
 fnull.close()
-
-
-
-
-
-
-"""
-Popen(shlex.split('gnome-terminal -x bash -c "pypy gts.py 1 n"'))
-Popen(shlex.split('gnome-terminal -x bash -c "pypy gts.py 1 y"'))
-Popen(shlex.split('gnome-terminal -x bash -c "pypy gts.py 2 n"'))
-Popen(shlex.split('gnome-terminal -x bash -c "pypy gts.py 2 y"'))
-Popen(shlex.split('gnome-terminal -x bash -c "pypy gts.py 3 n"'))
-Popen(shlex.split('gnome-terminal -x bash -c "pypy gts.py 3 y"'))
-Popen(shlex.split('gnome-terminal -x bash -c "pypy gts.py 4 n"'))
-Popen(shlex.split('gnome-terminal -x bash -c "pypy gts.py 4 y"'))
-"""
-

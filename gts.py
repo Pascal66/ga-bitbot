@@ -215,8 +215,8 @@ if __name__ == "__main__":
 						print ag['id'],ag['score']
 					print "*"*80
 					print "HALTED."
-					while 1:
-						pass
+					sys.exit()
+
 
 			if bob_simulator:
 				#after a local optima is reached, sleep for some time to allow extra processing power to
