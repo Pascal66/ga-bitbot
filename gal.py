@@ -22,13 +22,15 @@ This file is part of ga-bitbot.
     along with ga-bitbot.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-# genetic algo client launcher
 __appversion__ = "0.01a"
 print "ga-bitbot system launcher v%s"%__appversion__
 
 WATCHDOG_TIMEOUT = 180 #seconds
 monitored_launch = ['pypy gts.py 1 n','pypy gts.py 2 n','pypy gts.py 3 n','pypy gts.py 4 n','pypy gts.py 1 y','pypy gts.py 2 y','pypy gts.py 3 y','pypy gts.py 4 y']
 unmonitored_launch = ['python wc_server.py','python report_gen.py']
+
+monitor = {}	#variables to track monitored/unmonitored processes
+no_monitor = []
 
 import atexit
 import sys
@@ -42,10 +44,13 @@ from time import *
 fnull = open(os.devnull,'w')
 
 #update the dataset
-#Popen(shlex.split('python ./datafeed_reboot/process.py -d')).wait()
+print "Synching the local datafeed..."
+Popen(shlex.split('python bcfeed_synch.py -d')).wait()
 
 #launch the bcfeed script to collect data from the live feed
-#Popen(shlex.split('python bcfeed.py'),stdin=fnull, stdout=fnull, stderr=fnull)
+print "Starting the live datafeed capture script..."
+p = Popen(shlex.split('python bcfeed.py'),stdin=fnull, stdout=fnull, stderr=fnull)
+no_monitor.append(p)
 
 print "Launching the xmlrpc server..."
 Popen(shlex.split('python gene_server.py'),stdin=fnull, stdout=fnull, stderr=fnull)
@@ -61,10 +66,6 @@ __server__ = gene_server_config.__server__
 __port__ = str(gene_server_config.__port__)
 server = xmlrpclib.Server('http://' + __server__ + ":" + __port__)  
 print "Connected to",__server__,":",__port__
-
-
-monitor = {}
-no_monitor = []
 
 # create and register callback function to do a clean shutdown of the system on exit.
 def shutdown():
@@ -129,7 +130,5 @@ while 1:
 			epl = cpl				#update the existing pid list
 			monitor.update({npl[0]:{'cmd':cmd_line,'process':p}})	#store the pid/cmd_line/process
 			print "Process Launched (PID:",npl[0],"CMD:",cmd_line,")"
-
-
 
 fnull.close()
