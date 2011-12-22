@@ -42,7 +42,7 @@ from SimpleXMLRPCServer import SimpleXMLRPCRequestHandler
 from operator import itemgetter, attrgetter
 
 quit = 0
-MAX_PID_MESSAGE_BUFFER_SIZE = 2048
+MAX_PID_MESSAGE_BUFFER_SIZE = 16384
 
 max_len = 600
 max_bobs = 1000
@@ -187,8 +187,8 @@ def get_pids():
 	global g_pids
 	js_pids = json.dumps(g_pids)
 	#clear the message buffers
-	for pid in g_pids.keys():
-		g_pids[pid]['msg_buffer'] = ''
+	#for pid in g_pids.keys():
+	#	g_pids[pid]['msg_buffer'] = ''
 	return js_pids
 		
 def shutdown():

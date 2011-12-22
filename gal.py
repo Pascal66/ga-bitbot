@@ -91,7 +91,7 @@ for cmd_line in launch:
 	npl = list(set(epl) ^ set(cpl)) 	#find the new pid(s)
 	epl = cpl				#update the existing pid list
 	monitor.update({npl[0]:cmd_line})	#store the pid/cmd_line combination
-	print "Process Launched (PID:",npl[0],"CMD:",cmd_line,")"
+	print "Monitored Process Launched (PID:",npl[0],"CMD:",cmd_line,")"
 
 #start unmonitored processes
 unmonitored_launch = ['python wc_server.py','python report_gen.py']
