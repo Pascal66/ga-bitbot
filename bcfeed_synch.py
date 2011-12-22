@@ -8,15 +8,14 @@ import sys
 __app_version__ = "0.01a"
 
 print """
-Bitcoin Charts Data Download (CSV) Processor v%s
+Bitcoin Data Download (CSV) Processor v%s
 
 \tConverts the data into a weighted price 1min data feed format
 
-\t- the download file must be edited to remove any html formating.
-
-to automaticaly download the mtgox usd historic data run with the following option:
+To automaticaly download and process the mtgox usd historic data run with the following option:
 python process -d
 
+Without the -d switch the output will only be written to the datafeed_reboot folder
 """%(__app_version__)
 
 link = """http://bitcoincharts.com/t/trades.csv?symbol=mtgoxUSD&start={START_TIME}"""
@@ -28,7 +27,7 @@ if len(sys.argv) >= 2:
 	if sys.argv[1] == '-d':
 		try:
 			print "Checking potential for incremental update..."
-			for line in open('../datafeed/bcfeed_mtgoxUSD_1min.csv'):pass
+			for line in open('./datafeed/bcfeed_mtgoxUSD_1min.csv'):pass
 			line = line.split(',')[0]
 			line = line.split('.')[0]
 			start_time = int(line) + 60
@@ -40,7 +39,7 @@ if len(sys.argv) >= 2:
 			pass
 		print "Downloading mtgox historic data..."
 		data = urllib2.urlopen(link).read()
-		f = open("download_mtgoxUSD.csv",'w')
+		f = open("./datafeed_reboot/download_mtgoxUSD.csv",'w')
 		f.write(data)
 		f.close()
 		auto_move_output = 1
@@ -50,7 +49,7 @@ if len(sys.argv) >= 2:
 
 
 
-f = open("download_mtgoxUSD.csv",'r')
+f = open("./datafeed_reboot/download_mtgoxUSD.csv",'r')
 d = f.readlines()
 f.close()
 
@@ -85,12 +84,12 @@ if auto_move_output == 1 :
 	print "Updating the datafeed directory directly...no need to manualy move the output file"
 	if incremental_update == 1:
 		print "Writing incremental update..."
-		f = open('../datafeed/bcfeed_mtgoxUSD_1min.csv','a')
+		f = open('./datafeed/bcfeed_mtgoxUSD_1min.csv','a')
 	else:
-		f = open('../datafeed/bcfeed_mtgoxUSD_1min.csv','w')
+		f = open('./datafeed/bcfeed_mtgoxUSD_1min.csv','w')
 
 else:
-	f = open('bcfeed_mtgoxUSD_1min.csv','w')
+	f = open('./datafeed_reboot/bcfeed_mtgoxUSD_1min.csv','w')
 
 	
 for t,p,v in one_min:
