@@ -268,7 +268,7 @@ class genepool:
 	gen = filtered_gen
 
 	#apply the threshold
-	self.step_prune()	#variable pruning threshold
+	self.step_prune()	#calculate the variable pruning threshold
 	threshold = int(len(gen) * self.prune_threshold)
 	gen = gen[:threshold]
 
@@ -373,7 +373,7 @@ class genepool:
 	
     def get_next(self):
 	#get the next available unscored gene
-	#if none are available the create the
+	#if none are available then create the
 	#next generation
 	if self.next_index >= len(self.pool) - 1:
 		self.next_index = 0
@@ -418,10 +418,10 @@ class genepool:
 		g['msg'] = msg
 	return
     
-    def add_numvar(self,name,bits,decimal_places):
+    def add_numvar(self,name,bits,decimal_places,offset=0):
 	#add a variable to the gene
-	self.contains.append([name,bits,decimal_places])
-    
+	self.contains.append([name,bits,decimal_places,offset])   
+
     def rbit(self):
 	#generate a random bit
 	if random.random() > 0.5:
@@ -441,25 +441,27 @@ class genepool:
 	    offset = 0
 	    for v in self.contains:
 		name = v[0]
-		glen = v[1]
-		subg = g['gene'][offset:offset+glen]
-		offset += glen
-		n = int(subg,2)
+		var_len = v[1]
+		var_offset = v[3]
+		var = g['gene'][offset:offset+var_len]
+		offset += var_len
+		n = int(var,2)
 		if v[2] > 0:
-		    n = (n * 1.0) / pow(10,v[2])
-		g[name] = n
+		    n = ((n * 1.0) / pow(10,v[2])) 
+		g[name] = n + var_offset
 		
     def decode_gene_dict(self,g_d):
 	offset = 0
 	for v in self.contains:
 		name = v[0]
-		glen = v[1]
-		subg = g_d['gene'][offset:offset+glen]
-		offset += glen
-		n = int(subg,2)
+		var_len = v[1]
+		var_offset = v[3]
+		var = g_d['gene'][offset:offset+var_len]
+		offset += var_len
+		n = int(var,2)
 		if v[2] > 0:
-		    n = (n * 1.0) / pow(10,v[2])
-		g_d[name] = n
+		    n = ((n * 1.0) / pow(10,v[2]))
+		g_d[name] = n + var_offset
 	return g_d
 
     def create_id(self):
@@ -467,7 +469,6 @@ class genepool:
 	if self.id_index > 99999:
 		self.id_index = 9999
 	return str(int(time.time())).replace('.','')[4:] + str(self.id_index) + '-' + self.id
-    	#return str(int(time.time())).replace('.','')[4:] + str(self.id_index)
 
     def create_gene(self):
 	gene = ""
@@ -523,19 +524,19 @@ class genepool:
 if __name__ == "__main__":
     #test the genetic class    
     g = genepool()
-    g.pool_size = 100
+    g.pool_size = 200
     g.niche_min_iteration = 10000
     #16 bit number (65535) with the decimal three places to the left (10^3 = 1000)
-    #max value should be 65.535
-    g.add_numvar("afloat",16,3)
+    #max value should be 65.535 minus an offset of 200 giving a variable range of -200 to -134.465
+    g.add_numvar("afloat",16,3,-200)
     
-    g.add_numvar("aint",6,0)
+    g.add_numvar("aint",6,0,200)
 	
     g.seed()
     
     print g.contains
     
-    max_score = 0
+    max_score = -99999999
     max_gene = ""
 
     while g.local_optima_reached == False:
@@ -546,8 +547,8 @@ if __name__ == "__main__":
 		max_score = score
 		max_gene = ag['gene']
 	g.set_score(ag['id'],ag['afloat'] * ag['aint'])
-    print max_score
-    print max_gene
+    print "MAX_SCORE:",max_score
+    print "MAX_GENE:",max_gene
 
     #test merge_multi
     l = ["101","010","110"]
@@ -556,5 +557,7 @@ if __name__ == "__main__":
     else:
 	print "merge_multi pass"
 
-	
+    print str(g.contains)
+    print str(ag)
+
 	

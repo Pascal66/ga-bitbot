@@ -67,14 +67,25 @@ def pwdict(d,filename):
 	return d
 
 for quartile in [1,2,3,4]:
-	print "-"*80
-	print "Quartile:",quartile
-	ag = json.loads(server.get(60*20,quartile))	
-	ppdict(ag)
-	pwdict(ag,'./test_data/gene_high_score_' + str(quartile))
+	try:
+		print "-"*80
+		print "Quartile:",quartile
+		ag = json.loads(server.get(60*20,quartile))	
+		ppdict(ag)
+		pwdict(ag,'./test_data/gene_high_score_' + str(quartile))
+	except:
+		pass
 
+print "-"*80
+print "PID STATUS:"
+pid_status = json.loads(server.get_pids())
+ppdict(pid_status)
+pwdict(pid_status,'./test_data/pid_status')
 
+print "-"*80
+print "PID Watchdog Check (90 sec): "
+for pid in pid_status.keys():
+	print pid,server.pid_check(pid,90)
 
-
-
+print server.shutdown()
 

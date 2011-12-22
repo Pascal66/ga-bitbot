@@ -50,26 +50,28 @@ print "Connected to",__server__,":",__port__
 from bct import *
 
 
-max_length = 60 * 24 * 360
+max_length = 60 * 24 * 60
 
 def load():
-    #open the history file
-    f = open("./datafeed/bcfeed_mtgoxUSD_1min.csv",'r')
-    #f = open("./datafeed/test_data.csv",'r')
-    d = f.readlines()
-    f.close()
-    
-    if len(d) > max_length:
-	#truncate the dataset
-	d [max_length * -1:]
+	#open the history file
+	#print "loading the data set"
+	f = open("./datafeed/bcfeed_mtgoxUSD_1min.csv",'r')
+	#f = open("./datafeed/test_data.csv",'r')
+	d = f.readlines()
+	f.close()
 
-    #load the backtest dataset
-    input = []
-    for row in d[1:]:
-	r = row.split(',')[1] #last price
-	t = row.split(',')[0] #time
-	input.append([int(float(t)),float(r)])
-    return input
+	if len(d) > max_length:
+		#truncate the dataset
+		d = d[max_length * -1:]
+
+	#load the backtest dataset
+	input = []
+	for row in d[1:]:
+		r = row.split(',')[1] #last price
+		t = row.split(',')[0] #time
+		input.append([int(float(t)),float(r)])
+	#print "done loading:", str(len(input)),"records."
+	return input
 
 
 while 1:
@@ -151,8 +153,8 @@ while 1:
 
 		    #te.classify_market(input)
 		    print "creating charts..."
-		    te.chart("./report/chart.templ","./report/chart_test_%s.html"%str(quartile),60*24*14)
-		    te.chart("./report/chart.templ","./report/chart_test_zoom_%s.html"%str(quartile),60*24)
+		    te.chart("./report/chart.templ","./report/chart_test_%s.html"%str(quartile))
+		    te.chart("./report/chart.templ","./report/chart_test_zoom_%s.html"%str(quartile),60*48)
 		    #print "Evaluating target price"
 		    if current_quartile == quartile:
 			    if (target >= p['buy']) or (abs(target - p['buy']) < 0.01): #submit the order at or below target

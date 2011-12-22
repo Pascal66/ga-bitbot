@@ -547,17 +547,41 @@ class trade_engine:
 		f.close()
 		return
 
-	def compress_log(self,log):
+	def compress_log(self,log):		
 		#removes records with no change in price, before and after record n
-		ret_log = []
-		for i in xrange(len(log)):
-			if i > 1 and i < len(log) - 2:
-				if log[i-1][1] == log[i][1] and log[i+1][1] == log[i][1]:
-					pass #no change before or after, omit record
+		compressible = True
+		while compressible:
+			compressible = False
+			ret_log = []
+			for i in xrange(len(log)):
+				if type(log[i][1]) == float:
+					log[i][1] = float("%.3f"%log[i][1])
+				if i >= 1 and i < len(log) - 1:
+					if log[i-1][1] == log[i][1] and log[i+1][1] == log[i][1]:
+						compressible = True #no change in value before or after, omit record
+					else:
+						ret_log.append(log[i])
 				else:
 					ret_log.append(log[i])
-			else:
-				ret_log.append(log[i])
+			log = ret_log
+
+		while len(log) > 2000:
+			avg = log[0][1]
+			avg = (log[0][1] - avg) * 0.2 + avg
+			ret_log = [log[0]]	#capture the first record
+			for i in xrange(1,len(log),2):
+				#find which sample that deviates the most from the average
+				a = abs(log[i][1] - avg)
+				b = abs(log[i-1][1] - avg)
+				if a > b:
+					ret_log.append(log[i])
+				else:
+					ret_log.append(log[i-1])
+				#update the moving average
+				avg = (log[i-1][1] - avg) * 0.2 + avg
+				avg = (log[i][1] - avg) * 0.2 + avg
+			ret_log.append(log[len(log)-1])	#make sure the last record is captured
+			log = ret_log	
 
 		return ret_log
 

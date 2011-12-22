@@ -60,24 +60,33 @@ if __name__ == "__main__":
 
 
 	deep_logging_enable = False;
-	max_length = 60 * 24 * 90
+	max_length = 120000
 	load_throttle = 0 #go easy on cpu usage
 	calibrate = 1	#set to one to adjust the population size to maintain a one min test cycle
-	work_group_size = 32
-	max_open_orders = 256	#MUST MATCH THE OPENCL KERNEL !!!!
+	work_group_size = 6
+	work_item_size = 128
+	max_open_orders = 512	#MUST MATCH THE OPENCL KERNEL !!!!
 	order_array_size = 16	#MUST MATCH THE OPENCL KERNEL !!!!
 	#init pyopencl
 	ctx = cl.create_some_context()
-	queue = cl.CommandQueue(ctx,None,cl.command_queue_properties.OUT_OF_ORDER_EXEC_MODE_ENABLE)
+	queue = cl.CommandQueue(ctx)
 	mf = cl.mem_flags
 	#read in the OpenCL source file as a string
-	f = open("gkernel.cl", 'r')
+	#f = open("gkernel.cl", 'r')
+	f = open("gkernel_macd.cl", 'r')
 	fstr = "".join(f.readlines())
 	#create the program
 	ocl_program = cl.Program(ctx, fstr).build('-w') #'-g -O0 -cl-opt-disable -w'
-	kernel = ocl_program.fitness
+	#kernel = ocl_program.fitness
+	kernel = ocl_program.macd
 
+	ocl_mb_wg_macd_pct = None
+	input_len = 0
+	
 	def load():
+		global ocl_mb_wg_macd_pct
+		global input_len
+		
 		#open the history file
 		#print "loading the data set"
 		f = open("./datafeed/bcfeed_mtgoxUSD_1min.csv",'r')
@@ -95,7 +104,18 @@ if __name__ == "__main__":
 			r = row.split(',')[1] #last price
 			t = row.split(',')[0] #time
 			input.append([int(float(t)),float(r)])
+
 		#print "done loading:", str(len(input)),"records."
+
+		#allocate uninitalized buffer(s)
+		input_len = numpy.uint32(len(input))
+		buf_size = len(input) * work_group_size * work_item_size * 4 #float32 is four bytes
+		print "#DEBUG# Buffer size: ",buf_size
+		if ocl_mb_wg_macd_pct != None:
+			ocl_mb_wg_macd_pct.release()
+		ocl_mb_wg_macd_pct = cl.Buffer(ctx, mf.WRITE_ONLY, size=buf_size)
+		print ocl_mb_wg_macd_pct.get_info(cl.mem_info.SIZE)
+		queue.flush()
 		return input
 
 	#configure the gene pool
@@ -178,8 +198,8 @@ if __name__ == "__main__":
 	print "Running the simulator"
 	while 1:
 		#periodicaly reload the data set
-		test_count += work_group_size
-		total_count += work_group_size
+		test_count += work_group_size * work_item_size
+		total_count += work_group_size * work_item_size
 		if load_throttle == 1:
 			time.sleep(0.35)
 
@@ -275,60 +295,68 @@ if __name__ == "__main__":
 		#wg_market_classification = [int(i[1] * 4) for i in te.market_class] #use the python based bct trade engine market classification
 		#wg_input = [i[1] for i in input]
 
-		print "Batch processing",work_group_size,"genes from a pool of",len(g.pool)
-		for i in range(work_group_size):
+		print "Batch processing",work_group_size * work_item_size,"genes from a pool of",len(g.pool), " and an input len of ",len(wg_input)
+		for i in range(work_group_size * work_item_size):
 			ag = g.get_next()
 
 			wg_id.append(ag['id'])
 			wg_gene.append(ag['gene'])
-			wg_shares.append(ag['shares'])
+			#wg_shares.append(ag['shares'])
 			wg_wll.append(ag['wll'] + ag['wls'] + 2) 	#add the two together to make sure
 									#the macd moving windows dont get inverted
 			wg_wls.append(ag['wls'] + 1)
-			wg_buy_wait.append(ag['buy_wait'])
-			wg_markup.append(ag['markup'] + (te.commision * 3.0)) #+ 0.025
-			wg_stop_loss.append(ag['stop_loss'])
-			wg_stop_age.append(float(ag['stop_age']))
-			wg_macd_buy_trip.append(ag['macd_buy_trip'] * -1.0)
-			wg_buy_wait_after_stop_loss.append(ag['buy_wait_after_stop_loss'])
-			wg_quartile.append(quartile)
+			#wg_buy_wait.append(ag['buy_wait'])
+			#wg_markup.append(ag['markup'] + (te.commision * 3.0)) #+ 0.025
+			#wg_stop_loss.append(ag['stop_loss'])
+			#wg_stop_age.append(float(ag['stop_age']))
+			#wg_macd_buy_trip.append(ag['macd_buy_trip'] * -1.0)
+			#wg_buy_wait_after_stop_loss.append(ag['buy_wait_after_stop_loss'])
+			#wg_quartile.append(quartile)
 
-
+		print "Global Work Items: ",work_group_size * work_item_size
 		#build the memory buffers
-		mb_wg_shares = numpy.array(wg_shares, dtype=numpy.float32)
+		#mb_wg_shares = numpy.array(wg_shares, dtype=numpy.float32)
 		mb_wg_wll = numpy.array(wg_wll, dtype=numpy.uint32)
 		mb_wg_wls = numpy.array(wg_wls, dtype=numpy.uint32)
-		mb_wg_buy_wait = numpy.array(wg_shares, dtype=numpy.uint32)
-		mb_wg_markup = numpy.array(wg_markup, dtype=numpy.float32)
-		mb_wg_stop_loss = numpy.array(wg_stop_loss, dtype=numpy.float32)
-		mb_wg_stop_age = numpy.array(wg_stop_age, dtype=numpy.float32)
-		mb_wg_macd_buy_trip = numpy.array(wg_macd_buy_trip, dtype=numpy.float32)
-		mb_wg_buy_wait_after_stop_loss = numpy.array(wg_buy_wait_after_stop_loss, dtype=numpy.uint32)
-		mb_wg_quartile = numpy.array(wg_quartile, dtype=numpy.uint32)
-		mb_wg_market_classification = numpy.array(wg_market_classification, dtype=numpy.uint32)
+		#mb_wg_buy_wait = numpy.array(wg_shares, dtype=numpy.uint32)
+		#mb_wg_markup = numpy.array(wg_markup, dtype=numpy.float32)
+		#mb_wg_stop_loss = numpy.array(wg_stop_loss, dtype=numpy.float32)
+		#mb_wg_stop_age = numpy.array(wg_stop_age, dtype=numpy.float32)
+		#mb_wg_macd_buy_trip = numpy.array(wg_macd_buy_trip, dtype=numpy.float32)
+		#mb_wg_buy_wait_after_stop_loss = numpy.array(wg_buy_wait_after_stop_loss, dtype=numpy.uint32)
+		#mb_wg_quartile = numpy.array(wg_quartile, dtype=numpy.uint32)
+		#mb_wg_market_classification = numpy.array(wg_market_classification, dtype=numpy.uint32)
 		mb_wg_input = numpy.array(wg_input, dtype=numpy.float32)
-		mb_wg_score = numpy.array(range(work_group_size), dtype=numpy.float32)
-		mb_wg_orders = numpy.array(range(work_group_size * max_open_orders * order_array_size), dtype=numpy.float32)
+		#mb_wg_score = numpy.array(range(work_group_size), dtype=numpy.float32)
+		#mb_wg_orders = numpy.array(range(work_group_size * max_open_orders * order_array_size), dtype=numpy.float32)
 		#create OpenCL buffers
 
 		#mapped - makes sure the data is completly loaded before processing begins
-		ocl_mb_wg_market_classification = cl.Buffer(ctx, mf.READ_ONLY | mf.ALLOC_HOST_PTR | mf.COPY_HOST_PTR, hostbuf=mb_wg_market_classification)
+		#ocl_mb_wg_market_classification = cl.Buffer(ctx, mf.READ_ONLY | mf.ALLOC_HOST_PTR | mf.COPY_HOST_PTR, hostbuf=mb_wg_market_classification)
 		ocl_mb_wg_input = cl.Buffer(ctx, mf.READ_ONLY | mf.ALLOC_HOST_PTR | mf.COPY_HOST_PTR, hostbuf=mb_wg_input)
-		ocl_mb_wg_orders = cl.Buffer(ctx, mf.READ_WRITE | mf.ALLOC_HOST_PTR | mf.COPY_HOST_PTR, hostbuf=mb_wg_orders)#mb_wg_orders.nbytes
+		#ocl_mb_wg_orders = cl.Buffer(ctx, mf.READ_WRITE | mf.ALLOC_HOST_PTR | mf.COPY_HOST_PTR, hostbuf=mb_wg_orders)#mb_wg_orders.nbytes
 		
 		#unmapped - can be transferred on demand
-		ocl_mb_wg_quartile = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=mb_wg_quartile)
-		ocl_mb_wg_score = cl.Buffer(ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=mb_wg_score)
-		ocl_mb_wg_shares = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=mb_wg_shares)
+		#ocl_mb_wg_quartile = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=mb_wg_quartile)
+		#ocl_mb_wg_score = cl.Buffer(ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=mb_wg_score)
+		#ocl_mb_wg_shares = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=mb_wg_shares)
 		ocl_mb_wg_wll = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=mb_wg_wll)
 		ocl_mb_wg_wls = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=mb_wg_wls)
-		ocl_mb_wg_buy_wait = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=mb_wg_buy_wait)
-		ocl_mb_wg_markup = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=mb_wg_markup)
-		ocl_mb_wg_stop_loss = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=mb_wg_stop_loss)
-		ocl_mb_wg_stop_age = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=mb_wg_stop_age)
-		ocl_mb_wg_macd_buy_trip = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=mb_wg_macd_buy_trip)
-		ocl_mb_wg_buy_wait_after_stop_loss = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=mb_wg_buy_wait_after_stop_loss)
+		#ocl_mb_wg_buy_wait = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=mb_wg_buy_wait)
+		#ocl_mb_wg_markup = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=mb_wg_markup)
+		#ocl_mb_wg_stop_loss = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=mb_wg_stop_loss)
+		#ocl_mb_wg_stop_age = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=mb_wg_stop_age)
+		#ocl_mb_wg_macd_buy_trip = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=mb_wg_macd_buy_trip)
+		#ocl_mb_wg_buy_wait_after_stop_loss = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=mb_wg_buy_wait_after_stop_loss)
 		
+		#allocate uninitalized buffer(s)
+		#input_len = numpy.uint32(len(input))
+		#buf_size = len(input) * work_group_size * work_item_size * 4 #float32 is four bytes
+		#print "#DEBUG# Buffer size: ",buf_size 
+		#ocl_mb_wg_macd_pct = cl.Buffer(ctx, mf.WRITE_ONLY, size=buf_size)
+		#print ocl_mb_wg_macd_pct.get_info(cl.mem_info.SIZE)
+		#queue.flush()
+
 
 		#debug - used to make sure the datasets are constant (when input reloading is disabled)
 		#m = hashlib.md5()
@@ -336,6 +364,7 @@ if __name__ == "__main__":
 		#m.update(str(mb_wg_market_classification))
 		#print m.hexdigest()
 
+		gkernel_args = """
 		kernel.set_arg(0,ocl_mb_wg_shares)
 		kernel.set_arg(1,ocl_mb_wg_wll)
 		kernel.set_arg(2,ocl_mb_wg_wls)
@@ -350,17 +379,23 @@ if __name__ == "__main__":
 		kernel.set_arg(11,ocl_mb_wg_input)
 		kernel.set_arg(12,ocl_mb_wg_score)
 		kernel.set_arg(13,ocl_mb_wg_orders)
-		input_len = numpy.uint32(len(input))
 		kernel.set_arg(14,input_len)
-
+		"""
+		
+		kernel.set_arg(0,ocl_mb_wg_macd_pct)
+		kernel.set_arg(1,ocl_mb_wg_wll)
+		kernel.set_arg(2,ocl_mb_wg_wls)
+		kernel.set_arg(3,ocl_mb_wg_input)
+		kernel.set_arg(4,input_len)
+		
 		#execute the workgroup
 		print "executing the workgroup"
-		event = cl.enqueue_nd_range_kernel(queue,kernel,mb_wg_score.shape,(1,))
+		event = cl.enqueue_nd_range_kernel(queue,kernel,mb_wg_wll.shape,(work_item_size,))
 		event.wait()
 		print "execution complete"
 		#copy the result buffer (scores) back to the host
-		scores = numpy.empty_like(mb_wg_score)
-		cl.enqueue_read_buffer(queue, ocl_mb_wg_score, scores).wait()
+		#scores = numpy.empty_like(mb_wg_score)
+		#cl.enqueue_read_buffer(queue, ocl_mb_wg_score, scores).wait()
 		
 
 		#time.sleep(0.01)
@@ -378,23 +413,24 @@ if __name__ == "__main__":
 			f.close()
 
 		#release all the buffers
-		ocl_mb_wg_shares.release()
+		#ocl_mb_wg_shares.release()
 		ocl_mb_wg_wll.release()
 		ocl_mb_wg_wls.release()
-		ocl_mb_wg_buy_wait.release()
-		ocl_mb_wg_markup.release()
-		ocl_mb_wg_stop_loss.release()
-		ocl_mb_wg_stop_age.release()
-		ocl_mb_wg_macd_buy_trip.release()
-		ocl_mb_wg_buy_wait_after_stop_loss.release()
-		ocl_mb_wg_quartile.release()
-		ocl_mb_wg_market_classification.release()
+		#ocl_mb_wg_buy_wait.release()
+		#ocl_mb_wg_markup.release()
+		#ocl_mb_wg_stop_loss.release()
+		#ocl_mb_wg_stop_age.release()
+		#ocl_mb_wg_macd_buy_trip.release()
+		#ocl_mb_wg_buy_wait_after_stop_loss.release()
+		#ocl_mb_wg_quartile.release()
+		#ocl_mb_wg_market_classification.release()
 		ocl_mb_wg_input.release()
-		ocl_mb_wg_score.release() 
+		#ocl_mb_wg_score.release() 
 
 		#process the results
 		for i in range(work_group_size):
-			score = float(scores[i])
+			#score = float(scores[i])
+			score = -10000
 
 			#dump the scores buffer to a file - used for debugging			
 			if deep_logging_enable == True:
