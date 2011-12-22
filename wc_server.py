@@ -77,16 +77,23 @@ from bottle import route, run, static_file
 @route('/')
 def index():
 	output = '<body bgcolor="#071C33"><font color="#757F8A">'
+	output += '<b>ga-bitbot system monitor</b>' + '<br>'
+	output += '<a href="./report/chart_test_zoom_1.html"> VIEW CHARTS </a>' + '<br>'
+	pids = json.loads(server.get_pids())
+	output += "-"*80 + '<br>'
+	output += "Process monitor info (by PID)" + '<br>'
+	output += "-"*80 + '<br>'
+	output +=  ppdict(pids) + '<br>'*2
+
+	output += "-"*80 + '<br>'
+	output += "Highest scoring genes (per quartile)" + '<br>'
+	output += "-"*80 + '<br>'
 	for quartile in [1,2,3,4]:
 		ag = json.loads(server.get(60*20,quartile))
 		bobs = json.loads(server.get_bobs(quartile))			
 		output += "-"*80 + '<br>'
 		output += "Quartile: " + str(quartile) + " :: " + str(time.ctime()) + '<br>'
 		output += ppdict(ag) + '<br>'
-	pids = json.loads(server.get_pids())
-	output += "-"*80 + '<br>'
-	output += "-"*80 + '<br>'
-	output +=  ppdict(pids) + '<br>'
 	output = output.replace('\n','<br>')
 	return output
 

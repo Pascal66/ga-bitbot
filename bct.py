@@ -631,6 +631,7 @@ class trade_engine:
 					break
 
 		#print "chart: filling the template"
+		tmpl = tmpl.replace("{LAST_UPDATE}",time.ctime())
 		tmpl = tmpl.replace("{PRICES}",input)
 		tmpl = tmpl.replace("{WINDOW_LONG}",wl)
 		tmpl = tmpl.replace("{WINDOW_SHORT}",ws)
