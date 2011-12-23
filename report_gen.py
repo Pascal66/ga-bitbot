@@ -223,5 +223,5 @@ while 1:
 	print "sleeping..."
 	print "_" * 80
 	print "\n"
-	time.sleep(60) #generate a report every 20 seconds
+	time.sleep(60) #generate a report every n seconds
 	
