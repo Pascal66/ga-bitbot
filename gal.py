@@ -119,7 +119,7 @@ while 1:
 			epl = json.loads(server.pid_list()) 	#get the current pid list
 			cmd_line = monitor[pid]['cmd']
 			#terminate the process
-			monitor[pid]['p'].terminate()
+			monitor[pid]['process'].terminate()
 			monitor.pop(pid)
 			#launch new process
 			p = Popen(shlex.split(cmd_line),stdin=fnull, stdout=fnull, stderr=fnull)
