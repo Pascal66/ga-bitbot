@@ -145,7 +145,7 @@ function drawGenes() {
 			bw = (w/(q1[i].length)) / 4;
 			
 			//clamp to max height
-			if (bh > 10){bh = 10;}
+			if (bh > 5){bh = 5;}
 
 			for (var j=0; j < q1[i].length; j++)
 			{
@@ -155,12 +155,12 @@ function drawGenes() {
 				if (q1[i][j] == "1")
 				{
 					ctx.fillStyle = "rgb(255,128,128)";
-					ctx.fillRect(bx,by,bw,bh);
+					ctx.fillRect(bx,by,bw-1,bh-1);
 				}
 				else
 				{
 					ctx.fillStyle = "rgb(50,50,50)";
-					ctx.fillRect(bx,by,bw,bh);
+					ctx.fillRect(bx,by,bw-1,bh-1);
 				}
 			}
 		}
@@ -173,7 +173,7 @@ function drawGenes() {
 			bw = (w/(q2[i].length)) / 4;
 			
 			//clamp to max height
-			if (bh > 10){bh = 10;}
+			if (bh > 5){bh = 5;}
 
 			for (var j=0; j < q2[i].length; j++)
 			{
@@ -183,12 +183,12 @@ function drawGenes() {
 				if (q2[i][j] == "1")
 				{
 					ctx.fillStyle = "rgb(128,255,128)";
-					ctx.fillRect(bx,by,bw,bh);
+					ctx.fillRect(bx,by,bw-1,bh-1);
 				}
 				else
 				{
 					ctx.fillStyle = "rgb(50,50,50)";
-					ctx.fillRect(bx,by,bw,bh);
+					ctx.fillRect(bx,by,bw-1,bh-1);
 				}
 			}
 		}
@@ -200,7 +200,7 @@ function drawGenes() {
 			bw = (w/(q3[i].length)) / 4;
 			
 			//clamp to max height
-			if (bh > 10){bh = 10;}
+			if (bh > 5){bh = 5;}
 
 			for (var j=0; j < q3[i].length; j++)
 			{
@@ -210,12 +210,12 @@ function drawGenes() {
 				if (q3[i][j] == "1")
 				{
 					ctx.fillStyle = "rgb(128,128,255)";
-					ctx.fillRect(bx,by,bw,bh);
+					ctx.fillRect(bx,by,bw-1,bh-1);
 				}
 				else
 				{
 					ctx.fillStyle = "rgb(50,50,50)";
-					ctx.fillRect(bx,by,bw,bh);
+					ctx.fillRect(bx,by,bw-1,bh-1);
 				}
 			}
 		}
@@ -227,7 +227,7 @@ function drawGenes() {
 			bw = (w/(q4[i].length)) / 4;
 			
 			//clamp to max height
-			if (bh > 10){bh = 10;}
+			if (bh > 5){bh = 5;}
 
 			for (var j=0; j < q4[i].length; j++)
 			{
@@ -237,12 +237,12 @@ function drawGenes() {
 				if (q4[i][j] == "1")
 				{
 					ctx.fillStyle = "rgb(128,190,190)";
-					ctx.fillRect(bx,by,bw,bh);
+					ctx.fillRect(bx,by,bw-1,bh-1);
 				}
 				else
 				{
 					ctx.fillStyle = "rgb(50,50,50)";
-					ctx.fillRect(bx,by,bw,bh);
+					ctx.fillRect(bx,by,bw-1,bh-1);
 				}
 			}
 		}
@@ -258,9 +258,9 @@ function drawGenes() {
 <p><b>Bitcoin Genetic AI Gene Visualizer</b>
 || <a href="../">System Monitor</a> || Quartile Reports
 : <a href="chart_test_1.html">1</a> | <a href="chart_test_zoom_1.html">1 latest</a>
-|| <a href="chart_test_2.html">2</a> | <a href="chart_test_zoom_2.html">2 latest</a>
-|| <a href="chart_test_3.html">3</a> | <a href="chart_test_zoom_3.html">3 latest</a>
-|| <a href="chart_test_4.html">4</a> | <a href="chart_test_zoom_4.html">4 latest</a>
+| <a href="chart_test_2.html">2</a> | <a href="chart_test_zoom_2.html">2 latest</a>
+| <a href="chart_test_3.html">3</a> | <a href="chart_test_zoom_3.html">3 latest</a>
+| <a href="chart_test_4.html">4</a> | <a href="chart_test_zoom_4.html">4 latest</a>
 </p>
 {LAST_UPDATE}
 <br>

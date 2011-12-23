@@ -78,7 +78,7 @@ from bottle import route, run, static_file
 def index():
 	output = '<body bgcolor="#071C33"><font color="#757F8A">'
 	output += '<b>ga-bitbot system monitor</b>' + '<br>'
-	output += '<a href="./report/chart_test_zoom_1.html"> VIEW CHARTS </a>' + '<br>'
+	output += '<a href="./report/chart_test_zoom_1.html"> VIEW CHARTS </a> || <a href="./report/gene_visualizer.html"> GENE VISUALIZER </a>' + '<br>'
 	pids = json.loads(server.get_pids())
 	output += "-"*80 + '<br>'
 	output += "Process monitor info (by PID)" + '<br>'
