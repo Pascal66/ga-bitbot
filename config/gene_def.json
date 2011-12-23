@@ -32,7 +32,7 @@
 			["wls",7,0,1],
 			["buy_wait",10,0,1],
 			["buy_wait_after_stop_loss",10,0,1],
-			["markup",10,4,0.01],
+			["markup",10,5,0.01],
 			["stop_loss",10,4,0.03],
 			["stop_age",12,0],
 			["macd_buy_trip",14,3]
