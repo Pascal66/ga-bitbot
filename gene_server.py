@@ -103,6 +103,7 @@ def get_bobs(quartile):
 
 def put_gene(d,quartile):
 	global g_d
+	global g_bobs
 	#dictionary must have two key values, time & score
 	#add the record and sort the dictionary list
 	d = json.loads(d)
@@ -114,6 +115,13 @@ def put_gene(d,quartile):
 				print "put_gene: removing previous record"
 				g_d[quartile - 1].pop(i)
 				break
+
+	#check the bob dict to see if the gene is already captured
+	if any(adict['gene'] == d['gene'] for adict in g_bobs[quartile - 1]):
+		print "put_gene: duplicate BOB gene detected"
+		#update the gene
+		put_bob(json.dumps(d),quartile)
+		return "OK"
 
 	g_d[quartile - 1].append(d)
 	d = sorted(g_d[quartile - 1], key=itemgetter('time'),reverse = True)
