@@ -25,9 +25,9 @@ This file is part of ga-bitbot.
 __appversion__ = "0.01a"
 print "ga-bitbot system launcher v%s"%__appversion__
 
-WATCHDOG_TIMEOUT = 180 #seconds
+WATCHDOG_TIMEOUT = 60 * 5 #seconds
 monitored_launch = ['pypy gts.py 1 n','pypy gts.py 2 n','pypy gts.py 3 n','pypy gts.py 4 n','pypy gts.py 1 y','pypy gts.py 2 y','pypy gts.py 3 y','pypy gts.py 4 y']
-unmonitored_launch = ['python wc_server.py','python report_gen.py']
+unmonitored_launch = ['python wc_server.py','pypy report_gen.py']
 
 monitor = {}	#variables to track monitored/unmonitored processes
 no_monitor = []
@@ -53,8 +53,8 @@ p = Popen(shlex.split('python bcfeed.py'),stdin=fnull, stdout=fnull, stderr=fnul
 no_monitor.append(p)
 
 print "Launching the xmlrpc server..."
-Popen(shlex.split('python gene_server.py'),stdin=fnull, stdout=fnull, stderr=fnull)
-sleep(3) #give the server time to start
+Popen(shlex.split('pypy gene_server.py'),stdin=fnull, stdout=fnull, stderr=fnull)
+sleep(1) #give the server time to start
 
 
 # connect to the xml server
@@ -80,6 +80,14 @@ def shutdown():
 
 atexit.register(shutdown)
 
+a = ""
+while not(a == 'y' or a == 'n'):
+	print "Load archived gene database? (y/n)"
+	a = raw_input()
+
+if a == 'y':
+	print "Loading the gene database..."
+	print server.reload()
 
 print "Launching GA Clients..."
 
@@ -91,7 +99,7 @@ epl = json.loads(server.pid_list()) #get the existing pid list
 #start the monitored processes
 for cmd_line in monitored_launch:
 	p = Popen(shlex.split(cmd_line),stdin=fnull, stdout=fnull, stderr=fnull)
-	sleep(3)
+	sleep(1)
 	cpl = json.loads(server.pid_list())	#get the current pid list
 	npl = list(set(epl) ^ set(cpl)) 	#find the new pid(s)
 	epl = cpl				#update the existing pid list
@@ -103,7 +111,7 @@ for cmd_line in unmonitored_launch:
 	p = Popen(shlex.split(cmd_line),stdin=fnull, stdout=fnull, stderr=fnull)
 	print "Unmonitored Process Launched (CMD:",cmd_line,")"
 	no_monitor.append(p)	#store the popen instance
-	sleep(90) #wait a while before starting the report_gen script
+	sleep(1) #wait a while before starting the report_gen script
 
 
 print "\nMonitoring Processes..."

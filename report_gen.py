@@ -88,7 +88,7 @@ while 1:
 		#get the high score gene from the gene server
 		while 1:
 			try:
-				ag = json.loads(server.get(60*60,quartile))
+				ag = json.loads(server.get(60*360,quartile))
 				break
 			except:
 				print "Gene Server Error"
@@ -120,9 +120,9 @@ while 1:
 
 		print "_" * 40
 		if current_quartile == quartile:
-			print "Quartile:",quartile, "+"
+			print "Quartile:",quartile, "(%.4f)"%ag['score'],"+"
 		else:
-			print "Quartile:",quartile
+			print "Quartile:",quartile, "(%.4f)"%ag['score']
 
 		#feed the data
 		try:
@@ -139,17 +139,21 @@ while 1:
 					target = te.input_log[-1][1]
 
 				#first check to see if the last price triggered a buy:
-				if te.positions[-1]['buy_period'] == len(te.input_log):
+				if te.positions[-1]['buy_period'] == len(te.input_log) - 1:
 					p = te.positions[-1]
+					target = p['buy']
 				else:
 					print "Last buy order was", len(te.input_log) - te.positions[-1]['buy_period'],"periods ago."
 					#if not try to calculate the trigger point to get the buy orders in early...
 					print "Trying to trigger with: ",target
-					te.score()
+					print "Score: ",te.score()
 					st = input[-1][0] + 2000
 					te.input(st,target)
-					p = te.positions[-1]
-					#print p
+					p = te.positions[-1].copy()
+					if p['buy'] != target:
+						print "Order not triggered @",target
+						p['buy'] = 0.00
+						p['target'] = 0.00
 
 				#te.classify_market(input)
 				print "creating charts..."
@@ -157,14 +161,14 @@ while 1:
 				te.chart("./report/chart.templ","./report/chart_test_zoom_%s.html"%str(quartile),60*48)
 				#print "Evaluating target price"
 				if current_quartile == quartile:
-					if (target >= p['buy']) or (abs(target - p['buy']) < 0.01): #submit the order at or below target
+					if ((target >= p['buy']) or (abs(target - p['buy']) < 0.01)) and p['buy'] != 0: #submit the order at or below target
 						#format the orders
 						p['buy'] = float("%.3f"%(p['buy'] - 0.01))
 						p['target'] = float("%.3f"%p['target'])
 						p.update({'stop_age':(60 * te.stop_age)})
 						if float("%.3f"%((te.wins / float(te.wins + te.loss)) * 100)) > 85.0:
-							#only submitt an order if the win/loss ratio is greater than 95%
-							print "sending target buy order to server.."
+							#only submit an order if the win/loss ratio is greater than x%
+							print "sending target buy order to server @ $" + str(p['buy'])
 							server.put_target(json.dumps(p))
 						else:
 							print "underperforming trade strategy, order not submitted"
@@ -205,7 +209,14 @@ while 1:
 	f.close()
 
 	for quartile in [1,2,3,4]:
+		band_l = []
 		gl = json.loads(server.get_bobs(quartile))
+		if len(gl) > 0:
+			#place a band (a small list of gene set to all 1's) in the data to highlight the break between the bobs and high scores
+			band = "1" * len(gl[0]['gene'])
+			for i in xrange(3):
+				band_l.append({'gene':band})
+		gl += band_l
 		gl += json.loads(server.get_all(quartile))
 		l = []
 		for ag in gl:

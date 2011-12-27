@@ -77,8 +77,21 @@ from bottle import route, run, static_file
 @route('/')
 def index():
 	output = '<body bgcolor="#071C33"><font color="#757F8A">'
-	output += '<b>ga-bitbot system monitor</b>' + '<br>'
+	output += '<h1><b>ga-bitbot system monitor</b></h1>' + '<br>'
 	output += '<a href="./report/chart_test_zoom_1.html"> VIEW CHARTS </a> || <a href="./report/gene_visualizer.html"> GENE VISUALIZER </a>' + '<br>'
+
+	output += "-"*80 + '<br>'
+	output += "Buy Order Trigger* @ $"+"%.2f"%json.loads(server.get_target())['buy'] + '<br>' * 2
+	output += "* Will report $0 if target is too far away from the current price.<br> bcbookie also uses additional logic to screen potential orders.<br>"
+	output += "-"*80 + '<br>' * 2
+
+	output += "-"*80 + '<br>'
+	pid_list = json.loads(server.pid_list(180))
+	output += "Active Clients (" + str(len(pid_list))  + ')<br>'
+	for pid in pid_list:
+		output += "----> "+ pid + '<br>'
+	output += "-"*80 + '<br>' * 2
+
 	pids = json.loads(server.get_pids())
 	output += "-"*80 + '<br>'
 	output += "Process monitor info (by PID)" + '<br>'
@@ -89,8 +102,11 @@ def index():
 	output += "Highest scoring genes (per quartile)" + '<br>'
 	output += "-"*80 + '<br>'
 	for quartile in [1,2,3,4]:
-		ag = json.loads(server.get(60*20,quartile))
-		bobs = json.loads(server.get_bobs(quartile))			
+		try:
+			ag = json.loads(server.get(60*20,quartile))
+			bobs = json.loads(server.get_bobs(quartile))
+		except:
+			ag = {"Gene server didn't return a dictionary."}
 		output += "-"*80 + '<br>'
 		output += "Quartile: " + str(quartile) + " :: " + str(time.ctime()) + '<br>'
 		output += ppdict(ag) + '<br>'
@@ -103,5 +119,5 @@ def server_static(filepath):
 	return static_file(filepath, root='./report')
 
 
-run(host=ip_address, port=8090)
+run(host=ip_address, port=8080)
 

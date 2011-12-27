@@ -324,16 +324,17 @@ class genepool:
 	#bit sweep (bit level hill climbing)
 	if random.random() <= self.bit_sweep_rate and self.iteration > self.bit_sweep_min_iteration:
 		print "** Hill Climb Bit Sweep **"
-		#sweep a bit across the current high scoring gene (xor)
+		#random gene
+		i = int(random.random() * (len(gen) - 1))
+		bsl = self.bit_sweep(gen[i]['gene'])
+		for new_g in bsl:
+			gdict = {"gene":new_g,"score":None,"time":None,"generation":gen[i]["generation"] + 1,"id":self.create_id(),"msg":""}
+			os.append(gdict)
+		#current high scoring gene (xor)
 		bsl = self.bit_sweep(winning_gene['gene'])
-		#and another random gene
-		#index = int(random.random() * (len(gen) - 1)) + 1
-		#bsl += self.bit_sweep(gen[index]['gene'])
 		for new_g in bsl:
 			gdict = {"gene":new_g,"score":None,"time":None,"generation":winning_gene["generation"] + 1,"id":self.create_id(),"msg":""}
 			os.append(gdict)
-
-		
 
 	#if max iterations have been reached repopulate
 	#the gene pool

@@ -124,8 +124,8 @@ if __name__ == "__main__":
 		bs = raw_input()
 	if bs == 'y':
 		bob_simulator = True
+		update_all_scores = True	#on the first pass only, bob clients need to resubmit updated scores for every gene 
 		g.local_optima_trigger = 10
-		calibrate = 1
 		bootstrap_bobs = json.loads(server.get_bobs(quartile))
 		bootstrap_all = json.loads(server.get_all(quartile))
 		print len(bootstrap_all)
@@ -133,7 +133,8 @@ if __name__ == "__main__":
 			g.seed()
 			g.pool = []		
 			g.insert_genedict_list(bootstrap_bobs)
-			g.insert_genedict_list(bootstrap_all)	
+			g.insert_genedict_list(bootstrap_all)
+			g.pool_size = len(g.pool)
 			g.reset_scores()
 		else: #if no BOBS or high scores..seed with a new population
 			print "no BOBs or high scores available...seeding new pool."
@@ -146,6 +147,7 @@ if __name__ == "__main__":
 	
 	else:
 		bob_simulator = False
+		update_all_scores = False
 		g.local_optima_trigger = 5
 		print "Seeding the initial population"
 		g.seed()
@@ -173,6 +175,7 @@ if __name__ == "__main__":
 			time.sleep(0.35)
 		    
 		if loop_count > g.pool_size:
+			update_all_scores = False	#on the first pass only, bob clients need to resubmit updated scores for every gene 
 			loop_count = 0
 			#reset the watchdog monitor
 			server.pid_alive(g.id)
@@ -223,8 +226,10 @@ if __name__ == "__main__":
 				#the other clients so they can find potentialy better genes
 				#print "going to sleep..."
 				#time.sleep(60*15)
+				update_all_scores = True	#on the first pass only, bob clients need to resubmit updated scores for every gene 
 				bootstrap_bobs = json.loads(server.get_bobs(quartile))
 			    	bootstrap_all = json.loads(server.get_all(quartile))
+				g.pool_size = len(g.pool)
 				if (type(bootstrap_bobs) == type([])) and (type(bootstrap_all) == type([])):
 					g.seed()
 					g.pool = []		
@@ -295,5 +300,13 @@ if __name__ == "__main__":
 					server.put(json.dumps(max_gene),quartile)
 				else:
 					print "MAX_GENE is None!!"
+			elif update_all_scores == True:
+				print "--\tUpdating score for id:%s to server (%.2f)"%(str(ag['id']),score)
+				agene = g.get_by_id(ag['id'])
+				if agene != None:
+					server.put(json.dumps(agene),quartile)
+				else:
+					print "Updating Gene Error: Gene is missing!!"
+
 
 

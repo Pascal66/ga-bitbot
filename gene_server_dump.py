@@ -33,7 +33,7 @@ print "Genetic Bitcoin Gene Server Dump v%s"%__appversion__
 import gene_server_config
 import xmlrpclib
 import json
-
+import time
 
 __server__ = gene_server_config.__server__
 __port__ = str(gene_server_config.__port__)
@@ -70,8 +70,9 @@ for quartile in [1,2,3,4]:
 	try:
 		print "-"*80
 		print "Quartile:",quartile
-		ag = json.loads(server.get(60*20,quartile))	
-		ppdict(ag)
+		ag = json.loads(server.get(60*360,quartile))	
+		#ppdict(ag)
+		print "gene last updated",time.time() - ag['time'],"seconds ago.", "SCORE:",ag['score']
 		pwdict(ag,'./test_data/gene_high_score_' + str(quartile))
 	except:
 		pass
@@ -79,7 +80,7 @@ for quartile in [1,2,3,4]:
 print "-"*80
 print "PID STATUS:"
 pid_status = json.loads(server.get_pids())
-ppdict(pid_status)
+#ppdict(pid_status)
 pwdict(pid_status,'./test_data/pid_status')
 
 print "-"*80
@@ -87,5 +88,16 @@ print "PID Watchdog Check (90 sec): "
 for pid in pid_status.keys():
 	print pid,server.pid_check(pid,90)
 
-print server.shutdown()
+#save all genes
+for quartile in [1,2,3,4]:
+	gd = {'bobs':[],'high_scores':[]}
+	gd['high_scores'] = json.loads(server.get_all(quartile))
+	gd['bobs'] = json.loads(server.get_bobs(quartile))
+	f = open('./config/gene_server_db_backup_quartile' + str(quartile) + '.json','w')
+	f.write(json.dumps(gd))
+	f.close()
+
+
+
+#print server.shutdown()
 

@@ -47,7 +47,7 @@ MAX_PID_MESSAGE_BUFFER_SIZE = 16384
 max_len = 600
 max_bobs = 1000
 g_d = [[],[],[],[]]
-g_trgt = []
+g_trgt = 0
 
 g_bobs = [[],[],[],[]]
 
@@ -68,22 +68,28 @@ def get_target():
 
 def get_gene(n_sec,quartile):
 	global g_d
-	
+	global g_bobs
+
 	t = time.time() - n_sec
 	#get the highest score calculated within the last n seconds
 	#or return the latest if none are found.
 	r = []
-	#collect the records (presorted))
+	#collect the high scoring records
 	for a_d in g_d[quartile - 1]:
 		if a_d['time'] > t:
 			r.append(a_d)
-		else:
-			break
+
+	#collect the bob records
+	for a_d in g_bobs[quartile - 1]:
+		if a_d['time'] > t:
+			r.append(a_d)
+
 	#print "searching for greater than",t 
 	#print "found",len(r),"records"
 	#if no record found, grab the most recent
 	if len(r) == 0:
-		r = g_d[quartile - 1][0]
+		r = sorted(g_d[quartile - 1], key=itemgetter('score'),reverse = True)[0]
+		r.append(sorted(g_bobs[quartile - 1], key=itemgetter('score'),reverse = True)[0])
 	
 	if len(r) > 1:
 		#if more than one record found find the highest scoring one
@@ -95,11 +101,11 @@ def get_gene(n_sec,quartile):
 
 def get_all_genes(quartile):
 	global g_d
-	return json.dumps(g_d[quartile - 1])
+	return json.dumps(sorted(g_d[quartile - 1], key=itemgetter('score')))
 
 def get_bobs(quartile):
 	global g_bobs
-	return json.dumps(g_bobs[quartile - 1])
+	return json.dumps(sorted(g_bobs[quartile - 1], key=itemgetter('score')))
 
 def put_gene(d,quartile):
 	global g_d
@@ -122,12 +128,14 @@ def put_gene(d,quartile):
 		#update the gene
 		put_bob(json.dumps(d),quartile)
 		return "OK"
+	
+	#timestamp the gene submission
+	d['time'] = time.time()
 
 	g_d[quartile - 1].append(d)
-	d = sorted(g_d[quartile - 1], key=itemgetter('time'),reverse = True)
-	g_d[quartile - 1] = d
+	g_d[quartile - 1] = sorted(g_d[quartile - 1], key=itemgetter('score'),reverse = True)
 	
-	print "put",g_d[quartile - 1][0]['time'],g_d[quartile - 1][0]['score']
+	print "put",d['time'],d['score']
 	#prune the dictionary list
 	if len(g_d[quartile - 1]) > max_len:
 		g_d[quartile - 1] = g_d[quartile - 1][:max_len]
@@ -147,9 +155,11 @@ def put_bob(d,quartile):
 				g_bobs[quartile - 1].pop(i)
 				break
 
+	#timestamp the gene submission
+	d['time'] = time.time()
+
 	g_bobs[quartile - 1].append(d)
-	s_bobs = sorted(g_bobs[quartile - 1], key=itemgetter('score'),reverse = True)
-	g_bobs[quartile - 1] = s_bobs
+	g_bobs[quartile - 1] = sorted(g_bobs[quartile - 1], key=itemgetter('score'),reverse = True)
 	
 	print "put bob",d['time'],d['score']
 	#prune the dictionary list
@@ -160,7 +170,7 @@ def put_bob(d,quartile):
 ### watchdog services ###
 def pid_alive(pid):
 	global g_pids
-	#track the last time a process checked in (watchdog reset)
+	#pid ping (watchdog reset)
 	if pid in g_pids.keys(): #existing pid
 		g_pids[pid]['watchdog_reset'] = time.time()
 	else: #new pid
@@ -200,9 +210,13 @@ def pid_msg(pid,msg):
 	else:
 		return "NOK"
 
-def pid_list():
+def pid_list(ping_seconds=9999999):
 	global g_pids
-	return json.dumps(g_pids.keys())
+	pids = []
+	for pid in g_pids.keys():
+		if pid_check(pid,ping_seconds) == "OK":
+			pids.append(pid)
+	return json.dumps(pids)
 
 def get_pids():
 	global g_pids
@@ -215,7 +229,42 @@ def get_pids():
 def shutdown():
 	global quit
 	quit = 1
+
+	#save the gene db before shut down
+	for quartile in [1,2,3,4]:
+		gd = {'bobs':[],'high_scores':[]}
+		gd['high_scores'] = json.loads(server.get_all(quartile))
+		gd['bobs'] = json.loads(server.get_bobs(quartile))
+		f = open('./config/gene_server_db_backup_quartile' + str(quartile) + '.json','w')
+		f.write(json.dumps(gd))
+		f.close()
+
 	return 1
+
+
+def reload_db():
+	reload_error = False
+	#save the gene db before shut down
+	print "reloading stored gene data into server..."
+	for quartile in [1,2,3,4]:
+		try:
+			f = open('./config/gene_server_db_backup_quartile' + str(quartile) + '.json','r')
+			d = json.loads(f.read())
+			f.close()
+
+			for g in d['bobs']:
+				put_bob(json.dumps(g),quartile)
+			for g in d['high_scores']:
+				put_gene(json.dumps(g),quartile)
+		except:
+			reload_error = True
+			pass
+
+	if reload_error == True:
+		return "NOK"
+	return "OK"
+
+
 
 #set the service url
 class RequestHandler(SimpleXMLRPCRequestHandler):
@@ -244,6 +293,7 @@ server.register_function(pid_list,'pid_list')
 server.register_function(echo,'echo')
 #system services
 server.register_function(shutdown,'shutdown')
+server.register_function(reload_db,'reload')
 server.register_introspection_functions()
 
 if __name__ == "__main__":
