@@ -26,6 +26,8 @@ __appversion__ = "0.01a"
 print "ga-bitbot system launcher v%s"%__appversion__
 
 WATCHDOG_TIMEOUT = 60 * 10 #seconds
+MONITORED_PROCESS_LAUNCH_TIMEOUT = 20 #seconds
+
 monitored_launch = ['pypy gts.py 1 n','pypy gts.py 2 n','pypy gts.py 3 n','pypy gts.py 4 n','pypy gts.py 1 y','pypy gts.py 2 y','pypy gts.py 3 y','pypy gts.py 4 y']
 unmonitored_launch = ['python wc_server.py','pypy report_gen.py']
 
@@ -99,12 +101,20 @@ epl = json.loads(server.pid_list()) #get the existing pid list
 #start the monitored processes
 for cmd_line in monitored_launch:
 	p = Popen(shlex.split(cmd_line),stdin=fnull, stdout=fnull, stderr=fnull)
-	sleep(1)
-	cpl = json.loads(server.pid_list())	#get the current pid list
-	npl = list(set(epl) ^ set(cpl)) 	#find the new pid(s)
-	epl = cpl				#update the existing pid list
-	monitor.update({npl[0]:{'cmd':cmd_line,'process':p}})	#store the pid/cmd_line/process
-	print "Monitored Process Launched (PID:",npl[0],"CMD:",cmd_line,")"
+	retry = MONITORED_PROCESS_LAUNCH_TIMEOUT
+	while retry > 0:
+		sleep(1)
+		cpl = json.loads(server.pid_list())	#get the current pid list
+		npl = list(set(epl) ^ set(cpl)) 	#find the new pid(s)
+		epl = cpl				#update the existing pid list
+		if len(npl) > 0:
+			monitor.update({npl[0]:{'cmd':cmd_line,'process':p}})	#store the pid/cmd_line/process
+			print "Monitored Process Launched (PID:",npl[0],"CMD:",cmd_line,")"
+			break
+		else:
+			retry -= 1
+	if retry == 0:
+		print "ERROR: Monitored Process Failed to Launch","(CMD:",cmd_line,")"
 
 #start unmonitored processes
 for cmd_line in unmonitored_launch:
@@ -138,5 +148,8 @@ while 1:
 			epl = cpl				#update the existing pid list
 			monitor.update({npl[0]:{'cmd':cmd_line,'process':p}})	#store the pid/cmd_line/process
 			print "Process Launched (PID:",npl[0],"CMD:",cmd_line,")"
+
+	#periodicaly tell the server to save the gene db
+	server.save()
 
 fnull.close()

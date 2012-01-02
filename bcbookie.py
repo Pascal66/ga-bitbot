@@ -74,7 +74,7 @@ class bookie:
 	    
 	    #write the records
 	    for r in export:
-		if r['book'].find('buy_cancel') < 0:
+		if (r['book'].find('buy_cancel') < 0) or 1:
 			f.write('\t<tr>\n')
 			for key in keys:
 			    s = ""

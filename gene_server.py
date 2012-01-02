@@ -229,8 +229,10 @@ def get_pids():
 def shutdown():
 	global quit
 	quit = 1
+	save_db()
+	return 1
 
-	#save the gene db before shut down
+def save_db():
 	for quartile in [1,2,3,4]:
 		gd = {'bobs':[],'high_scores':[]}
 		gd['high_scores'] = json.loads(server.get_all(quartile))
@@ -238,9 +240,7 @@ def shutdown():
 		f = open('./config/gene_server_db_backup_quartile' + str(quartile) + '.json','w')
 		f.write(json.dumps(gd))
 		f.close()
-
-	return 1
-
+	return 'OK'
 
 def reload_db():
 	reload_error = False
@@ -294,6 +294,7 @@ server.register_function(echo,'echo')
 #system services
 server.register_function(shutdown,'shutdown')
 server.register_function(reload_db,'reload')
+server.register_function(save_db,'save')
 server.register_introspection_functions()
 
 if __name__ == "__main__":
