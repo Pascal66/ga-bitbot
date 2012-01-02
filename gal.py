@@ -131,7 +131,7 @@ while 1:
 
 	#process monitor loop
 	for pid in monitor.keys():
-		sleep(5)
+		sleep(20)
 		if server.pid_check(pid,WATCHDOG_TIMEOUT) == "NOK":
 			#watchdog timed out
 			print "WATCHDOG: PID",pid,"EXPIRED"
