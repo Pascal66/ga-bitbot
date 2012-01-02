@@ -126,6 +126,9 @@ for cmd_line in unmonitored_launch:
 
 print "\nMonitoring Processes..."
 while 1:
+	#periodicaly tell the server to save the gene db
+	server.save()
+
 	#process monitor loop
 	for pid in monitor.keys():
 		sleep(5)
@@ -149,7 +152,6 @@ while 1:
 			monitor.update({npl[0]:{'cmd':cmd_line,'process':p}})	#store the pid/cmd_line/process
 			print "Process Launched (PID:",npl[0],"CMD:",cmd_line,")"
 
-	#periodicaly tell the server to save the gene db
-	server.save()
+
 
 fnull.close()
