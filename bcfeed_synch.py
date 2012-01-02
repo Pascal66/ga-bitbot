@@ -8,12 +8,12 @@ import sys
 __app_version__ = "0.01a"
 
 print """
-Bitcoin Data Download (CSV) Processor v%s
+Bitcoin Data Feed Synchronizer v%s
 
 \tConverts the data into a weighted price 1min data feed format
 
 To automaticaly download and process the mtgox usd historic data run with the following option:
-python process -d
+python bcfeed_synch -d
 
 Without the -d switch the output will only be written to the datafeed_reboot folder
 """%(__app_version__)
@@ -32,12 +32,11 @@ if len(sys.argv) >= 2:
 			line = line.split('.')[0]
 			start_time = int(line) + 60
 			incremental_update = 1
-			link = link.replace('{START_TIME}',str(start_time))
-				
 		except:
 			print "Incremental update not possible."
 			pass
 		print "Downloading mtgox historic data..."
+		link = link.replace('{START_TIME}',str(start_time))
 		data = urllib2.urlopen(link).read()
 		f = open("./datafeed_reboot/download_mtgoxUSD.csv",'w')
 		f.write(data)

@@ -25,7 +25,7 @@ This file is part of ga-bitbot.
 __appversion__ = "0.01a"
 print "ga-bitbot system launcher v%s"%__appversion__
 
-WATCHDOG_TIMEOUT = 60 * 5 #seconds
+WATCHDOG_TIMEOUT = 60 * 10 #seconds
 monitored_launch = ['pypy gts.py 1 n','pypy gts.py 2 n','pypy gts.py 3 n','pypy gts.py 4 n','pypy gts.py 1 y','pypy gts.py 2 y','pypy gts.py 3 y','pypy gts.py 4 y']
 unmonitored_launch = ['python wc_server.py','pypy report_gen.py']
 

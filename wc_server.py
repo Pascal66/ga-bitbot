@@ -37,6 +37,8 @@ import json
 import time
 import socket
 
+#define the server port
+PORT = 8080
 
 #cross-platform hack to get the local ip address
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -106,7 +108,7 @@ def index():
 			ag = json.loads(server.get(60*20,quartile))
 			bobs = json.loads(server.get_bobs(quartile))
 		except:
-			ag = {"Gene server didn't return a dictionary."}
+			ag = {"Gene server didn't return a dictionary.":"Gene server didn't return a dictionary."}
 		output += "-"*80 + '<br>'
 		output += "Quartile: " + str(quartile) + " :: " + str(time.ctime()) + '<br>'
 		output += ppdict(ag) + '<br>'
@@ -119,5 +121,7 @@ def server_static(filepath):
 	return static_file(filepath, root='./report')
 
 
-run(host=ip_address, port=8080)
+run(host=ip_address, port=PORT)
+
+print "http://" + ip_address + ":" + str(PORT)
 

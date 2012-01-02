@@ -228,9 +228,7 @@ class trade_engine:
 		self.dump_open_positions()
 		if (self.wins + self.loss) > 0:	    
 			self.positions = sorted(self.positions, key=itemgetter('buy_period'))
-			#use the last position buy_period to calc the exp_scale. If the total input period counts are used the scores will
-			#change with new price data regardless if the trade history remains unchanged. This would effectivly disable local optima detection
-			exp_scale = self.nlsf / float(self.positions[-1]['buy_period'])	
+			exp_scale = self.nlsf / self.period #float(self.positions[-1]['buy_period'])	
 			final_score_balance = 0
 			for p in self.positions:
 				p['score'] = 0
@@ -242,7 +240,7 @@ class trade_engine:
 					p['score'] /= (pow(p['age'],self.stbf) / p['age'] )
 					p['score'] *= 10.0
 					if p['age'] < 4.0:
-						p['score'] *= (1/4.0) #I'm knocking down very short term trades because theres a chance the system will miss them
+						p['score'] *= (1/4.0) #I'm knocking down very short term trades because there's a chance the system will miss them in live trading
 				if p['status'] == "stop":
 					if p['actual'] > p['buy']:
 						age = float(self.stop_age) 
@@ -284,6 +282,15 @@ class trade_engine:
 			#severly penalize the score if the win/ratio is less than 85%
 			if self.wins / (self.wins + self.loss * 1.0) < 0.85:
 				final_score_balance /= 10000.0
+
+			#risk reward weighting
+			if final_score_balance > 0:
+				rr = self.markup / (self.stop_loss + 0.00001)
+				#clamp the risk reward weighting
+				if rr > 2.0:
+					rr = 2.0
+				final_score_balance *= rr
+
 
 			#if self.opening_balance > self.balance:
 			#	#losing strategy
@@ -547,7 +554,7 @@ class trade_engine:
 		f.close()
 		return
 
-	def compress_log(self,log):		
+	def compress_log(self,log,lossless_compression = False):		
 		#removes records with no change in price, before and after record n
 		compressible = True
 		while compressible:
@@ -564,6 +571,9 @@ class trade_engine:
 				else:
 					ret_log.append(log[i])
 			log = ret_log
+
+		if lossless_compression == True:
+			return ret_log
 
 		while len(log) > 2000:
 			avg = log[0][1]
@@ -602,8 +612,8 @@ class trade_engine:
 		ws = str(self.compress_log(self.ws_log[periods:])).replace('L','')
 		macd_pct = str(self.compress_log(self.macd_pct_log[periods:])).replace('L','')
 		input = str(self.compress_log(self.input_log[periods:])).replace('L','')
-		net_worth = str(self.compress_log(self.net_worth_log[periods:])).replace('L','')
-		volatility_quartile = str(self.compress_log(self.market_class[periods:])).replace('L','')
+		net_worth = str(self.compress_log(self.net_worth_log[periods:],lossless_compression = True)).replace('L','')
+		volatility_quartile = str(self.compress_log(self.market_class[periods:],lossless_compression = True)).replace('L','')
 
 		buy = str([])
 		sell = str([])

@@ -88,7 +88,7 @@ while 1:
 		#get the high score gene from the gene server
 		while 1:
 			try:
-				ag = json.loads(server.get(60*360,quartile))
+				ag = json.loads(server.get(60*60*24,quartile))
 				break
 			except:
 				print "Gene Server Error"
