@@ -235,7 +235,7 @@ def shutdown():
 def save_db():
 	for quartile in [1,2,3,4]:
 		gd = {'bobs':[],'high_scores':[]}
-		gd['high_scores'] = json.loads(server.get_all(quartile))
+		gd['high_scores'] = json.loads(server.get_all_genes(quartile))
 		gd['bobs'] = json.loads(server.get_bobs(quartile))
 		f = open('./config/gene_server_db_backup_quartile' + str(quartile) + '.json','w')
 		f.write(json.dumps(gd))
