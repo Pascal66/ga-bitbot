@@ -47,7 +47,7 @@ MAX_PID_MESSAGE_BUFFER_SIZE = 16384
 max_len = 600
 max_bobs = 1000
 g_d = [[],[],[],[]]
-g_trgt = 0
+g_trgt = json.dumps({'buy':0})
 
 g_bobs = [[],[],[],[]]
 
