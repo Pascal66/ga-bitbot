@@ -55,7 +55,7 @@ if __name__ == "__main__":
 	print "Genetic Bitcoin Trade Simulator v%s"%__appversion__
 
 	max_length = 60 * 24 * 60
-	load_throttle = 0 #go easy on cpu usage
+	load_throttle = 1 #go easy on cpu usage
 	calibrate = 1	#set to one to adjust the population size to maintain a one min test cycle
 
 	def load():
@@ -172,7 +172,7 @@ if __name__ == "__main__":
 		total_count += 1
 		loop_count += 1
 		if load_throttle == 1:
-			time.sleep(0.35)
+			time.sleep(0.05)
 		    
 		if loop_count > g.pool_size:
 			update_all_scores = False	#on the first pass only, bob clients need to resubmit updated scores for every gene 
