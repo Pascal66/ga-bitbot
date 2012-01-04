@@ -206,10 +206,10 @@ if __name__ == "__main__":
 			max_score = -10000
 			test_count = 0
 
-			max_gene = g.get_by_id(max_score_id)
 			if max_gene != None:
 				print "--\tSubmit BOB for id:%s to server (%.2f)"%(str(max_gene['id']),max_gene['score'])
 				server.put_bob(json.dumps(max_gene),quartile)
+				max_gene = None
 			else:
 				if max_score > -10000:
 					print "**WARNING** MAX_GENE is gone.: ID",max_score_id
