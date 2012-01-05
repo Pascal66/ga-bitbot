@@ -177,7 +177,7 @@ class bookie:
 	    except:
 		print "funds: client error..retrying @ " + ctime()
 
-    def sell(self, amount, price):
+    def sell(self, amount, price,parent_oid = "none"):
 	price = float("%.3f"%price)
 	print "sell: selling position: qty,price: ",amount,price
 	if price < self.btc_price:
@@ -186,7 +186,9 @@ class bookie:
 
 	while 1:
 	    try:
-		self.client.sell_btc(amount, price)
+		order = self.client.sell_btc(amount, price)
+		order.update({'parent_oid':parent_oid,'localtime':time(),'pending_counter':10,'book':'open','commit':price,'target':price,'stop':price,'max_wait':999999,'max_hold':999999})
+		self.add_record(order)		
 		self.save_records()
 		return
 	    except:
@@ -247,11 +249,10 @@ class bookie:
 		self.funds()
 		if self.btcs > last_btc_balance:
 			print 'buy: instant order verified'
-			order = {'price':buy_price,'oid':'none','localtime':time(),'pending_counter':10,'book':'closed:instant','commit':commit_price,'target':target_price,'stop':stop_loss,'max_wait':max_wait,'max_hold':max_hold}
-			self.sell(qty, target_price)
+			order = {'parent_oid':'none','price':buy_price,'oid':'none','localtime':time(),'pending_counter':10,'book':'held','commit':commit_price,'target':target_price,'stop':stop_loss,'max_wait':max_wait,'max_hold':max_hold}
 		else:
 			print 'buy: third level order verification failed'
-			order = {'price':buy_price,'oid':'none','localtime':time(),'pending_counter':10,'book':'closed: order not acknowledged','commit':commit_price,'target':target_price,'stop':stop_loss,'max_wait':max_wait,'max_hold':max_hold}
+			order = {'parent_oid':'none','price':buy_price,'oid':'none','localtime':time(),'pending_counter':10,'book':'closed: order not acknowledged','commit':commit_price,'target':target_price,'stop':stop_loss,'max_wait':max_wait,'max_hold':max_hold}
 		self.add_record(order)
 		#print 'buy: posting instant order for sale @ target (off book)'
 		#self.sell(qty, target_price)
@@ -260,11 +261,11 @@ class bookie:
 	    elif order['status'] == 2 and order['real_status'] != 'pending':
 		self.cancel_buy_order(order['oid'])
 		print 'buy: insuf funds'
-		order.update({'localtime':time(),'pending_counter':10,'book':'closed:insuf','commit':commit_price,'target':target_price,'stop':stop_loss,'max_wait':max_wait,'max_hold':max_hold})
+		order.update({'parent_oid':'none','localtime':time(),'pending_counter':10,'book':'closed:insuf','commit':commit_price,'target':target_price,'stop':stop_loss,'max_wait':max_wait,'max_hold':max_hold})
 		self.add_record(order)
 		return False
 	    else:
-		order.update({'localtime':time(),'pending_counter':10,'book':'open','commit':commit_price,'target':target_price,'stop':stop_loss,'max_wait':max_wait,'max_hold':max_hold})
+		order.update({'parent_oid':'none','localtime':time(),'pending_counter':10,'book':'open','commit':commit_price,'target':target_price,'stop':stop_loss,'max_wait':max_wait,'max_hold':max_hold})
 		self.add_record(order)
 		
 		print "buy: order confirmed"
@@ -335,8 +336,7 @@ class bookie:
 			print "\trecord_synch: record error found, canceling order"
 			self.cancel_buy_order(r['oid'])
 			r['book'] += ": error"
-	    if order_found == 0:
-		
+	    if order_found == 0:		
 	    	print "!!!!!!! record_synch: orphaned or manual order found:","TYPE:",o['type'],"AMOUNT:",o['amount'],"PRICE:",o['price']
 		
 	if error_found > 0:
@@ -400,21 +400,21 @@ class bookie:
 		#check commit price
 		if current_price >= r['commit']:
 		    print "\t+++ update: selling position: price commit target met: (OID):",r['oid']
-		    self.sell(r['amount'],r['target'])
+		    self.sell(r['amount'],r['target'],parent_oid = r['oid'])
 		    r['book'] = "closed:commit"
 		    put_for_sale = 1
 		#check max age  
 		elif dt > r['max_hold'] and put_for_sale == 0:
 		    #dump the position
 		    print "\t-+- update: selling position: target timeout: (OID):",r['oid']
-		    self.sell(r['amount'],current_price - 0.001)
+		    self.sell(r['amount'],current_price - 0.001,parent_oid = r['oid'])
 		    r['book'] = "closed:max_hold"
 		    put_for_sale = 1
 		#chek stop loss
 		elif current_price <= r['stop'] and  put_for_sale == 0:
 		    #dump the position
 		    print "\t--- update: selling position: stop loss: (OID):",r['oid']
-		    self.sell(r['amount'],current_price - 0.001)
+		    self.sell(r['amount'],current_price - 0.001,parent_oid = r['oid'])
 		    r['book'] = "closed:stop"
 		    put_for_sale = 1
 		elif put_for_sale == 0:

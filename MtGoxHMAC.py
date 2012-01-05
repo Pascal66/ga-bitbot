@@ -164,6 +164,11 @@ class Client:
 		params = {"amount":str(amount), "price":str(price)}
 		buy = self.request("buyBTC.php", params)
 		oid = buy['oid']
+		#check the response for the order
+		for order in buy['orders']:
+			if order['oid'] == oid:
+				return order
+		#if it wasn't reported yet...check again
 		time.sleep(1)
 		orders = self.get_orders()['orders']
 		for order in orders:
@@ -179,7 +184,20 @@ class Client:
 			print "minimun amount is 0.1btc"
 			return 0
 		params = {"amount":str(amount), "price":str(price)}
-		return self.request("sellBTC.php", params)
+		sell = self.request("sellBTC.php", params)
+		oid = sell['oid']
+		#check the response for the order
+		for order in sell['orders']:
+			if order['oid'] == oid:
+				return order
+		#if it wasn't reported yet...check again
+		time.sleep(2)
+		orders = self.get_orders()['orders']
+		for order in orders:
+			if order['oid'] == oid:
+				return order
+		else:
+			return None
         
 	def cancel_buy_order(self, oid):
 		params = {"oid":str(oid), "type":str(2)}
