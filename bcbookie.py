@@ -368,8 +368,8 @@ class bookie:
 		    print "\tupdate: OID:",r['oid'], " sell order active"
 		    pass	#sell orders stand until completed.
 		elif r['type'] == 2: #buy
-		    print "\tupdate: OID:",r['oid'], " buy order active"
 		    dt = time() - r['localtime']
+		    print "\tupdate: OID:",r['oid'], " buy order active -- time left (seconds):",r['max_wait'] - dt
 		    #kill any buy orders where there are not enough funds
 		    if r['status'] == 2 and r['real_status'] == "pending":
 			r['pending_counter'] -= 1
