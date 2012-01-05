@@ -48,6 +48,9 @@ print "Connected to",__server__,":",__port__
 class bookie:
     def __init__(self):
 	self.client = MtGoxHMAC.Client()
+	#These variables update automaticaly - do not modify
+	self.client_info = None
+	self.client_commision = 0 
 	self.orders = []
 	self.records = []
 	self.balance = 0
@@ -63,7 +66,7 @@ class bookie:
 	    f = open('./report/book.html','w')
 	    f.write('<table border="1">\n')
 	    keys = export[0].keys()
-
+	    keys.sort()
 	    #write the header
 	    f.write('\t<tr>\n')
 	    for key in keys:
@@ -101,6 +104,16 @@ class bookie:
 	    f.close()
 	    
 	return
+
+    def get_info(self):
+	while 1:
+	    try:
+		self.client_info = self.client.get_info()
+		self.client_commision = float(self.client_info['Trade_Fee'])
+		return self.client_info
+	    except:
+		print "get_info: client error..retrying @ " + ctime()
+
     
     def get_price(self):
 	#print "get_price: downloading last price"
@@ -186,8 +199,14 @@ class bookie:
 
 	while 1:
 	    try:
+		commision = self.client_commision
+		if parent_oid != "none":
+			#find the parent order to get the commision used for the inital buy
+			for o in self.orders:
+				if o['oid'] == parent_oid:
+					commision = float(o['commision'])
 		order = self.client.sell_btc(amount, price)
-		order.update({'parent_oid':parent_oid,'localtime':time(),'pending_counter':10,'book':'open','commit':price,'target':price,'stop':price,'max_wait':999999,'max_hold':999999})
+		order.update({'commision':commision,'parent_oid':parent_oid,'localtime':time(),'pending_counter':10,'book':'open','commit':price,'target':price,'stop':price,'max_wait':999999,'max_hold':999999})
 		self.add_record(order)		
 		self.save_records()
 		return
@@ -249,10 +268,10 @@ class bookie:
 		self.funds()
 		if self.btcs > last_btc_balance:
 			print 'buy: instant order verified'
-			order = {'parent_oid':'none','price':buy_price,'oid':'none','localtime':time(),'pending_counter':10,'book':'held','commit':commit_price,'target':target_price,'stop':stop_loss,'max_wait':max_wait,'max_hold':max_hold}
+			order = {'commision':self.client_commision,'parent_oid':'none','price':buy_price,'oid':'none','localtime':time(),'pending_counter':10,'book':'held','commit':commit_price,'target':target_price,'stop':stop_loss,'max_wait':max_wait,'max_hold':max_hold}
 		else:
 			print 'buy: third level order verification failed'
-			order = {'parent_oid':'none','price':buy_price,'oid':'none','localtime':time(),'pending_counter':10,'book':'closed: order not acknowledged','commit':commit_price,'target':target_price,'stop':stop_loss,'max_wait':max_wait,'max_hold':max_hold}
+			order = {'commision':self.client_commision,'parent_oid':'none','price':buy_price,'oid':'none','localtime':time(),'pending_counter':10,'book':'closed: order not acknowledged','commit':commit_price,'target':target_price,'stop':stop_loss,'max_wait':max_wait,'max_hold':max_hold}
 		self.add_record(order)
 		#print 'buy: posting instant order for sale @ target (off book)'
 		#self.sell(qty, target_price)
@@ -261,11 +280,11 @@ class bookie:
 	    elif order['status'] == 2 and order['real_status'] != 'pending':
 		self.cancel_buy_order(order['oid'])
 		print 'buy: insuf funds'
-		order.update({'parent_oid':'none','localtime':time(),'pending_counter':10,'book':'closed:insuf','commit':commit_price,'target':target_price,'stop':stop_loss,'max_wait':max_wait,'max_hold':max_hold})
+		order.update({'commision':self.client_commision,'parent_oid':'none','localtime':time(),'pending_counter':10,'book':'closed:insuf','commit':commit_price,'target':target_price,'stop':stop_loss,'max_wait':max_wait,'max_hold':max_hold})
 		self.add_record(order)
 		return False
 	    else:
-		order.update({'parent_oid':'none','localtime':time(),'pending_counter':10,'book':'open','commit':commit_price,'target':target_price,'stop':stop_loss,'max_wait':max_wait,'max_hold':max_hold})
+		order.update({'commision':self.client_commision,'parent_oid':'none','localtime':time(),'pending_counter':10,'book':'open','commit':commit_price,'target':target_price,'stop':stop_loss,'max_wait':max_wait,'max_hold':max_hold})
 		self.add_record(order)
 		
 		print "buy: order confirmed"
@@ -369,7 +388,7 @@ class bookie:
 		    pass	#sell orders stand until completed.
 		elif r['type'] == 2: #buy
 		    dt = time() - r['localtime']
-		    print "\tupdate: OID:",r['oid'], " buy order active -- time left (seconds):",r['max_wait'] - dt
+		    print "\tupdate: OID:",r['oid'], " buy order active @",r['price']," - time left (seconds):","%.0f"%(r['max_wait'] - dt)
 		    #kill any buy orders where there are not enough funds
 		    if r['status'] == 2 and r['real_status'] == "pending":
 			r['pending_counter'] -= 1
@@ -400,21 +419,21 @@ class bookie:
 		#check commit price
 		if current_price >= r['commit']:
 		    print "\t+++ update: selling position: price commit target met: (OID):",r['oid']
-		    self.sell(r['amount'],r['target'],parent_oid = r['oid'])
+		    self.sell(float(r['amount']) - (float(r['amount']) * r['commision']),r['target'],parent_oid = r['oid'])
 		    r['book'] = "closed:commit"
 		    put_for_sale = 1
 		#check max age  
 		elif dt > r['max_hold'] and put_for_sale == 0:
 		    #dump the position
 		    print "\t-+- update: selling position: target timeout: (OID):",r['oid']
-		    self.sell(r['amount'],current_price - 0.001,parent_oid = r['oid'])
+		    self.sell(float(r['amount']) - (float(r['amount']) * r['commision']),current_price - 0.001,parent_oid = r['oid'])
 		    r['book'] = "closed:max_hold"
 		    put_for_sale = 1
 		#chek stop loss
 		elif current_price <= r['stop'] and  put_for_sale == 0:
 		    #dump the position
 		    print "\t--- update: selling position: stop loss: (OID):",r['oid']
-		    self.sell(r['amount'],current_price - 0.001,parent_oid = r['oid'])
+		    self.sell(float(r['amount']) - (float(r['amount']) * r['commision']),current_price - 0.001,parent_oid = r['oid'])
 		    r['book'] = "closed:stop"
 		    put_for_sale = 1
 		elif put_for_sale == 0:
