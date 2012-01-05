@@ -303,6 +303,10 @@ class bookie:
 		    if o['oid'] == r['oid']:
 			found = 1
 			print "\trecord_synch: OID:",r['oid'], " active"
+			#update with the current order status
+			r['status'] = o['status']
+			r.update({'amount_remaining':o['amount']})				
+
 		if found == 0:
 		    print "\trecord_synch: OID:",r['oid'], " not active"
 		    #the order was filled
@@ -373,6 +377,9 @@ class bookie:
 			    	print "\t\tupdate: canceling pending order (insuf funds?) (OID):",r['oid']
 				self.cancel_buy_order(r['oid'])
 				r['book'] = "buy_cancel: pending state (insuf funds?)"
+		    elif r['status'] == 1 and r['real_status'] == "pending":
+				#update the 'real status' - pending order has gone active
+				r['real_status'] = "open"
 		    elif r['status'] == 2:
 			print "\t\tupdate: canceling order due to a lack of funds (OID):",r['oid']
 			self.cancel_buy_order(r['oid'])
@@ -447,7 +454,7 @@ if __name__ == "__main__":
 	    #buy(qty,buy_price,target_price,stop_loss,max_wait,max_hold)
 
 	    bid_counter += 1
-	    if bid_counter == 4:
+	    if bid_counter == 5:
 		bid_counter = 0
 		"main: Submitting GA Order: "
 
@@ -469,6 +476,4 @@ if __name__ == "__main__":
 	print "sleeping..."
 	print "_"*80
 	print "\n\n"  
-	sleep(60)	
-	
-    
+	sleep(60)
