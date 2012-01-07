@@ -80,7 +80,7 @@ from bottle import route, run, static_file
 def index():
 	output = '<body bgcolor="#071C33"><font color="#757F8A">'
 	output += '<h1><b>ga-bitbot system monitor</b></h1>' + '<br>'
-	output += '<a href="./report/chart_test_zoom_1.html"> VIEW CHARTS </a> || <a href="./report/gene_visualizer.html"> GENE VISUALIZER </a>' + '<br>'
+	output += '<a href="./report/book.html"> ORDER BOOK </a> || <a href="./report/chart_test_zoom_1.html"> VIEW CHARTS </a> || <a href="./report/gene_visualizer.html"> GENE VISUALIZER </a>' + '<br>'
 
 	output += "-"*80 + '<br>'
 	output += "Buy Order Trigger* @ $"+"%.2f"%json.loads(server.get_target())['buy'] + '<br>' * 2

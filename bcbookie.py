@@ -66,27 +66,48 @@ class bookie:
 			merge.update(r)
 		keys = merge.keys()
 		keys.sort()
-		#dump the records into a html file
-		if len(self.records) > 0:
-			export = sorted(self.records, key=itemgetter('localtime'),reverse=True)
-			f = open('./report/book.html','w')
-			f.write('<table border="1">\n')
-			#write the header
-			f.write('\t<tr>\n')
-			for key in keys:
-				f.write('\t\t<th>\n')
-				f.write('\t\t\t'+key + '\n')
-				f.write('\t\t</th>\n')
-			f.write('\t</tr>\n')
+
+		#load the html template
+		f = open('./report/book.templ','r')
+		template = f.read()
+		f.close()
 		
-			#write the records
+		account_value = float(self.usds) + float(self.btcs) * float(self.btc_price)
+		info = "Current Market Price: $%.3f   Account Market Value: $%.4f   @ %s<br>"%(self.btc_price, account_value, ctime())
+		info += "Holdings:  BTC: %.3f  USD: $%.3f<br>"%(float(self.btcs), float(self.usds))
+
+		#dump the records into a table structure
+		if len(self.records) > 0:
+			export = sorted(self.records, key=itemgetter('date'),reverse=True)
+			
+			output = '<table border="1" id="dtable" class="imgtbl">\n'
+			#write the header
+			output += '\t<thead>><tr>\n'
+			for key in keys:
+				output +='\t\t<th>\n'
+				output +='\t\t\t'+key + '\n'
+				output +='\t\t</th>\n'
+			output +='\t</tr></thead><tbody>\n'
+		
+			#write the row records
+			count = 0
 			for r in export:
+				count += 1
 				if (r['book'].find('buy_cancel:max_wait') == -1):
-					f.write('\t<tr>\n')
+					if count%2 == 1:
+						output +='\t<tr>\n'
+					else:
+						output +='\t<tr class="odd">\n'
 					for key in keys:
 						s = ""
 						if key == 'localtime':
 							s = str(ctime(r[key]))
+						if key == 'type':
+							if r[key] == 1:
+								s = 'ask'
+							if r[key] == 2:
+								s = 'bid'
+
 						try:
 							if s == "" and type(1.0) == type(r[key]):
 								s = "%.8f"%r[key]
@@ -95,18 +116,29 @@ class bookie:
 						else:
 							if s == "":
 								s = str(r[key])
-
-						f.write('\t\t<td>\n')
-						f.write('\t\t\t'+ s + '\n')
-						f.write('\t\t</td>\n')
-					f.write('\t</tr>\n')
-			f.write('</table>\n')
-			f.close()
+						if key == 'book':
+							if r[key] == 'open':
+								output +='\t\t<td class="y">\n'
+							elif r[key] == 'held':
+								output +='\t\t<td class="o">\n'
+							elif r[key] == 'sold':
+								output +='\t\t<td class="g">\n'
+							else:
+								output +='\t\t<td>\n'
+						else:
+							output +='\t\t<td>\n'
+						output +='\t\t\t'+ s + '\n'
+						output +='\t\t</td>\n'
+					output +='\t</tr>\n'
+			output +='</tbody></table>\n'
 		else:
-			f = open('./report/book.html','w')
-			f.write("No records to report.")
-			f.close()
-		
+			output = "No records to report."
+
+		template = template.replace('{ORDER_TABLE}',output)
+		template = template.replace('{INFO}',info)
+		f = open('./report/book.html','w')
+		f.write(template)
+		f.close()
 		return
 
 	def get_info(self):
@@ -386,8 +418,10 @@ class bookie:
 		# -automates sells,stop loss, etc...
 		#print "update: checking positions"
 		current_price = self.get_price()
-		print "\tupdate: current price %.3f @ %s"%(current_price,ctime())
-		print self.get_info()
+		account_value = float(self.usds) + float(self.btcs) * current_price
+		print "\tupdate: current price: %.3f  account market value: %.4f @ %s"%(current_price, account_value, ctime())
+
+		self.get_info() #get_info updates the commision rate
 		#first synch the local records...
 		self.record_synch()
 	

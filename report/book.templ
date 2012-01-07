@@ -1,0 +1,167 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>Bitcoin Genetic AI Trade Book Report</title>
+		<!--[if lte IE 8]><script language="javascript" type="text/javascript" src="../excanvas.min.js"></script><![endif]-->
+		<script language="javascript" type="text/javascript" src="jquery.min.js"></script>
+		<script language="javascript" type="text/javascript" src="jquery.dataTables.min.js"></script>
+		<script type="text/javascript" charset="utf-8">
+			$(document).ready(function() {
+			$('#dtable').dataTable({"sScrollY": "800px","bPaginate":false});
+			} );
+		</script>
+
+		<style type="text/css"> 
+
+		#info {
+		font-size:0.8em;
+		position:absolute;
+		top:40px;
+		left:50px;
+		width:800px;
+		}
+
+		#orders {
+		font-size:0.4em;
+		position:absolute;
+		top:100px;
+		left:50px;
+		width:1400px;
+		}
+
+		#placeholder {
+		font-size:0.90em;
+		}
+
+		#placeholder .button {
+		position: absolute;
+		cursor: pointer;
+		}
+
+		#placeholder div.button {
+		font-size:0.90em;
+		color: #000000;
+		background-color: #aa7777;
+		padding: 2px;
+		}
+
+		.message {
+		padding-left: 50px;
+		font-size: smaller;
+		}
+
+		table.imgtbl th 
+		{
+			background:#080808 url('th.png');
+			border-width: 1px;
+			padding: 8px;
+			border-style: solid;
+			border-color: #999999;
+			font-size:0.90em;
+		}
+
+		table.imgtbl tr.odd
+		{
+			background:#080808 url('tr2.png');
+			border-width: 1px;
+			padding: 8px;
+			border-style: solid;
+			border-color: #999999;
+		}
+
+
+		table.imgtbl td.z
+		{
+			background:#080808 url('tr2.png');
+			border-width: 1px;
+			padding: 8px;
+			border-style: solid;
+			border-color: #999999;
+		}
+
+		table.imgtbl td.r 
+		{
+			background:#080808 url('r.png');
+			border-width: 1px;
+			padding: 1px;
+			border-style: solid;
+			border-color: #999999;
+			font-size:0.7em;
+		}
+		table.imgtbl td.y 
+		{
+			background:#080808 url('y.png');
+			border-width: 1px;
+			padding: 1px;
+			border-style: solid;
+			border-color: #999999;
+			font-size:0.7em;
+		}
+		table.imgtbl td.g
+		{
+			background:#080808 url('g.png');
+			border-width: 1px;
+			padding: 1px;
+			border-style: solid;
+			border-color: #999999;
+			font-size:0.7em;
+		}
+		table.imgtbl td.o
+		{
+			background:#080808 url('o.png');
+			border-width: 1px;
+			padding: 1px;
+			border-style: solid;
+			border-color: #999999;
+			font-size:0.7em;
+		}
+		table.imgtbl td.b
+		{
+			background:#000000;
+			border-width: 1px;
+			padding: 1px;
+			border-style: solid;
+			border-color: #999999;
+			font-size:0.7em;
+		}
+
+		body
+		{
+		font-size:1.00em;
+		background-color:#202020;
+		color: #bfbfbf;
+		}
+
+		p
+		{
+		font-size:1.00em;
+		background-color:#080808;
+		color: #bfbfbf;
+		}
+
+		</style>
+
+
+
+
+	</head>
+
+<body>
+<p><b>Bitcoin Genetic AI Trade Book Report</b>
+|| <a href="../">System Monitor</a> || <a href="gene_visualizer.html">Gene Visualizer</a> || Quartile Reports
+: <a href="chart_test_1.html">1</a> | <a href="chart_test_zoom_1.html">1 latest</a>
+| <a href="chart_test_2.html">2</a> | <a href="chart_test_zoom_2.html">2 latest</a>
+| <a href="chart_test_3.html">3</a> | <a href="chart_test_zoom_3.html">3 latest</a>
+| <a href="chart_test_4.html">4</a> | <a href="chart_test_zoom_4.html">4 latest</a>
+</p>
+<div id="info">
+{INFO}
+</div>
+
+<div id="orders">
+{ORDER_TABLE}
+</div>
+
+</body>
+</html>
