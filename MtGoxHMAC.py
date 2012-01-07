@@ -70,6 +70,7 @@ class Client:
 		self.buff = ""
 		self.timeout = 15
 		self.__url_parts = urlparse.urlsplit("https://mtgox.com/api/0/")
+		self.__url_parts_1 = urlparse.urlsplit("https://mtgox.com/api/1/")
 		self.clock_window = time.time()
 		self.clock = time.time()
 		self.query_count = 0
@@ -89,7 +90,7 @@ class Client:
 			time.sleep(self.query_time_slice - tdelta)
 		return
        
-	def perform(self, path, params):
+	def perform(self, path, params,JSON=True,API_VERSION=0):
 		self.throttle()
 		nonce =  str(int(time.time()*1000))
 		if params != None:
@@ -108,36 +109,61 @@ class Client:
 			"Rest-Sign": ahmac
 			}
 
-		url = urlparse.urlunsplit((
-			self.__url_parts.scheme,
-			self.__url_parts.netloc,
-			self.__url_parts.path + path,
-			self.__url_parts.query,
-			self.__url_parts.fragment
-		))	
+		if API_VERSION == 0:
+			url = urlparse.urlunsplit((
+				self.__url_parts.scheme,
+				self.__url_parts.netloc,
+				self.__url_parts.path + path,
+				self.__url_parts.query,
+				self.__url_parts.fragment
+			))
+		else: #assuming API_VERSION 1
+			url = urlparse.urlunsplit((
+				self.__url_parts_1.scheme,
+				self.__url_parts_1.netloc,
+				self.__url_parts_1.path + path,
+				self.__url_parts_1.query,
+				self.__url_parts_1.fragment
+			))
 		
 		req = urllib2.Request(url, post_data, header)
 
 		with closing(urllib2.urlopen(req, post_data)) as res:
-			data = json.load(res)
-
-		if u"error" in data:
-			if data[u"error"] == u"Not logged in.":
-				raise UserError()
+			if JSON == True:
+				data = json.load(res)
 			else:
-				raise ServerError(data[u"error"])
-		else:
-			return data
+				data = res.read()
+		if JSON == True:
+			if u"error" in data:
+				if data[u"error"] == u"Not logged in.":
+					raise UserError()
+				else:
+					raise ServerError(data[u"error"])
+			else:
+				return data
+		return data
 		
 
-	def request(self, path, params):
-		ret = self.perform(path, params)
-		if "error" in ret:
-			raise UserError(ret["error"])
-		else:
-			return ret
+	def request(self, path, params,JSON=True,API_VERSION=0):
+		ret = self.perform(path, params,JSON,API_VERSION)
+		if JSON == True:
+			if "error" in ret:
+				raise UserError(ret["error"])
+			else:
+				return ret
+		return ret
 
 	#public api
+	def get_bid_history(self,OID):
+		params = {"type":'bid',"order":OID}
+		return self.request('generic/private/order/result',params,API_VERSION=1)
+	def get_ask_history(self,OID):
+		params = {"type":'ask',"order":OID}
+		return self.request('generic/private/order/result',params,API_VERSION=1)
+	def get_history_btc(self):
+		return self.request('history_BTC.csv',None,JSON=False)
+	def get_history_usd(self):
+		return self.request('history_USD.csv',None,JSON=False)
 	def get_info(self):
 		return self.request('info.php', None) 
 	def get_ticker(self):
@@ -237,15 +263,19 @@ if __name__ == "__main__":
 
 	print "\ndownloaded examples of the MtGox json format will be stored in the test_data folder."
 	c = Client()
-	b = ppdict(pwdict(c.buy_btc(1.5,0.25),'./test_data/mg_buy.txt'))
-	s = ppdict(pwdict(c.sell_btc(1.0,100.00),'./test_data/mg_sell.txt'))
-	ppdict(pwdict(c.get_info(),'./test_data/mg_info.txt'))
-	ppdict(pwdict(c.get_ticker(),'./test_data/mg_ticker.txt'))
-	ppdict(pwdict(c.get_depth(),'./test_data/mg_depth.txt'))
-	ppdict(pwdict(c.get_balance(),'./test_data/mg_balance.txt'))	
+	#b = ppdict(pwdict(c.buy_btc(1.5,0.25),'./test_data/mg_buy.txt'))
+	#s = ppdict(pwdict(c.sell_btc(1.0,100.00),'./test_data/mg_sell.txt'))
+	#ppdict(pwdict(c.get_info(),'./test_data/mg_info.txt'))
+	#ppdict(pwdict(c.get_ticker(),'./test_data/mg_ticker.txt'))
+	#ppdict(pwdict(c.get_depth(),'./test_data/mg_depth.txt'))
+	#ppdict(pwdict(c.get_balance(),'./test_data/mg_balance.txt'))	
 	ppdict(pwdict(c.get_orders(),'./test_data/mg_orders.txt'))
-	ppdict(pwdict(c.cancel_buy_order(b['oid']),'./test_data/mg_cancel_buy.txt'))
-	ppdict(pwdict(c.cancel_sell_order(s['oid']),'./test_data/mg_cancel_sell.txt'))
+	#ppdict(pwdict(c.cancel_buy_order(b['oid']),'./test_data/mg_cancel_buy.txt'))
+	#ppdict(pwdict(c.cancel_sell_order(s['oid']),'./test_data/mg_cancel_sell.txt'))
+	#ppdict(pwdict(c.get_history_btc(),'./test_data/mg_history_btc.txt'))
+	#ppdict(pwdict(c.get_history_usd(),'./test_data/mg_history_usd.txt'))
+	ppdict(pwdict(c.get_bid_history("b07bd3f4-7e2d-4c04-a7a5-2047cf530aa5"),'./test_data/mg_bid_history.txt'))
+	#ppdict(pwdict(c.get_ask_history(),'./test_data/mg_ask_history.txt'))
 	print "done."
 
 

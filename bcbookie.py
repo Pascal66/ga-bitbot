@@ -209,7 +209,6 @@ class bookie:
 		order = self.client.sell_btc(amount, price)
 		order.update({'commission':commission,'parent_oid':parent_oid,'localtime':time(),'pending_counter':10,'book':'open','commit':price,'target':price,'stop':price,'max_wait':999999,'max_hold':999999})
 		self.add_record(order)		
-		self.save_records()
 		return
 	    except:
 		print "sell: client error..retrying @ " + ctime()
@@ -487,7 +486,7 @@ if __name__ == "__main__":
 			    #maintain underbid orders
 			    u_bids = 10
 			    for u_bid in range(2,u_bids,2):
-				bid_modifier = 1 - (u_bid/300.0)
+				bid_modifier = 1 - (u_bid/250.0)
 			    	b.buy(0.25 * u_bid,t['buy'] * bid_modifier,commit,t['target'],t['stop'],60 * (u_bids + 5),t['stop_age'])
 			    pass
 			else:
