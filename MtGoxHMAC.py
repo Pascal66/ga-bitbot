@@ -1,4 +1,3 @@
-
 """
 MyGoxHMAC v0.01 
 
@@ -22,6 +21,7 @@ This file is part of ga-bitbot.
 
 from contextlib import closing
 from Crypto.Cipher import AES
+import getpass
 import base64
 import hmac
 import hashlib
@@ -45,8 +45,8 @@ class UserError(Exception):
 class Client:
 	def __init__(self, enc_password=""):
 		if enc_password == "":
-			print "MtGoxHMAC: Enter your API key file encryption password:"
-			enc_password = raw_input()
+			print "MtGoxHMAC: Enter your API key file encryption password."
+			enc_password = getpass.getpass()#raw_input()
 		try:	
 			f = open('./config/salt.txt','r')
 			salt = f.read()
@@ -263,19 +263,20 @@ if __name__ == "__main__":
 
 	print "\ndownloaded examples of the MtGox json format will be stored in the test_data folder."
 	c = Client()
-	#b = ppdict(pwdict(c.buy_btc(1.5,0.25),'./test_data/mg_buy.txt'))
-	#s = ppdict(pwdict(c.sell_btc(1.0,100.00),'./test_data/mg_sell.txt'))
-	#ppdict(pwdict(c.get_info(),'./test_data/mg_info.txt'))
-	#ppdict(pwdict(c.get_ticker(),'./test_data/mg_ticker.txt'))
-	#ppdict(pwdict(c.get_depth(),'./test_data/mg_depth.txt'))
-	#ppdict(pwdict(c.get_balance(),'./test_data/mg_balance.txt'))	
+	"""
+	b = ppdict(pwdict(c.buy_btc(1.5,0.25),'./test_data/mg_buy.txt'))
+	s = ppdict(pwdict(c.sell_btc(1.0,100.00),'./test_data/mg_sell.txt'))
+	ppdict(pwdict(c.get_info(),'./test_data/mg_info.txt'))
+	ppdict(pwdict(c.get_ticker(),'./test_data/mg_ticker.txt'))
+	ppdict(pwdict(c.get_depth(),'./test_data/mg_depth.txt'))
+	ppdict(pwdict(c.get_balance(),'./test_data/mg_balance.txt'))	
 	ppdict(pwdict(c.get_orders(),'./test_data/mg_orders.txt'))
-	#ppdict(pwdict(c.cancel_buy_order(b['oid']),'./test_data/mg_cancel_buy.txt'))
-	#ppdict(pwdict(c.cancel_sell_order(s['oid']),'./test_data/mg_cancel_sell.txt'))
-	#ppdict(pwdict(c.get_history_btc(),'./test_data/mg_history_btc.txt'))
-	#ppdict(pwdict(c.get_history_usd(),'./test_data/mg_history_usd.txt'))
-	ppdict(pwdict(c.get_bid_history("b07bd3f4-7e2d-4c04-a7a5-2047cf530aa5"),'./test_data/mg_bid_history.txt'))
-	#ppdict(pwdict(c.get_ask_history(),'./test_data/mg_ask_history.txt'))
+	ppdict(pwdict(c.cancel_buy_order(b['oid']),'./test_data/mg_cancel_buy.txt'))
+	ppdict(pwdict(c.cancel_sell_order(s['oid']),'./test_data/mg_cancel_sell.txt'))
+	ppdict(pwdict(c.get_history_btc(),'./test_data/mg_history_btc.txt'))
+	ppdict(pwdict(c.get_history_usd(),'./test_data/mg_history_usd.txt'))
+	ppdict(pwdict(c.get_bid_history(b['oid']),'./test_data/mg_bid_history.txt'))
+	ppdict(pwdict(c.get_ask_history(s['oid']),'./test_data/mg_ask_history.txt'))
 	print "done."
-
+	"""
 
