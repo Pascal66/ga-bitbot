@@ -78,7 +78,7 @@ class bookie:
 
 		#dump the records into a table structure
 		if len(self.records) > 0:
-			export = sorted(self.records, key=itemgetter('date'),reverse=True)
+			export = sorted(self.records, key=itemgetter('priority'),reverse=True)
 			
 			output = '<table border="1" id="dtable" class="imgtbl">\n'
 			#write the header
@@ -525,7 +525,17 @@ if __name__ == "__main__":
 			"main: Submitting GA Order: "
 
 			t = json.loads(server.get_target())
-			if monitor_mode == False:
+
+			#bug fix for issue #12 - verify target order returned from gene server
+			target_order_validated = False
+			if t.has_key('target') and t.has_key('buy') and t.has_key('stop') and t.has_key('stop_age'):
+				if type(t['target']) == float and type(t['buy']) == float:
+					if type(t['stop']) == float and type(t['stop_age']) == float:
+						target_order_validated = True
+					else:
+						print "main: warning - ignoring invalid target order"
+
+			if monitor_mode == False and target_order_validated == True: 
 				commit = ((t['target'] - t['buy']) * 0.8) + t['buy'] #commit sell order at 80% to target
 				if t['buy'] > 1 and t['buy'] < 20:
 					b.buy(0.5,t['buy'],commit,t['target'],t['stop'],60 * 5,t['stop_age'])

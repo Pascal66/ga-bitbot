@@ -55,7 +55,13 @@ f.close()
 print "Processing input..."
 one_min = []
 accum_r = []
-last_t = d[0].split(',')[0]
+#exception handling to address issue #11 - unhandled exception when download or input file has no data
+try:
+	last_t = d[0].split(',')[0]
+except:
+	print "No new data to process"
+	sys.exit()
+
 last_m = ctime(int(last_t)).split(':')[1]
 for r in d:
 	sr = r.replace('\n','').split(',')
