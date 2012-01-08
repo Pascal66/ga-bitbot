@@ -54,6 +54,7 @@ class bookie:
 		self.orders = []
 		self.records = []
 		self.balance = 0
+		self.balance_committed = 0
 		self.usds = 0
 		self.btcs = 0
 		self.btc_price = 0
@@ -273,7 +274,7 @@ class bookie:
 
 		#check available funds
 		cost = qty * buy_price
-		if self.funds() > cost and qty >= 0.01:
+		if (self.funds() - self.balance_committed) > cost and qty >= 0.01:
 			last_btc_balance = self.btcs #used for verifying off book orders
 			#make sure the order is lower than the current price
 			if buy_price > self.btc_price:
@@ -341,7 +342,7 @@ class bookie:
 		print "-"*80
 		#print "record_synch: synching records:"
 		for r in self.records:
-			if r['book'] == "open":
+			if r['book'].find("open") >= 0:
 				found = 0
 				#print "record_synch: searching for OID:",r['oid']
 				for o in self.orders:
@@ -350,6 +351,7 @@ class bookie:
 						print "\trecord_synch: OID:",r['oid'], " active"
 						#update with the current order status
 						r['status'] = o['status']
+						r['real_status'] = o['real_status']
 						r.update({'amount_remaining':o['amount']})				
 
 				if found == 0:
@@ -369,19 +371,26 @@ class bookie:
 							r.update({'trade_id': ",".join(trade_ids)})
 						print "\t\trecord_synch: OID:",r['oid'], " tag as sold"
 					if r['type'] == 2:
-						if r['status'] == 1:
-							r['book'] = "held"
-							try:
-								history = self.client.get_bid_history(r['oid'])
-							except:
-								pass #OID not found
-							else:
-								trade_ids = []
-								if history['result'] == 'success':
-									for trade in history['return']['trades']:
-										trade_ids.append(trade['trade_id'])
+						#check to see if any trades have been completed
+						try:
+							history = self.client.get_bid_history(r['oid'])
+						except:
+							pass #OID not found
+						else:
+							trade_ids = []
+							if history['result'] == 'success':
+								for trade in history['return']['trades']:
+									trade_ids.append(trade['trade_id'])
+							if len(trade_ids) > 0:
 								r.update({'trade_id': ",".join(trade_ids)})
+						if r['status'] == 1 and r.has_key('trade_id'):
+							r['book'] = "held"
 							print "\t\trecord_synch: OID:",r['oid'], " tag as held"
+						elif r['status'] == 2 and r.has_key('trade_id'):
+							#the order jumped states between updates from not enough funds to completed
+							r['book'] = "held"
+							print "\t\trecord_synch: OID:",r['oid'], " tag as held"
+						#these last two states should never be reached:						
 						elif r['status'] == 2 and r['real_status'] == "pending":
 							print "\t\trecord_synch: OID:",r['oid'], " remaining open (real_status:pending)"
 						else:
@@ -405,9 +414,6 @@ class bookie:
 		
 		if error_found > 0:
 			print "record_synch: order error(s) found and canceled"
-		else:
-			#print "record_synch: no order errors found"
-			pass
 	   
 		self.save_records()
 		self.report()
@@ -424,7 +430,7 @@ class bookie:
 		self.get_info() #get_info updates the commision rate
 		#first synch the local records...
 		self.record_synch()
-	
+		self.balance_committed = 0
 		print "-" * 80
 		print "checking open orders"
 		print "-" * 80
@@ -435,6 +441,7 @@ class bookie:
 					print "\tupdate: OID:",r['oid'], " sell order active"
 					pass	#sell orders stand until completed.
 				elif r['type'] == 2: #buy
+					self.balance_committed += float(r['price']) * float(r['amount'])
 					dt = time() - r['localtime']
 					print "\tupdate: OID:",r['oid'], " buy order active @",r['price']," - time left (seconds):","%.0f"%(r['max_wait'] - dt)
 					#kill any buy orders where there are not enough funds
@@ -530,10 +537,11 @@ if __name__ == "__main__":
 			target_order_validated = False
 			if t.has_key('target') and t.has_key('buy') and t.has_key('stop') and t.has_key('stop_age'):
 				if type(t['target']) == float and type(t['buy']) == float:
-					if type(t['stop']) == float and type(t['stop_age']) == float:
+					if type(t['stop']) == float and type(t['stop_age']) == int:
 						target_order_validated = True
 					else:
-						print "main: warning - ignoring invalid target order"
+						print "main: warning - ignoring invalid target order:"
+						print str(t)
 
 			if monitor_mode == False and target_order_validated == True: 
 				commit = ((t['target'] - t['buy']) * 0.8) + t['buy'] #commit sell order at 80% to target
