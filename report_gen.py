@@ -120,7 +120,7 @@ while 1:
 
 		print "_" * 40
 		if current_quartile == quartile:
-			print "Quartile:",quartile, "(%.4f)"%ag['score'],"+"
+			print "Quartile:",quartile, "(%.4f)"%ag['score'],"+active"
 		else:
 			print "Quartile:",quartile, "(%.4f)"%ag['score']
 
@@ -134,24 +134,32 @@ while 1:
 
 			# Calc the next buy trigger point
 			if len(te.positions) > 0:
-				target = te.input_log[-1][1] - (abs(((te.macd_buy_trip - te.macd_pct_log[-1][1]) / 100.0) * te.input_log[-1][1]) * 2.0)
+				#testing
+				print "Inverse MACD Result: ",te.inverse_macd()
+
+				#target = te.input_log[-1][1] - (abs(((te.macd_buy_trip - te.macd_pct_log[-1][1]) / 100.0) * te.input_log[-1][1]) * 2.0)
+				#print "Simple Calculation Result: ",target
+				
+				#DEBUG : use the inverse MACD
+				target = te.inverse_macd()
+
 				if target > te.input_log[-1][1]:
 					target = te.input_log[-1][1]
 
-				#first check to see if the last price triggered a buy:
+				#first check to see if the tested input triggered a buy:
 				if te.positions[-1]['buy_period'] == len(te.input_log) - 1:
 					p = te.positions[-1]
 					target = p['buy']
 				else:
 					print "Last buy order was", len(te.input_log) - te.positions[-1]['buy_period'],"periods ago."
 					#if not try to calculate the trigger point to get the buy orders in early...
-					print "Trying to trigger with: ",target
+					#print "Trying to trigger with: ",target
 					print "Score: ",te.score()
 					st = input[-1][0] + 2000
 					te.input(st,target)
 					p = te.positions[-1].copy()
 					if p['buy'] != target:
-						print "Order not triggered @",target
+						#print "Order not triggered @",target
 						p['buy'] = 0.00
 						p['target'] = 0.00
 
@@ -159,6 +167,7 @@ while 1:
 				print "creating charts..."
 				te.chart("./report/chart.templ","./report/chart_test_%s.html"%str(quartile))
 				te.chart("./report/chart.templ","./report/chart_test_zoom_%s.html"%str(quartile),60*48)
+				te.chart("./report/chart.templ","./report/chart_test_now_%s.html"%str(quartile),60* 4)
 				#print "Evaluating target price"
 				if current_quartile == quartile:
 					if ((target >= p['buy']) or (abs(target - p['buy']) < 0.01)) and p['buy'] != 0: #submit the order at or below target
@@ -166,7 +175,7 @@ while 1:
 						p['buy'] = float("%.3f"%(p['buy'] - 0.01))
 						p['target'] = float("%.3f"%p['target'])
 						p.update({'stop_age':(60 * te.stop_age)})
-						if float("%.3f"%((te.wins / float(te.wins + te.loss)) * 100)) > 85.0:
+						if float("%.3f"%((te.wins / float(te.wins + te.loss)) * 100)) > 90.0:
 							#only submit an order if the win/loss ratio is greater than x%
 							print "sending target buy order to server @ $" + str(p['buy'])
 							server.put_target(json.dumps(p))
@@ -182,7 +191,7 @@ while 1:
 						print "Win Ratio :","%.3f"%((te.wins / float(te.wins + te.loss)) * 100),"%"
 						print "-" * 40
 					else:
-						print "Target out of range, no order set."
+						print "Trigger criteria not met, no order set."
 						print "Buy	   :$", p['buy']
 						print "Target	:$",p['target']
 						print "Input Target :$",target

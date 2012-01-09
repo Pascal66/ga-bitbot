@@ -28,7 +28,7 @@ print "ga-bitbot system launcher v%s"%__appversion__
 WATCHDOG_TIMEOUT = 60 * 15 #seconds
 MONITORED_PROCESS_LAUNCH_TIMEOUT = 20 #seconds
 
-monitored_launch = ['pypy gts.py 1 n','pypy gts.py 2 n','pypy gts.py 3 n','pypy gts.py 4 n','pypy gts.py 1 y','pypy gts.py 2 y','pypy gts.py 3 y','pypy gts.py 4 y']
+monitored_launch = ['pypy gts.py all y','pypy gts.py all n','pypy gts.py 1 n','pypy gts.py 2 n','pypy gts.py 3 n','pypy gts.py 4 n','pypy gts.py 1 y','pypy gts.py 2 y','pypy gts.py 3 y','pypy gts.py 4 y']
 unmonitored_launch = ['python wc_server.py','python report_gen.py']
 
 monitor = {}	#variables to track monitored/unmonitored processes

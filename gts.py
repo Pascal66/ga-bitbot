@@ -58,6 +58,7 @@ if __name__ == "__main__":
 	load_throttle = 1 #go easy on cpu usage
 	load_throttle_sleep_interval = 0.05#seconds
 	calibrate = 1	#set to one to adjust the population size to maintain a one min test cycle
+	quartile_cycle = False
 
 	def load():
 		#open the history file
@@ -113,11 +114,15 @@ if __name__ == "__main__":
 			
 	
 	#which quartile group to test
-	while not (quartile in ['1','2','3','4']):
+	while not (quartile in ['1','2','3','4','all']):
 		print "Which quartile group to test? (1,2,3,4):"
 		quartile = raw_input()
-	quartile = int(quartile)
-    
+	if quartile != 'all':	
+		quartile = int(quartile)
+	else:
+		quartile = 1
+		quartile_cycle = True
+    		update_all_scores = True
 
 	#bootstrap the population with the winners available from the gene_pool server
 	while not(bs == 'y' or bs == 'n'):
@@ -125,7 +130,7 @@ if __name__ == "__main__":
 		bs = raw_input()
 	if bs == 'y':
 		bob_simulator = True
-		update_all_scores = True	#on the first pass only, bob clients need to resubmit updated scores for every gene 
+		update_all_scores = False
 		g.local_optima_trigger = 10
 		bootstrap_bobs = json.loads(server.get_bobs(quartile))
 		bootstrap_all = json.loads(server.get_all(quartile))
@@ -174,8 +179,17 @@ if __name__ == "__main__":
 		loop_count += 1
 		if load_throttle == 1:
 			time.sleep(load_throttle_sleep_interval)
-		    
+
+		if loop_count%100 == 0:
+			#periodicaly reset the watchdog monitor
+			server.pid_alive(g.id)
+
 		if loop_count > g.pool_size:
+			if quartile_cycle == True and bob_simulator == True:
+				#force a state jump to load the next quartile to retest the genes
+				#in this mode the only function of the client is to cycle through the quartiles to retest existing genes
+				g.local_optima_reached = True 
+
 			update_all_scores = False	#on the first pass only, bob clients need to resubmit updated scores for every gene 
 			loop_count = 0
 			#reset the watchdog monitor
@@ -196,20 +210,33 @@ if __name__ == "__main__":
 			performance_metrics = " ".join(map(str,performance_metrics))
 			print performance_metrics
 			server.pid_msg(g.id,performance_metrics)
+			
+		if g.local_optima_reached:	
+			test_count = 0
+
 			#load the latest trade data
 			#print "Loading the lastest trade data..."
 			input = load()
 			#preprocess input data
 			te.classify_market(input)
-			#print g.local_optima_reached
-		if g.local_optima_reached:	
-			max_score = -10000
-			test_count = 0
 
-			if max_gene != None:
+			if quartile_cycle == True and bob_simulator == True:
+				#jump to the next quartile and skip the bob submission
+				update_all_scores = True
+				quartile += 1
+				if quartile > 4:
+					quartile = 1
+
+			elif max_gene != None:
 				print "--\tSubmit BOB for id:%s to server (%.2f)"%(str(max_gene['id']),max_gene['score'])
 				server.put_bob(json.dumps(max_gene),quartile)
-				max_gene = None
+				if quartile_cycle == True:
+					#if not in bob simulator mode but cycling is enabled then 
+					#the client will cycle through the quartiles as local optimas are found
+					#jump to the next quartile
+					quartile += 1
+					if quartile > 4:
+						quartile = 1
 			else:
 				if max_score > -10000:
 					print "**WARNING** MAX_GENE is gone.: ID",max_score_id
@@ -221,13 +248,11 @@ if __name__ == "__main__":
 					print "HALTED."
 					sys.exit()
 
+			max_gene = None #clear the max gene
+			max_score = -10000 #reset the high score
 
 			if bob_simulator:
-				#after a local optima is reached, sleep for some time to allow extra processing power to
-				#the other clients so they can find potentialy better genes
-				#print "going to sleep..."
-				#time.sleep(60*15)
-				update_all_scores = True	#on the first pass only, bob clients need to resubmit updated scores for every gene 
+				#update_all_scores = True	#on the first pass only, bob clients need to resubmit updated scores for every gene 
 				bootstrap_bobs = json.loads(server.get_bobs(quartile))
 			    	bootstrap_all = json.loads(server.get_all(quartile))
 				g.pool_size = len(g.pool)
@@ -235,8 +260,14 @@ if __name__ == "__main__":
 					g.seed()
 					g.pool = []		
 					g.insert_genedict_list(bootstrap_bobs)
-					g.insert_genedict_list(bootstrap_all)	
-					g.reset_scores()			
+					g.insert_genedict_list(bootstrap_all)
+					if quartile_cycle == True:
+						#reset the scores for retesting
+						g.reset_scores()
+					else:
+						#mate the genes before testing
+						g.next_gen() 
+					
 				else: #if no BOBS or high scores..seed with a new population
 					#print "no BOBs or high scores available...seeding new pool."
 					g.seed()
@@ -293,7 +324,7 @@ if __name__ == "__main__":
 
 			#if a new high score is found submit the gene to the server
 			if score > max_score:
-				print "--\tSubmit high score for id:%s to server (%.2f)"%(str(ag['id']),score)
+				print "--\tSubmit high score for quartile:%s id:%s to server (%.5f)"%(str(quartile),str(ag['id']),score)
 				max_score = score
 				max_score_id = ag['id']
 				max_gene = g.get_by_id(max_score_id)
@@ -302,7 +333,7 @@ if __name__ == "__main__":
 				else:
 					print "MAX_GENE is None!!"
 			elif update_all_scores == True:
-				print "--\tUpdating score for id:%s to server (%.2f)"%(str(ag['id']),score)
+				print "--\tUpdating score for quartile:%s id:%s to server (%.5f)"%(str(quartile),str(ag['id']),score)
 				agene = g.get_by_id(ag['id'])
 				if agene != None:
 					server.put(json.dumps(agene),quartile)

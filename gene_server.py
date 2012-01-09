@@ -42,7 +42,7 @@ from SimpleXMLRPCServer import SimpleXMLRPCRequestHandler
 from operator import itemgetter, attrgetter
 
 quit = 0
-MAX_PID_MESSAGE_BUFFER_SIZE = 16384
+MAX_PID_MESSAGE_BUFFER_SIZE = 255
 
 max_len = 600
 max_bobs = 1000

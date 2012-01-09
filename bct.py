@@ -76,6 +76,7 @@ class trade_engine:
 		self.sell_log = []
 		self.stop_log = []
 		self.net_worth_log = []
+		self.trigger_log = []
 		self.balance = 1000			#account balance
 		self.opening_balance = self.balance	#record the starting balance
 		self.score_balance = 0			#cumlative score
@@ -272,10 +273,10 @@ class trade_engine:
 			final_score_balance *= self.markup * len(self.positions)
 
 			#fine tune the score
-			final_score_balance += self.buy_wait / 1000.0
-			final_score_balance += self.buy_wait_after_stop_loss / 1000.0
+			final_score_balance -= self.buy_wait / 1000.0
+			final_score_balance -= self.buy_wait_after_stop_loss / 1000.0
 			final_score_balance -= (self.stop_loss * 1000)
-			final_score_balance += (self.wls / 10000.0)
+			final_score_balance += (self.wls / 1000.0)
 			final_score_balance -= (self.stop_age / 1000.0)
 			final_score_balance += self.shares
 
@@ -388,6 +389,7 @@ class trade_engine:
 		#add the balance to the net worth
 		current_net_worth += self.balance
 		if not self.score_only:
+			self.trigger_log.append([self.time,self.inverse_macd()])
 			self.net_worth_log.append([self.time,current_net_worth])
 			if sell > 0:
 				self.sell_log.append([self.time,sell])
@@ -395,6 +397,25 @@ class trade_engine:
 				self.stop_log.append([self.time,stop])
 		return
 	
+	def inverse_macd(self):
+		#calculates the inverse macd
+		#wolfram alpha used to transform the macd equation to solve for the trigger price:
+		price = 0.0
+		try:
+			price = -1.0 * (100.0 *(self.wls+1)*(self.wll-1)*self.ema_long + (self.wll+1)*self.ema_short*(self.wls * (self.macd_buy_trip - 100) + self.macd_buy_trip + 100)) / (200 * (self.wls - self.wll))
+			price -= 0.01 #subtract a penny to satisfy the trigger criteria
+		except:
+			price = 0.0
+		if price < 0.0:
+			price = 0.0
+		#clamp the max value
+		if price > self.history[0]:
+			price = self.history[0]
+		#clamp the min value (70% of ema_long)
+		if price < self.ema_long * 0.7:
+			price = self.ema_long * 0.7
+		return price
+
 	def macd(self):
 		#wait until there is enough data to fill the moving windows
 		if len(self.history) == self.wll:
@@ -613,6 +634,7 @@ class trade_engine:
 		macd_pct = str(self.compress_log(self.macd_pct_log[periods:])).replace('L','')
 		input = str(self.compress_log(self.input_log[periods:])).replace('L','')
 		net_worth = str(self.compress_log(self.net_worth_log[periods:],lossless_compression = True)).replace('L','')
+		trigger_price = str(self.compress_log(self.trigger_log[periods:])).replace('L','')
 		volatility_quartile = str(self.compress_log(self.market_class[periods:],lossless_compression = True)).replace('L','')
 
 		buy = str([])
@@ -650,6 +672,7 @@ class trade_engine:
 		tmpl = tmpl.replace("{SELL}",sell)
 		tmpl = tmpl.replace("{STOP}",stop)
 		tmpl = tmpl.replace("{NET_WORTH}",net_worth)
+		tmpl = tmpl.replace("{TRIGGER_PRICE}",trigger_price)
 		tmpl = tmpl.replace("{METRICS_REPORT}",self.metrics_report().replace('\n','<BR>'))
 		tmpl = tmpl.replace("{ORDERS_REPORT}",self.order_history)
 		tmpl = tmpl.replace("{VOLATILITY_QUARTILE}",volatility_quartile)

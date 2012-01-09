@@ -76,7 +76,7 @@ class bookie:
 		account_value = float(self.usds) + float(self.btcs) * float(self.btc_price)
 		info = "Last Report Update: %s <br> Current Market Price: $%.3f  || Total Account Value: $%.4f || "%(ctime(),self.btc_price, account_value)
 		info += "Holdings:  BTC: %.3f  USD: $%.3f<br>"%(float(self.btcs), float(self.usds))
-		info += "Funds Committed: $%.3f || Funds Available: $%.3f<br>"%(self.balance_committed, float(self.usds) - self.balance_committed)
+		info += "Funds Committed: $%.3f || Funds Available: $%.3f<br>"%(self.balance_committed, self.usds - self.balance_committed)
 
 		#dump the records into a table structure
 		if len(self.records) > 0:
@@ -220,8 +220,8 @@ class bookie:
 		while 1:
 			try:
 				self.balance = self.client.get_balance()
-				self.usds = self.balance['usds']
-				self.btcs = self.balance['btcs']
+				self.usds = float(self.balance['usds'])
+				self.btcs = float(self.balance['btcs'])
 				return self.usds
 			except:
 				print "funds: client error..retrying @ " + ctime()
@@ -315,7 +315,7 @@ class bookie:
 			else:
 				order.update({'commission':self.client_commission,'parent_oid':'none','localtime':time(),'pending_counter':10,'book':'open','commit':commit_price,'target':target_price,'stop':stop_loss,'max_wait':max_wait,'max_hold':max_hold})
 				self.add_record(order)
-				print "buy: order confirmed"
+				print "buy: order confirmed : %s BTC @ $%s"%(str(order['amount']),str(order['price']))
 				return True
 		
 		else:
