@@ -7,8 +7,29 @@
 		<script language="javascript" type="text/javascript" src="jquery.min.js"></script>
 		<script language="javascript" type="text/javascript" src="jquery.dataTables.min.js"></script>
 		<script type="text/javascript" charset="utf-8">
+			var dt;
 			$(document).ready(function() {
-			$('#dtable').dataTable({"sScrollY": "800px","bPaginate":false});
+				dt = $('#dtable').dataTable({
+					"sScrollY": "600px",
+					"bPaginate":false,
+					"bProcessing": true,
+				});
+
+
+				/* Add events */
+				$('#dtable tbody tr').live('click', function () {
+					var tab = RegExp("\\t", "g");
+					var nTds = $('td', this);
+					var sOID = $(nTds[13]).text();
+					/* Filter any whitespace chars */
+					dt.fnFilter( sOID.replace(/^\s+|\s+$/g, ''));
+				});
+
+
+				$('#dtable_filter').click(function(){
+					$('.dataTables_filter :input').val('');
+					dt.fnFilter('');
+				});
 			} );
 		</script>
 
@@ -17,7 +38,7 @@
 		#info {
 		font-size:0.8em;
 		position:absolute;
-		top:40px;
+		top:60px;
 		left:50px;
 		width:800px;
 		}
@@ -25,7 +46,7 @@
 		#orders {
 		font-size:0.4em;
 		position:absolute;
-		top:100px;
+		top:140px;
 		left:50px;
 		width:1400px;
 		}

@@ -74,8 +74,9 @@ class bookie:
 		f.close()
 		
 		account_value = float(self.usds) + float(self.btcs) * float(self.btc_price)
-		info = "Current Market Price: $%.3f   Account Market Value: $%.4f   @ %s<br>"%(self.btc_price, account_value, ctime())
+		info = "Last Report Update: %s <br> Current Market Price: $%.3f  || Total Account Value: $%.4f || "%(ctime(),self.btc_price, account_value)
 		info += "Holdings:  BTC: %.3f  USD: $%.3f<br>"%(float(self.btcs), float(self.usds))
+		info += "Funds Committed: $%.3f || Funds Available: $%.3f<br>"%(self.balance_committed, float(self.usds) - self.balance_committed)
 
 		#dump the records into a table structure
 		if len(self.records) > 0:
