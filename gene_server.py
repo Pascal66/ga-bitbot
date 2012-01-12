@@ -43,9 +43,11 @@ from operator import itemgetter, attrgetter
 
 quit = 0
 MAX_PID_MESSAGE_BUFFER_SIZE = 255
-
+AUTO_BACKUP_AFTER_N_SAVES = 60
 max_len = 600
 max_bobs = 1000
+
+g_save_counter = 0
 g_d = [[],[],[],[]]
 g_trgt = json.dumps({'buy':0})
 
@@ -233,10 +235,23 @@ def shutdown():
 	return 1
 
 def save_db():
+	global AUTO_BACKUP_AFTER_N_SAVES
+	global g_save_counter
+	g_save_counter += 1
+	if g_save_counter == AUTO_BACKUP_AFTER_N_SAVES:
+		backup = True
+	else:
+		backup = False
+
 	for quartile in [1,2,3,4]:
 		gd = {'bobs':[],'high_scores':[]}
 		gd['high_scores'] = json.loads(get_all_genes(quartile))
 		gd['bobs'] = json.loads(get_bobs(quartile))
+		if backup:
+			f = open('./config/gene_server_db_backup_quartile' + str(quartile) + '.json.bak','w')
+			f.write(json.dumps(gd))
+			f.close()
+
 		f = open('./config/gene_server_db_backup_quartile' + str(quartile) + '.json','w')
 		f.write(json.dumps(gd))
 		f.close()
@@ -259,6 +274,23 @@ def reload_db():
 		except:
 			reload_error = True
 			pass
+
+	#try to restore from backup on error
+	if reload_error == True:
+		reload_error = False
+		for quartile in [1,2,3,4]:
+			try:
+				f = open('./config/gene_server_db_backup_quartile' + str(quartile) + '.json.bak','r')
+				d = json.loads(f.read())
+				f.close()
+
+				for g in d['bobs']:
+					put_bob(json.dumps(g),quartile)
+				for g in d['high_scores']:
+					put_gene(json.dumps(g),quartile)
+			except:
+				reload_error = True
+				pass
 
 	if reload_error == True:
 		return "NOK"
@@ -286,6 +318,7 @@ server.register_function(get_bobs,'get_bobs')
 server.register_function(pid_alive,'pid_alive')
 server.register_function(pid_check,'pid_check')
 server.register_function(pid_remove,'pid_remove')
+server.register_function(pid_remove,'pid_exit')
 server.register_function(pid_msg,'pid_msg')
 server.register_function(get_pids,'get_pids')
 server.register_function(pid_list,'pid_list')

@@ -105,7 +105,7 @@ def index():
 	output += "-"*80 + '<br>'
 	for quartile in [1,2,3,4]:
 		try:
-			ag = json.loads(server.get(60*20,quartile))
+			ag = json.loads(server.get(60*60*24,quartile))
 		except:
 			ag = {"Gene server didn't return a dictionary.":"Gene server didn't return a dictionary."}
 		output += "-"*80 + '<br>'

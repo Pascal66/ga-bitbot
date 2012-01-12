@@ -56,7 +56,7 @@ if __name__ == "__main__":
 
 	max_length = 60 * 24 * 60
 	load_throttle = 1 #go easy on cpu usage
-	load_throttle_sleep_interval = 0.05#seconds
+	load_throttle_sleep_interval = 0.10#seconds
 	calibrate = 1	#set to one to adjust the population size to maintain a one min test cycle
 	quartile_cycle = False
 
@@ -103,15 +103,21 @@ if __name__ == "__main__":
 	quartile = ''
 	bs = ''
 	verbose = False
+	run_once = False
 	print sys.argv
 	if len(sys.argv) >= 3:
 		# Convert the two arguments from strings into numbers
 		quartile = sys.argv[1]
 		bs = sys.argv[2]
-		if len(sys.argv) == 4:
-			if sys.argv[3] == 'v':
-				verbose = True
-			
+		if len(sys.argv) > 3:
+			for i in range(3,len(sys.argv)):
+				if sys.argv[i] == 'v':
+					verbose = True
+				if sys.argv[i] == 'run_once':
+					#use with gal.py to auto reset (to address pypy memory leaks)
+					#exit after first local optima found
+					#or in the case of 'all' quartiles being tested, reset after once cycle through the quartiles
+					run_once = True	
 	
 	#which quartile group to test
 	while not (quartile in ['1','2','3','4','all']):
@@ -137,11 +143,17 @@ if __name__ == "__main__":
 		print len(bootstrap_all)
 		if (type(bootstrap_bobs) == type([])) and (type(bootstrap_all) == type([])):
 			g.seed()
-			g.pool = []		
+			if len(bootstrap_all) > 100:
+				g.pool = []		
 			g.insert_genedict_list(bootstrap_bobs)
 			g.insert_genedict_list(bootstrap_all)
 			g.pool_size = len(g.pool)
-			g.reset_scores()
+			if quartile_cycle == True:
+				#reset the scores for retesting
+				g.reset_scores()
+			else:
+				#mate the genes before testing
+				g.next_gen() 
 		else: #if no BOBS or high scores..seed with a new population
 			print "no BOBs or high scores available...seeding new pool."
 			g.seed()
@@ -180,7 +192,7 @@ if __name__ == "__main__":
 		if load_throttle == 1:
 			time.sleep(load_throttle_sleep_interval)
 
-		if loop_count%100 == 0:
+		if loop_count%20 == 0:
 			#periodicaly reset the watchdog monitor
 			server.pid_alive(g.id)
 
@@ -226,6 +238,11 @@ if __name__ == "__main__":
 				quartile += 1
 				if quartile > 4:
 					quartile = 1
+					if run_once:
+						print "Run Once Done."
+						server.pid_exit(g.id)
+						sys.exit()
+			
 
 			elif max_gene != None:
 				print "--\tSubmit BOB for id:%s to server (%.2f)"%(str(max_gene['id']),max_gene['score'])
@@ -237,6 +254,10 @@ if __name__ == "__main__":
 					quartile += 1
 					if quartile > 4:
 						quartile = 1
+						if run_once:
+							print "Run Once Done."
+							server.pid_exit(g.id)
+							sys.exit()
 			else:
 				if max_score > -10000:
 					print "**WARNING** MAX_GENE is gone.: ID",max_score_id
@@ -250,6 +271,11 @@ if __name__ == "__main__":
 
 			max_gene = None #clear the max gene
 			max_score = -10000 #reset the high score
+
+			if quartile_cycle == False and run_once:
+				print "Run Once Done."
+				server.pid_exit(g.id)
+				sys.exit()
 
 			if bob_simulator:
 				#update_all_scores = True	#on the first pass only, bob clients need to resubmit updated scores for every gene 

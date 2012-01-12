@@ -19,9 +19,17 @@
 
 				/* Add events */
 				$('#dtable tbody tr').live('click', function () {
-					var tab = RegExp("\\t", "g");
 					var nTds = $('td', this);
-					var sOID = $(nTds[13]).text();
+					var sType = $(nTds[24]).text();
+					sType = sType.replace(/^\s+|\s+$/g, '');
+					if (sType == 'bid')
+					{
+						var sOID = $(nTds[13]).text();
+					}
+					else
+					{
+						var sOID = $(nTds[14]).text();
+					}
 					/* Filter any whitespace chars */
 					dt.fnFilter( sOID.replace(/^\s+|\s+$/g, ''));
 				});
@@ -45,9 +53,9 @@
 		}
 
 		#orders {
-		font-size:0.4em;
+		font-size:0.6em;
 		position:absolute;
-		top:140px;
+		top:120px;
 		left:50px;
 		width:1400px;
 		}
@@ -182,6 +190,17 @@
 </div>
 
 <div id="orders">
+Click on any column name to sort. Click again to reverse the sort. The default sort is 'priority' in descending order.<br>
+Click on any record to filter by the order id (used to match bid/ask orders). Clear the filter by clicking the search textbox.<br>
+<br><br>
+The state of the order can be found in the 'book' column.<br>
+ * Open - Live bid or ask order on MtGox<br>
+ * Held - The buy (bid) order has been filled. A sell (ask) order is pending until the commit price is met<br>
+ * Closed:Commit - Commit price has been met for the filled buy (bid) order. A sell (ask) order has been issued.<br>
+ * Sold - The ask order has been filled. Commissions are not reported seperatly reflected in the <br>
+<br>
+Commissions are not reported separately. However, sell (ask) order amounts are adjusted to take the then current commission rate into account.<br>
+The trade_id (tid) column can be used to link the API orders, reported here, to the account history available for download from MtGox.<br>
 {ORDER_TABLE}
 </div>
 
