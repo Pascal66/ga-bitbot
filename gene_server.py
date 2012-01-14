@@ -239,6 +239,7 @@ def save_db():
 	global g_save_counter
 	g_save_counter += 1
 	if g_save_counter == AUTO_BACKUP_AFTER_N_SAVES:
+		g_save_counter = 0
 		backup = True
 	else:
 		backup = False

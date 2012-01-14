@@ -389,7 +389,8 @@ class trade_engine:
 		#add the balance to the net worth
 		current_net_worth += self.balance
 		if not self.score_only:
-			self.trigger_log.append([self.time,self.inverse_macd()])
+			if self.classified_market_data == False or self.quartile == self.market_class[self.period][1]:
+				self.trigger_log.append([self.time,self.inverse_macd()])
 			self.net_worth_log.append([self.time,current_net_worth])
 			if sell > 0:
 				self.sell_log.append([self.time,sell])
@@ -660,6 +661,10 @@ class trade_engine:
 			for i in xrange(len(self.stop_log)):
 				if self.stop_log[i][0] >= time_stamp:
 					stop = str(self.stop_log[i:]).replace('L','')
+					break
+			for i in xrange(len(self.trigger_log)):
+				if self.trigger_log[i][0] >= time_stamp:
+					trigger_price = str(self.trigger_log[i:]).replace('L','')
 					break
 
 		#print "chart: filling the template"

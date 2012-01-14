@@ -75,6 +75,8 @@ def load():
 
 
 while 1:
+	skip_sleep_delay = False #default to sleep delay mode between cycles
+				#will be set to true (and skip the sleep delay) if target prices are found.
 	print "_" * 80
 	print time.ctime()  
 	#load the data set
@@ -82,7 +84,7 @@ while 1:
 	
 	buys = []
 	targets = []
-	for quartile in [1,2,3,4]:
+	for quartile in [4,3,2,1]:
 		#create the trade engine	
 		te = trade_engine()
 		#get the high score gene from the gene server
@@ -179,6 +181,7 @@ while 1:
 							#only submit an order if the win/loss ratio is greater than x%
 							print "sending target buy order to server @ $" + str(p['buy'])
 							server.put_target(json.dumps(p))
+							skip_sleep_delay = True #if target buy orders are active skip the sleep delay
 						else:
 							print "underperforming trade strategy, order not submitted"
 							p['buy'] = 0.00
@@ -239,9 +242,12 @@ while 1:
 	f.close()
 
 
-
-	print "sleeping..."
-	print "_" * 80
-	print "\n"
-	time.sleep(60) #generate a report every n seconds
-	
+	if skip_sleep_delay == False:
+		print "sleeping..."
+		print "_" * 80
+		print "\n"
+		time.sleep(90) #generate a report every n seconds
+	else:
+		print "skipping sleep state due to active trigger prices..."
+		print "_" * 80
+		print "\n"

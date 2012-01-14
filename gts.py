@@ -173,7 +173,7 @@ if __name__ == "__main__":
 	cycle_time = 60 * 1#time in seconds to test the entire population
 	min_cycle_time = 30
 	cycle_time_step = 2
-
+	pid_update_rate = 20 #reset watchdog after every n genes tested
 	#the counters are all incremented at the same time but are reset by different events:
 	test_count = 0  #used to reset the pool after so many loop cycles
 	total_count = 0 #used to calculate overall performance
@@ -192,8 +192,9 @@ if __name__ == "__main__":
 		if load_throttle == 1:
 			time.sleep(load_throttle_sleep_interval)
 
-		if loop_count%20 == 0:
+		if loop_count%pid_update_rate == 0:
 			#periodicaly reset the watchdog monitor
+			print "watchdog reset"
 			server.pid_alive(g.id)
 
 		if loop_count > g.pool_size:
@@ -210,6 +211,7 @@ if __name__ == "__main__":
 			current_time = time.time()
 			elapsed_time = current_time - start_time
 			gps = total_count / elapsed_time
+			pid_update_rate = int(gps * 40)
 			if calibrate == 1:
 				#print "Recalibrating pool size..."
 				g.pool_size = int(gps * cycle_time)

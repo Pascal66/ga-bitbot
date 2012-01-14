@@ -160,6 +160,42 @@ class Client:
 	def get_ask_history(self,OID):
 		params = {"type":'ask',"order":OID}
 		return self.request('generic/private/order/result',params,API_VERSION=1)
+
+	def get_bid_tids(self,OID):
+		#used to link an OID from an API order to a list of TIDs reported in the account history log
+		try:
+			history = self.get_bid_history(OID)
+		except:
+			#OID not found, return an empty list
+			return []
+		else:
+			trade_ids = []
+			if history['result'] == 'success':
+				for trade in history['return']['trades']:
+					trade_ids.append(trade['trade_id'])
+					#return the list of trade ids
+					return trade_ids
+			else:
+				return []
+
+	def get_ask_tids(self,OID):
+		#used to link an OID from an API order to a list of TIDs reported in the account history log
+		try:
+			history = self.get_ask_history(OID)
+		except:
+			#OID not found, return an empty list
+			return []
+		else:
+			trade_ids = []
+			if history['result'] == 'success':
+				for trade in history['return']['trades']:
+					trade_ids.append(trade['trade_id'])
+					#return the list of trade ids
+					return trade_ids
+			else:
+				return []
+
+
 	def get_history_btc(self):
 		return self.request('history_BTC.csv',None,JSON=False)
 	def get_history_usd(self):

@@ -32,7 +32,7 @@ import MtGoxHMAC
 
 import xmlrpclib
 #import json
-import simplejson as json	#needed for python 2.4
+import json
 
 import gene_server_config
 import pdb
@@ -326,6 +326,7 @@ class bookie:
 			return False
 	
 	def cancel_buy_order(self,oid):
+		#first verify there was no partial order fill
 		print "cancel_buy_order: canceling"
 		while 1:
 			try:	
@@ -357,38 +358,15 @@ class bookie:
 
 				if found == 0:
 					print "\trecord_synch: OID:",r['oid'], " not active"
-					#the order was filled
 					if r['type'] == 1:
+						#the order was filled
 						r['book'] = "sold"
-						try:
-							history = self.client.get_ask_history(r['oid'])
-						except:
-							pass #OID not found
-						else:
-							trade_ids = []
-							if history['result'] == 'success':
-								for trade in history['return']['trades']:
-									trade_ids.append(trade['trade_id'])
-							r.update({'trade_id': ",".join(trade_ids)})
+						r.update({'trade_id': ",".join(self.client.get_ask_tids(r['oid']))})
 						print "\t\trecord_synch: OID:",r['oid'], " tag as sold"
 					if r['type'] == 2:
-						#check to see if any trades have been completed
-						try:
-							history = self.client.get_bid_history(r['oid'])
-						except:
-							pass #OID not found
-						else:
-							trade_ids = []
-							if history['result'] == 'success':
-								for trade in history['return']['trades']:
-									trade_ids.append(trade['trade_id'])
-							if len(trade_ids) > 0:
-								r.update({'trade_id': ",".join(trade_ids)})
-						if r['status'] == 1 and r.has_key('trade_id'):
-							r['book'] = "held"
-							print "\t\trecord_synch: OID:",r['oid'], " tag as held"
-						elif r['status'] == 2 and r.has_key('trade_id'):
-							#the order jumped states between updates from not enough funds to completed
+						r.update({'trade_id': ",".join(self.client.get_bid_tids(r['oid']))})
+						if len(r['trade_id']) > 0:
+							#the order was filled
 							r['book'] = "held"
 							print "\t\trecord_synch: OID:",r['oid'], " tag as held"
 						#these last two states should never be reached:						
@@ -462,7 +440,23 @@ class bookie:
 					elif dt > r['max_wait']:
 						print "\t\tupdate: canceling order due to timeout (OID):",r['oid']
 						self.cancel_buy_order(r['oid'])
-						r['book'] = "buy_cancel:max_wait"
+						#after the order is canceled check to make sure there was no partial order fill
+						r.update({'trade_id': ",".join(self.client.get_bid_tids(r['oid']))})
+						if len(r['trade_id']) > 0:
+							#The order was partialy or completly filled , adjust the amount
+							#and leave the order in the open state...the next update will
+							#detect a filled order and the 'round trip' will continue.
+							try:
+								history = self.client.get_bid_history(r['oid'])
+							except:
+								pass #this state should never happen
+							else:
+								total_amount = history['return']['total_amount']['value']
+								#only need to adjust the amount. leave the order in an open state
+								print "\t\tupdate: detected partial order fill, will enter held state with adjusted amount (OID):",r['oid']
+								r['amount'] = total_amount
+						else:
+							r['book'] = "buy_cancel:max_wait"
 	
 		print "-" * 80
 		print "checking held positions"
@@ -486,7 +480,7 @@ class bookie:
 					r['book'] = "closed:max_hold"
 					put_for_sale = 1
 				#chek stop loss
-				elif current_price <= r['stop'] and  put_for_sale == 0:
+				elif current_price <= r['stop'] and put_for_sale == 0:
 					#dump the position
 					print "\t--- update: selling position: stop loss: (OID):",r['oid']
 					self.sell(float(r['amount']) - (float(r['amount']) * (r['commission'] / 100.0)),current_price - 0.001,parent_oid = r['oid'])
@@ -497,7 +491,7 @@ class bookie:
 					time_left = str(int((r['max_hold'] - dt)/60.0))
 					stop_delta = "%.2f"%(current_price - r['stop'])
 					delta_target = "%.2f"%(r['target'] - current_price)
-					print "update: OID:%s time left: %s stop_delta: %s delta_target: %s"%(oid,time_left,stop_delta,delta_target)
+					print "update: sell order OID:%s time left: %s stop_delta: %s delta_target: %s"%(oid,time_left,stop_delta,delta_target)
 	
 		#save the updated records
 		self.save_records()
@@ -515,7 +509,7 @@ if __name__ == "__main__":
 
 	b = bookie()
 
-	bid_counter = 3
+	bid_counter = 0
 	
 	print "main: generating inital report"
 	b.report()
@@ -524,11 +518,9 @@ if __name__ == "__main__":
 	while 1:
 		print "_"*80
 		print "main: Availble Funds (USDS,BTCS) :" + str(b.update())
-		#always maintain a short term buy order
-		#buy(qty,buy_price,target_price,stop_loss,max_wait,max_hold)
 
 		bid_counter += 1
-		if bid_counter == 5:
+		if bid_counter == 1:
 			bid_counter = 0
 			"main: Submitting GA Order: "
 
@@ -547,15 +539,17 @@ if __name__ == "__main__":
 			if monitor_mode == False and target_order_validated == True: 
 				commit = ((t['target'] - t['buy']) * 0.8) + t['buy'] #commit sell order at 80% to target
 				if t['buy'] > 1 and t['buy'] < 20:
-					b.buy(0.5,t['buy'],commit,t['target'],t['stop'],60 * 5,t['stop_age'])
+					order_initiated = True
+					#buy(qty,buy_price,commit_price,target_price,stop_loss_price,max_wait,max_hold)
+					b.buy(0.5,t['buy'],commit,t['target'],t['stop'],90,t['stop_age'])
 					#maintain underbid orders
 					u_bids = 10
 					for u_bid in range(2,u_bids,2):
 						bid_modifier = 1 - (u_bid/250.0)
-						b.buy(0.25 * u_bid,t['buy'] * bid_modifier,commit,t['target'],t['stop'],60 * 5,t['stop_age'])
+						b.buy(0.5 * u_bid,t['buy'] * bid_modifier,commit,t['target'],t['stop'],90,t['stop_age'])
 				else:
 					print "main: No GA order available."
-
+		
 		print "_"*80
 		print "sleeping..."
 		print "_"*80

@@ -125,13 +125,17 @@ for cmd_line in unmonitored_launch:
 
 
 print "\nMonitoring Processes..."
+count = 0
 while 1:
+	count += 1
 	#periodicaly tell the server to save the gene db
-	server.save()
+	if count == 5:
+		count = 0
+		server.save()
 
 	#process monitor loop
 	for pid in monitor.keys():
-		sleep(10)
+		sleep(5) #check one pid every n seconds.
 		if server.pid_check(pid,WATCHDOG_TIMEOUT) == "NOK":
 			#watchdog timed out
 			print "WATCHDOG: PID",pid,"EXPIRED"
@@ -141,6 +145,7 @@ while 1:
 			cmd_line = monitor[pid]['cmd']
 			#terminate the process
 			monitor[pid]['process'].terminate()
+			monitor[pid]['process'].wait()
 			monitor.pop(pid)
 			#launch new process
 			p = Popen(shlex.split(cmd_line),stdin=fnull, stdout=fnull, stderr=fnull)
