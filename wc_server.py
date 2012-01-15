@@ -78,41 +78,47 @@ from bottle import route, run, static_file
 
 @route('/')
 def index():
-	output = '<body bgcolor="#071C33"><font color="#757F8A">'
-	output += '<h1><b>ga-bitbot system monitor</b></h1>' + '<br>'
-	output += '<a href="./report/book.html"> ORDER BOOK </a> || <a href="./report/chart_test_zoom_1.html"> VIEW CHARTS </a> || <a href="./report/gene_visualizer.html"> GENE VISUALIZER </a>' + '<br>'
+	f = open('./report/system.templ','r')
+	template = f.read()
+	f.close()
 
-	output += "-"*80 + '<br>'
-	output += "Buy Order Trigger* @ $"+"%.2f"%json.loads(server.get_target())['buy'] + '<br>' * 2
-	output += "* Will report $0 if target is too far away from the current price.<br> bcbookie also uses additional logic to screen potential orders.<br>"
-	output += "-"*80 + '<br>' * 2
+	trigger = "-"*80 + '<br>'
+	trigger += "Buy Order Trigger* @ $"+"%.2f"%json.loads(server.get_target())['buy'] + '<br>' * 2
+	trigger += "* Will report $0 if target is too far away from the current price.<br> bcbookie also uses additional logic to screen potential orders.<br>"
+	trigger += "-"*80 + '<br>' * 2
 
-	output += "-"*80 + '<br>'
+	clients = "-"*80 + '<br>'
 	pid_list = json.loads(server.pid_list(180))
-	output += "Active Clients (" + str(len(pid_list))  + ')<br>'
+	clients += "Active Clients (" + str(len(pid_list))  + ')<br>'
 	for pid in pid_list:
-		output += "----> "+ pid + '<br>'
-	output += "-"*80 + '<br>' * 2
+		clients += "----> "+ pid + '<br>'
+	clients += "-"*80 + '<br>' * 2
 
 	pids = json.loads(server.get_pids())
-	output += "-"*80 + '<br>'
-	output += "Process monitor info (by PID)" + '<br>'
-	output += "-"*80 + '<br>'
-	output +=  ppdict(pids) + '<br>'*2
+	monitor = "-"*80 + '<br>'
+	monitor += "Process monitor info (by PID)" + '<br>'
+	monitor += "-"*80 + '<br>'
+	monitor +=  ppdict(pids) + '<br>'*2
+	monitor = monitor.replace('\n','<br>')
 
-	output += "-"*80 + '<br>'
-	output += "Highest scoring genes (per quartile)" + '<br>'
-	output += "-"*80 + '<br>'
+	best = "-"*80 + '<br>'
+	best += "Highest scoring genes (per quartile)" + '<br>'
+	best += "-"*80 + '<br>'
 	for quartile in [1,2,3,4]:
 		try:
 			ag = json.loads(server.get(60*60*24,quartile))
 		except:
 			ag = {"Gene server didn't return a dictionary.":"Gene server didn't return a dictionary."}
-		output += "-"*80 + '<br>'
-		output += "Quartile: " + str(quartile) + " :: " + str(time.ctime()) + '<br>'
-		output += ppdict(ag) + '<br>'
-	output = output.replace('\n','<br>')
-	return output
+		best += "-"*80 + '<br>'
+		best += "Quartile: " + str(quartile) + " :: " + str(time.ctime()) + '<br>'
+		best += ppdict(ag) + '<br>'
+	best = best.replace('\n','<br>')
+	template = template.replace('{LAST_UPDATE}',time.ctime())
+	template = template.replace('{SYS_TRIGGER}',trigger)
+	template = template.replace('{SYS_MONITOR}',monitor)
+	template = template.replace('{SYS_CLIENTS}',clients)
+	template = template.replace('{SYS_BEST_GENES}',best)
+	return template
 
 
 @route('/report/<filepath:path>')

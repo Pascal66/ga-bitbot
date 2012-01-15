@@ -4,7 +4,7 @@
 		"monitor_mode" : 0,
 		"bid_counter" : 0,
 		"bid_counter_trip" : 1,
-		"order_qty" : 0.5,
+		"order_qty" : 2.0,
 		"commit_pct_to_target" : 0.8,
 		"sleep_state_seconds" : 60,
 		"buy_order_wait" : 90,
