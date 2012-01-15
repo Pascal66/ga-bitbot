@@ -177,7 +177,7 @@ class bookie:
 			f.close()
 			self.records = pickle.loads(pd)
 		except:
-			print "load_config: no records to load"
+			print "load_records: no records to load"
 		self.record_synch()
 	
 	def save_records(self):
@@ -505,12 +505,43 @@ class bookie:
 	
 	
 if __name__ == "__main__":
+	import __main__
+	from load_config import *
+
+	#the variable values below are superceded by the configuration loaded from the 
+	#configuration file bcbookie_main.json
+	#to change the values edit the json configuration file
 	monitor_mode = False
+	bid_counter = 0
+	bid_counter_trip = 1
+	order_qty = 0.5
+	commit_pct_to_target = 0.8
+	sleep_state_seconds = 60
+	buy_order_wait = 90 #seconds
+	min_bid_price = 1.0
+	max_bid_price = 20.00
+	enable_underbids = True
+	config_loaded = False
 
 	b = bookie()
 
-	bid_counter = 0
-	
+	#load config
+	try:
+		__main__ = load_config_file_into_object('bcbookie_main.json',__main__)
+	except:
+		print "Error detected while loading the configuration. The application will now exit."
+		import sys
+		sys.exit()
+	else:
+		if config_loaded == False:
+			print "Configuration failed to load. The application will now exit."
+			import sys
+			sys.exit()
+		else:
+			print "Configuration loaded."
+
+
+
 	print "main: generating inital report"
 	b.report()
 	
@@ -520,7 +551,7 @@ if __name__ == "__main__":
 		print "main: Availble Funds (USDS,BTCS) :" + str(b.update())
 
 		bid_counter += 1
-		if bid_counter == 1:
+		if bid_counter == bid_counter_trip:
 			bid_counter = 0
 			"main: Submitting GA Order: "
 
@@ -537,16 +568,17 @@ if __name__ == "__main__":
 						print str(t)
 
 			if monitor_mode == False and target_order_validated == True: 
-				commit = ((t['target'] - t['buy']) * 0.8) + t['buy'] #commit sell order at 80% to target
-				if t['buy'] > 1 and t['buy'] < 20:
+				commit = ((t['target'] - t['buy']) * commit_pct_to_target) + t['buy'] #commit sell order at n% to target
+				if t['buy'] > min_bid_price and t['buy'] < max_bid_price:
 					order_initiated = True
 					#buy(qty,buy_price,commit_price,target_price,stop_loss_price,max_wait,max_hold)
-					b.buy(0.5,t['buy'],commit,t['target'],t['stop'],90,t['stop_age'])
-					#maintain underbid orders
-					u_bids = 10
-					for u_bid in range(2,u_bids,2):
-						bid_modifier = 1 - (u_bid/250.0)
-						b.buy(0.5 * u_bid,t['buy'] * bid_modifier,commit,t['target'],t['stop'],90,t['stop_age'])
+					b.buy(order_qty,t['buy'],commit,t['target'],t['stop'],buy_order_wait,t['stop_age'])
+					if enable_underbids == True:
+						#maintain underbid orders
+						u_bids = 10
+						for u_bid in range(2,u_bids,2):
+							bid_modifier = 1 - (u_bid/250.0)
+							b.buy(order_qty * u_bid,t['buy'] * bid_modifier,commit,t['target'],t['stop'],buy_order_wait,t['stop_age'])
 				else:
 					print "main: No GA order available."
 		
@@ -554,4 +586,4 @@ if __name__ == "__main__":
 		print "sleeping..."
 		print "_"*80
 		print "\n\n"  
-		sleep(60)
+		sleep(sleep_state_seconds)

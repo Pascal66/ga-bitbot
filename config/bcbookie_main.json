@@ -1,0 +1,18 @@
+{
+	"set" :
+	{
+		"monitor_mode" : 0,
+		"bid_counter" : 0,
+		"bid_counter_trip" : 1,
+		"order_qty" : 0.5,
+		"commit_pct_to_target" : 0.8,
+		"sleep_state_seconds" : 60,
+		"buy_order_wait" : 90,
+		"min_bid_price" : 1.0,
+		"max_bid_price" : 20.00,
+		"enable_underbids" : 1,
+		"config_loaded" : 1
+	}
+
+}
+

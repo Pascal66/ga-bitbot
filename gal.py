@@ -42,6 +42,23 @@ from os import environ
 import os
 from time import *
 
+
+def terminate_process(process):
+	if sys.platform == 'win32':
+		import ctypes
+		PROCESS_TERMINATE = 1
+		pid = process.pid
+		handle = ctypes.windll.kernel32.OpenProcess(PROCESS_TERMINATE, False, pid)
+		ctypes.windll.kernel32.TerminateProcess(handle, -1)
+		ctypes.windll.kernel32.CloseHandle(handle)
+	else:
+		if process.poll() == None:
+			process.terminate()
+			process.wait()
+
+
+
+
 #open a null file to redirect output from the subprocesses 
 fnull = open(os.devnull,'w')
 
@@ -74,9 +91,9 @@ def shutdown():
 	global monitor
 	global no_monitor
 	for p in no_monitor:
-		p.terminate()
+		terminate_process(p)
 	for pid in monitor.keys():
-		monitor[pid]['process'].terminate()
+		terminate_process(monitor[pid]['process'])
 	sys.stderr = fnull
 	server.shutdown()
 
@@ -144,8 +161,7 @@ while 1:
 			epl = json.loads(server.pid_list()) 	#get the current pid list
 			cmd_line = monitor[pid]['cmd']
 			#terminate the process
-			monitor[pid]['process'].terminate()
-			monitor[pid]['process'].wait()
+			terminate_process(monitor[pid]['process'])
 			monitor.pop(pid)
 			#launch new process
 			p = Popen(shlex.split(cmd_line),stdin=fnull, stdout=fnull, stderr=fnull)
