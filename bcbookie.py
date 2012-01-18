@@ -377,7 +377,9 @@ class bookie:
 						r.update({'trade_id': ",".join(self.client.get_ask_tids(r['oid']))})
 						print "\t\trecord_synch: OID:",r['oid'], " tag as sold"
 						if self.__enable_text_messaging==True:
-							self.aws_client.send('Sold %sBTC @ $%s'%(str(r['amount']),str(r['target'])))
+							msg = 'Sold %sBTC @ $%s\n'%(str(r['amount']),str(r['target']))
+							msg += 'Account Balance: (%sBTC , $%s) Total Value: $%s'%(str(self.btcs),str(self.usds),str(float(self.usds) + float(self.btcs) * float(self.btc_price)))
+							self.aws_client.send(msg)
 					if r['type'] == 2:
 						r.update({'trade_id': ",".join(self.client.get_bid_tids(r['oid']))})
 						if len(r['trade_id']) > 0:
@@ -385,7 +387,9 @@ class bookie:
 							r['book'] = "held"
 							print "\t\trecord_synch: OID:",r['oid'], " tag as held"
 							if self.__enable_text_messaging==True:
-								self.aws_client.send('Bought %sBTC @ $%s'%(str(r['amount']),str(r['price'])))
+								msg = 'Bought %sBTC @ $%s'%(str(r['amount']),str(r['price']))
+								msg += 'Account Balance: (%sBTC , $%s) Total Value: $%s'%(str(self.btcs),str(self.usds),str(float(self.usds) + float(self.btcs) * float(self.btc_price)))
+								self.aws_client.send(msg)
 						#these last two states should never be reached:						
 						elif r['status'] == 2 and r['real_status'] == "pending":
 							print "\t\trecord_synch: OID:",r['oid'], " remaining open (real_status:pending)"
@@ -472,8 +476,6 @@ class bookie:
 								#only need to adjust the amount. leave the order in an open state
 								print "\t\tupdate: detected partial order fill, will enter held state with adjusted amount (OID):",r['oid']
 								r['amount'] = total_amount
-								if self.__enable_text_messaging==True:
-									self.aws_client.send('Bought %sBTC @ $%s (partial)'%(str(r['amount']),str(r['price'])))
 						else:
 							r['book'] = "buy_cancel:max_wait"
 	
