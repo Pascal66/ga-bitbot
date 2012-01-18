@@ -1,5 +1,5 @@
 """
-MyGoxHMAC v0.01 
+MtGoxHMAC v0.01 
 
 Copyright 2011 Brian Monkaba
 

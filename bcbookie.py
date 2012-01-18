@@ -46,8 +46,22 @@ server = xmlrpclib.Server('http://' + __server__ + ":" + __port__)
 print "Connected to",__server__,":",__port__
 
 class bookie:
-	def __init__(self):
+	def __init__(self,enable_text_messaging=False,enable_flash_crash_protection=False,flash_crash_protection_delay=0):
 		self.client = MtGoxHMAC.Client()
+		#flash crash protection delays stop loss orders by three hours - hopefully enough time to for the market to stabilize
+		self.__enable_flash_crash_protection = enable_flash_crash_protection
+		self.__flash_crash_protection_delay = flash_crash_protection_delay
+		self.__enable_text_messaging = enable_text_messaging
+		if self.__enable_text_messaging==True:
+			import AWS_SNS
+			self.aws_client = AWS_SNS.Client()
+			#send the system startup message
+			self.aws_client.send('bcbookie started on %s'%(ctime()))
+			print "Amazon SNS enabled."
+
+		if self.__enable_flash_crash_protection == True:
+			print "Flash crash protection enabled (%s sec delay)"%(str(self.__flash_crash_protection_delay))
+
 		#These variables update automaticaly - do not modify
 		self.client_info = None
 		self.client_commission = 0 
@@ -326,7 +340,6 @@ class bookie:
 			return False
 	
 	def cancel_buy_order(self,oid):
-		#first verify there was no partial order fill
 		print "cancel_buy_order: canceling"
 		while 1:
 			try:	
@@ -363,12 +376,16 @@ class bookie:
 						r['book'] = "sold"
 						r.update({'trade_id': ",".join(self.client.get_ask_tids(r['oid']))})
 						print "\t\trecord_synch: OID:",r['oid'], " tag as sold"
+						if self.__enable_text_messaging==True:
+							self.aws_client.send('Sold %sBTC @ $%s'%(str(r['amount']),str(r['target'])))
 					if r['type'] == 2:
 						r.update({'trade_id': ",".join(self.client.get_bid_tids(r['oid']))})
 						if len(r['trade_id']) > 0:
 							#the order was filled
 							r['book'] = "held"
 							print "\t\trecord_synch: OID:",r['oid'], " tag as held"
+							if self.__enable_text_messaging==True:
+								self.aws_client.send('Bought %sBTC @ $%s'%(str(r['amount']),str(r['price'])))
 						#these last two states should never be reached:						
 						elif r['status'] == 2 and r['real_status'] == "pending":
 							print "\t\trecord_synch: OID:",r['oid'], " remaining open (real_status:pending)"
@@ -455,6 +472,8 @@ class bookie:
 								#only need to adjust the amount. leave the order in an open state
 								print "\t\tupdate: detected partial order fill, will enter held state with adjusted amount (OID):",r['oid']
 								r['amount'] = total_amount
+								if self.__enable_text_messaging==True:
+									self.aws_client.send('Bought %sBTC @ $%s (partial)'%(str(r['amount']),str(r['price'])))
 						else:
 							r['book'] = "buy_cancel:max_wait"
 	
@@ -479,13 +498,17 @@ class bookie:
 					self.sell(float(r['amount']) - (float(r['amount']) * (r['commission'] / 100.0)),current_price - 0.001,parent_oid = r['oid'])
 					r['book'] = "closed:max_hold"
 					put_for_sale = 1
-				#chek stop loss
+				#check stop loss
 				elif current_price <= r['stop'] and put_for_sale == 0:
-					#dump the position
-					print "\t--- update: selling position: stop loss: (OID):",r['oid']
-					self.sell(float(r['amount']) - (float(r['amount']) * (r['commission'] / 100.0)),current_price - 0.001,parent_oid = r['oid'])
-					r['book'] = "closed:stop"
-					put_for_sale = 1
+					if self.__enable_flash_crash_protection == True:
+						print "\t--- update: flash crash protection triggered: (OID):",r['oid']
+						r['stop'] = 0.0
+						r['max_hold'] = (time() - r['localtime']) + self.__flash_crash_protection_delay
+					else:
+						print "\t--- update: selling position: stop loss: (OID):",r['oid']
+						self.sell(float(r['amount']) - (float(r['amount']) * (r['commission'] / 100.0)),current_price - 0.001,parent_oid = r['oid'])
+						r['book'] = "closed:stop"
+						put_for_sale = 1
 				elif put_for_sale == 0:
 					oid = r['oid']
 					time_left = str(int((r['max_hold'] - dt)/60.0))
@@ -510,7 +533,7 @@ if __name__ == "__main__":
 
 	#the variable values below are superceded by the configuration loaded from the 
 	#configuration file bcbookie_main.json
-	#to change the values edit the json configuration file
+	#!!!!!!!! to change the values edit the json configuration file NOT the variables below !!!!!!!!
 	monitor_mode = False
 	bid_counter = 0
 	bid_counter_trip = 1
@@ -520,10 +543,11 @@ if __name__ == "__main__":
 	buy_order_wait = 90 #seconds
 	min_bid_price = 1.0
 	max_bid_price = 20.00
+	enable_flash_crash_protection = False
+	flash_crash_protection_delay = 60 * 60 * 3 #three hours
 	enable_underbids = True
 	config_loaded = False
-
-	b = bookie()
+	enable_text_messaging = False
 
 	#load config
 	try:
@@ -540,6 +564,7 @@ if __name__ == "__main__":
 		else:
 			print "Configuration loaded."
 
+	b = bookie(enable_text_messaging=enable_text_messaging,enable_flash_crash_protection=enable_flash_crash_protection,flash_crash_protection_delay=flash_crash_protection_delay)
 
 
 	print "main: generating inital report"
