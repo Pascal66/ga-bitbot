@@ -50,6 +50,7 @@ max_bobs = 1000
 g_save_counter = 0
 g_d = [[],[],[],[]]
 g_trgt = json.dumps({'buy':0})
+g_active_quartile = 0
 
 g_bobs = [[],[],[],[]]
 
@@ -67,6 +68,15 @@ def put_target(target):
 def get_target():
 	global g_trgt
 	return g_trgt
+
+def put_active_quartile(quartile):
+	global g_active_quartile
+	g_active_quartile = quartile
+	return "OK"
+
+def get_active_quartile():
+	global g_active_quartile
+	return g_active_quartile
 
 def get_gene(n_sec,quartile):
 	global g_d
@@ -310,6 +320,8 @@ server = SimpleXMLRPCServer((__server__, __port__),requestHandler = RequestHandl
 #client services
 server.register_function(get_target,'get_target')
 server.register_function(put_target,'put_target')
+server.register_function(get_active_quartile,'get_active_quartile')
+server.register_function(put_active_quartile,'put_active_quartile')
 server.register_function(get_gene,'get')
 server.register_function(get_all_genes,'get_all')
 server.register_function(put_gene,'put')

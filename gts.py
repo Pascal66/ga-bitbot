@@ -96,6 +96,7 @@ if __name__ == "__main__":
 	print "Creating the trade engine"
 	te = trade_engine()
 	te.score_only = True
+	te.enable_flash_crash_protection = True #enable flash crash protection (must match bcbookie!!!)
 	#preprocess input data
 	te.classify_market(input)
 
@@ -136,7 +137,8 @@ if __name__ == "__main__":
 		bs = raw_input()
 	if bs == 'y':
 		bob_simulator = True
-		update_all_scores = False
+		if quartile_cycle == False:
+			update_all_scores = False
 		g.local_optima_trigger = 10
 		bootstrap_bobs = json.loads(server.get_bobs(quartile))
 		bootstrap_all = json.loads(server.get_all(quartile))
@@ -158,6 +160,7 @@ if __name__ == "__main__":
 			print "no BOBs or high scores available...seeding new pool."
 			g.seed()
 
+		print "Update all scores:",update_all_scores
 		print "%s BOBs loaded"%len(bootstrap_bobs)
 		print "%s high scores loaded"%len(bootstrap_all)
 

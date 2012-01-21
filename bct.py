@@ -40,6 +40,8 @@ class trade_engine:
 							#after a stop loss order
 		self.markup = 0.01		#order mark up
 		self.stop_loss = 0.282		#stop loss
+		self.enable_flash_crash_protection = False	#convert a stop loss order into a short term hold position
+		self.flash_crash_protection_delay = 180 #max_hold in minutes
 		self.stop_age = 10000		#stop age - dump after n periods
 		self.macd_buy_trip = -0.66	#macd buy indicator
 		self.min_i_pos = 0		#min periods of increasing price
@@ -249,16 +251,16 @@ class trade_engine:
 						p['score'] = (((p['buy'] - p['actual']) / p['buy']) * 100.0)  * self.shares
 						#apply non-linear scaling to the trade based on the round trip time (age)
 						#favors a faster turn around time on positions
-						#p['score'] /= (pow(age,self.stbf) / age )
-						#p['score'] *= 10.0
+						p['score'] /= (pow(age,self.stbf) / age )
+						p['score'] *= 100.0
 					else:
 						#losing position gets a negative score
 						age = float(self.stop_age) 
-						p['score'] = (((p['actual'] - p['buy']) / p['buy']) * 100.0)  * self.shares
+						p['score'] = ((((p['actual'] - p['buy']) / p['buy']) * 100.0)  * self.shares)
 						#apply non-linear scaling to the trade based on the round trip time (age)
 						#favors a faster turn around time on positions
-						#p['score'] /= (pow(age,self.stbf) / age )
-						#p['score'] *= 10.0	#increase weighting for losing positions
+						p['score'] /= (pow(age,self.stbf) / age )
+						p['score'] *= 1000.0	#increase weighting for losing positions
 
 				#apply e^0 to e^1 weighting to favor the latest trade results
 				p['score'] *= exp(exp_scale * p['buy_period']) 
@@ -356,26 +358,40 @@ class trade_engine:
 				self.positions[position['master_index']] = position.copy()
 			#handle the stop orders
 			elif position['status'] == "active" and (position['stop'] >= current_price or position['age'] >= self.stop_age):
-				updated = True
-				position['status'] = "stop"
-				position['actual'] = current_price
-				stop = current_price
-				position['sell_period'] = self.period
 				if position['stop'] >= current_price:
-					#stop loss
-					self.loss += 1
-					self.buy_delay += self.buy_wait_after_stop_loss
+					if self.enable_flash_crash_protection == True and self.market_class[self.period][1] == 1.0:						
+						stop_order_executed = False
+						#convert the stop loss order into a short term hold position
+						position['age'] = self.stop_age - self.flash_crash_protection_delay
+						position['stop'] *= -1.0
+					else:
+						#stop loss
+						stop_order_executed = True
+						updated = True
+						position['status'] = "stop"
+						position['actual'] = current_price
+						stop = current_price
+						position['sell_period'] = self.period
+						self.loss += 1
+						self.buy_delay += self.buy_wait_after_stop_loss
 				else:
 					#stop wait
-					self.loss += 1 - (position['actual'] / position['target'])  #fractional loss
+					stop_order_executed = True
+					updated = True
+					position['status'] = "stop"
+					position['actual'] = current_price
+					stop = current_price
+					position['sell_period'] = self.period
+					self.loss += 1 #- (position['actual'] / position['target'])  #fractional loss
 					self.buy_delay += self.buy_wait_after_stop_loss
-				self.balance += position['actual'] * (position['shares'] - (position['shares'] * self.commision))
-				self.score_balance += ((position['actual'] * (position['shares'] - (position['shares'] * self.commision))) / (position['buy'] * position['shares'])) * (pow(position['age'],self.stbf) / position['age'] )
-				#update the position in the master list
-				buy_period = position['buy_period']
-				#self.positions = filter(lambda x: x.get('buy_period') != buy_period, self.positions) #delete the old record
-				#self.positions.append(position.copy()) #and add the updated record
-				self.positions[position['master_index']] = position.copy()
+				if stop_order_executed == True:
+					self.balance += position['actual'] * (position['shares'] - (position['shares'] * self.commision))
+					self.score_balance += ((position['actual'] * (position['shares'] - (position['shares'] * self.commision))) / (position['buy'] * position['shares'])) * (pow(position['age'],self.stbf) / position['age'] )
+					#update the position in the master list
+					buy_period = position['buy_period']
+					#self.positions = filter(lambda x: x.get('buy_period') != buy_period, self.positions) #delete the old record
+					#self.positions.append(position.copy()) #and add the updated record
+					self.positions[position['master_index']] = position.copy()
 			#handle active (open) positions	
 			elif position['status'] == "active":
 				#position remains open, capture the current value
@@ -498,6 +514,7 @@ class trade_engine:
 
 	def log_orders(self,filename=None):
 		self.order_history = ""
+		print "log_orders: sorting data"
 		self.positions = sorted(self.positions, key=itemgetter('buy_period'),reverse=True)
 		if len(self.positions) > 0:
 			keys = self.positions[0].keys()
@@ -509,9 +526,9 @@ class trade_engine:
 		self.order_history +="</tr>\n"
 
 		#only htmlize the last positions so the browser doesn't blow up ;)
-		reported_position_count_limit = 10000
+		reported_position_count_limit = 200
 		reported_position_count = 0
-
+		print "log_orders: generating html table for %s positions"%(len(self.positions))
 		for p in self.positions:
 			if reported_position_count >= reported_position_count_limit:
 				break
@@ -629,7 +646,7 @@ class trade_engine:
 		else:
 			periods *= -1
 		
-		#print "chart: compressing data"
+		print "chart: compressing data"
 		wl = str(self.compress_log(self.wl_log[periods:])).replace('L','')
 		ws = str(self.compress_log(self.ws_log[periods:])).replace('L','')
 		macd_pct = str(self.compress_log(self.macd_pct_log[periods:])).replace('L','')
@@ -647,6 +664,7 @@ class trade_engine:
 			sell = str(self.sell_log[periods:]).replace('L','')
 			stop = str(self.stop_log[periods:]).replace('L','')
 		else:
+			print "chart: selecting data"
 			#get the timestamp for the start index
 			time_stamp = self.input_log[periods:periods+1][0][0]
 			#search the following for the time stamp
@@ -666,8 +684,8 @@ class trade_engine:
 				if self.trigger_log[i][0] >= time_stamp:
 					trigger_price = str(self.trigger_log[i:]).replace('L','')
 					break
-
-		#print "chart: filling the template"
+		
+		print "chart: filling the template"
 		tmpl = tmpl.replace("{LAST_UPDATE}",time.ctime())
 		tmpl = tmpl.replace("{PRICES}",input)
 		tmpl = tmpl.replace("{WINDOW_LONG}",wl)
@@ -683,7 +701,7 @@ class trade_engine:
 		tmpl = tmpl.replace("{VOLATILITY_QUARTILE}",volatility_quartile)
 
 
- 		#print "chart: writing the data to a file"
+ 		print "chart: writing the data to a file"
 		f = open(filename,'w')
 		f.write(tmpl)
 		f.close()

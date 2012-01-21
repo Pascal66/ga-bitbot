@@ -102,6 +102,7 @@ while 1:
 		#THE FOLLOWING SECTION MUST MATCH THE GTS Tool!!!
 		#set the trade engine class vars
 		#te.buy_delay =  len(input) - (60 * 12)
+		te.enable_flash_crash_protection = True
 		te.shares = ag['shares']
 		te.wll = ag['wll'] + ag['wls'] + 2 #add the two together to make sure
 					#the macd moving windows dont get inverted
@@ -116,6 +117,7 @@ while 1:
 		
 		#preprocess the data
 		current_quartile = te.classify_market(input)
+		server.put_active_quartile(current_quartile)
 		#select the quartile to test
 		te.test_quartile(quartile)
 		te.net_worth_log = []
@@ -169,7 +171,7 @@ while 1:
 				print "creating charts..."
 				te.chart("./report/chart.templ","./report/chart_test_%s.html"%str(quartile))
 				te.chart("./report/chart.templ","./report/chart_test_zoom_%s.html"%str(quartile),60*48)
-				te.chart("./report/chart.templ","./report/chart_test_now_%s.html"%str(quartile),60* 4)
+				#te.chart("./report/chart.templ","./report/chart_test_now_%s.html"%str(quartile),60* 4)
 				#print "Evaluating target price"
 				if current_quartile == quartile:
 					if ((target >= p['buy']) or (abs(target - p['buy']) < 0.01)) and p['buy'] != 0: #submit the order at or below target
@@ -177,7 +179,7 @@ while 1:
 						p['buy'] = float("%.3f"%(p['buy'] - 0.01))
 						p['target'] = float("%.3f"%p['target'])
 						p.update({'stop_age':(60 * te.stop_age)})
-						if float("%.3f"%((te.wins / float(te.wins + te.loss)) * 100)) > 90.0:
+						if float("%.3f"%((te.wins / float(te.wins + te.loss)) * 100)) > 80.0:
 							#only submit an order if the win/loss ratio is greater than x%
 							print "sending target buy order to server @ $" + str(p['buy'])
 							server.put_target(json.dumps(p))
@@ -241,12 +243,11 @@ while 1:
 	f.write(template)
 	f.close()
 
-
 	if skip_sleep_delay == False:
 		print "sleeping..."
 		print "_" * 80
 		print "\n"
-		time.sleep(90) #generate a report every n seconds
+		time.sleep(1) #generate a report every n seconds
 	else:
 		print "skipping sleep state due to active trigger prices..."
 		print "_" * 80

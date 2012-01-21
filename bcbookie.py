@@ -73,6 +73,7 @@ class bookie:
 		self.btcs = 0
 		self.btc_price = 0
 		self.load_records()
+		self.active_quartile = 0
 	
 	def report(self):
 		#get all the keys available in the list of dicts
@@ -416,7 +417,7 @@ class bookie:
 			print "record_synch: order error(s) found and canceled"
 	   
 		self.save_records()
-		self.report()
+
 	
 	
 	def update(self):
@@ -461,6 +462,7 @@ class bookie:
 					elif dt > r['max_wait']:
 						print "\t\tupdate: canceling order due to timeout (OID):",r['oid']
 						self.cancel_buy_order(r['oid'])
+						self.balance_committed -= float(r['price']) * float(r['amount'])
 						#after the order is canceled check to make sure there was no partial order fill
 						r.update({'trade_id': ",".join(self.client.get_bid_tids(r['oid']))})
 						if len(r['trade_id']) > 0:
@@ -502,7 +504,7 @@ class bookie:
 					put_for_sale = 1
 				#check stop loss
 				elif current_price <= r['stop'] and put_for_sale == 0:
-					if self.__enable_flash_crash_protection == True:
+					if self.__enable_flash_crash_protection == True and self.active_quartile == 4:
 						print "\t--- update: flash crash protection triggered: (OID):",r['oid']
 						r['stop'] = 0.0
 						r['max_hold'] = (time() - r['localtime']) + self.__flash_crash_protection_delay
@@ -520,8 +522,6 @@ class bookie:
 	
 		#save the updated records
 		self.save_records()
-		#generate the report
-		self.report()
 		#return the account balance
 		self.funds()
 		return self.usds,self.btcs
@@ -566,6 +566,8 @@ if __name__ == "__main__":
 		else:
 			print "Configuration loaded."
 
+	print "Note: The Amazon SNS text messaging service can be enabled/disabled by modifying the bcbookie_main.json configuration file"	
+
 	b = bookie(enable_text_messaging=enable_text_messaging,enable_flash_crash_protection=enable_flash_crash_protection,flash_crash_protection_delay=flash_crash_protection_delay)
 
 
@@ -574,6 +576,9 @@ if __name__ == "__main__":
 	
 	print "main: entering main loop"
 	while 1:
+		#get the current quartile
+		b.active_quartile = server.get_active_quartile()
+
 		print "_"*80
 		print "main: Availble Funds (USDS,BTCS) :" + str(b.update())
 
@@ -602,13 +607,18 @@ if __name__ == "__main__":
 					b.buy(order_qty,t['buy'],commit,t['target'],t['stop'],buy_order_wait,t['stop_age'])
 					if enable_underbids == True:
 						#maintain underbid orders
+						#calc stop %
+						stop_pct = (t['stop'] / t['buy'])
 						u_bids = 10
 						for u_bid in range(2,u_bids,2):
 							bid_modifier = 1 - (u_bid/250.0)
-							b.buy(order_qty * u_bid,t['buy'] * bid_modifier,commit,t['target'],t['stop'],buy_order_wait,t['stop_age'])
+							buy_price = t['buy'] * bid_modifier
+							stop_price = buy_price * stop_pct
+							b.buy(order_qty * u_bid,buy_price,commit,t['target'],stop_price,buy_order_wait,t['stop_age'])
 				else:
 					print "main: No GA order available."
-		
+		#update the report		
+		b.report()
 		print "_"*80
 		print "sleeping..."
 		print "_"*80

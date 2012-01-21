@@ -83,6 +83,7 @@ def index():
 	f.close()
 
 	trigger = "-"*80 + '<br>'
+	trigger += "Current Volitility Quartile: " + str(server.get_active_quartile()) + '<br>'
 	trigger += "Buy Order Trigger* @ $"+"%.2f"%json.loads(server.get_target())['buy'] + '<br>' * 2
 	trigger += "* Will report $0 if target is too far away from the current price.<br> bcbookie also uses additional logic to screen potential orders.<br>"
 	trigger += "-"*80 + '<br>' * 2
