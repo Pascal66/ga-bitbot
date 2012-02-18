@@ -54,11 +54,40 @@ import time
 if __name__ == "__main__":
 	__appversion__ = "0.01a"
 	print "Genetic Bitcoin Trade Simulator v%s"%__appversion__
+	import __main__
+	from load_config import *
 
+	#the variable values below are superceded by the configuration loaded from the 
+	#configuration file global_config.json
+	#!!!!!!!! to change the values edit the json configuration file NOT the variables below !!!!!!!!
 	max_length = 60 * 24 * 60
 	load_throttle = 1 #go easy on cpu usage
 	load_throttle_sleep_interval = 0.10#seconds
 	calibrate = 1	#set to one to adjust the population size to maintain a one min test cycle
+	cycle_time = 60 * 1#time in seconds to test the entire population
+	min_cycle_time = 30
+	cycle_time_step = 2
+	pid_update_rate = 20 #reset watchdog after every n genes tested
+	enable_flash_crash_protection = False
+	flash_crash_protection_delay = 60 * 3 #three hours
+	config_loaded = 0
+
+	#load config
+	try:
+		__main__ = load_config_file_into_object('global_config.json',__main__)
+	except:
+		print "Error detected while loading the configuration. The application will now exit."
+		import sys
+		sys.exit()
+	else:
+		if config_loaded == False:
+			print "Configuration failed to load. The application will now exit."
+			import sys
+			sys.exit()
+		else:
+			print "Configuration loaded."
+
+
 	quartile_cycle = False
 
 	def load():
@@ -97,7 +126,8 @@ if __name__ == "__main__":
 	print "Creating the trade engine"
 	te = trade_engine()
 	te.score_only = True
-	te.enable_flash_crash_protection = True #enable flash crash protection (must match bcbookie!!!)
+	te.enable_flash_crash_protection = enable_flash_crash_protection 
+	te.flash_crash_protection_delay = flash_crash_protection_delay
 	#preprocess input data
 	te.classify_market(input)
 
@@ -174,10 +204,6 @@ if __name__ == "__main__":
 		print "Seeding the initial population"
 		g.seed()
 
-	cycle_time = 60 * 1#time in seconds to test the entire population
-	min_cycle_time = 30
-	cycle_time_step = 2
-	pid_update_rate = 20 #reset watchdog after every n genes tested
 	#the counters are all incremented at the same time but are reset by different events:
 	test_count = 0  #used to reset the pool after so many loop cycles
 	total_count = 0 #used to calculate overall performance

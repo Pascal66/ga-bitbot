@@ -49,8 +49,32 @@ print "Connected to",__server__,":",__port__
 
 from bct import *
 from load_config import *
+import __main__
 
+#the variable values below are superceded by the configuration loaded from the 
+#configuration file global_config.json
+#!!!!!!!! to change the values edit the json configuration file NOT the variables below !!!!!!!!
 max_length = 60 * 24 * 60
+enable_flash_crash_protection = True
+flash_crash_protection_delay = 180
+chart_zoom_periods = 3000
+chart_now_periods = 200
+config_loaded = 0
+#load config
+try:
+	__main__ = load_config_file_into_object('global_config.json',__main__)
+except:
+	print "Error detected while loading the configuration. The application will now exit."
+	import sys
+	sys.exit()
+else:
+	if config_loaded == False:
+		print "Configuration failed to load. The application will now exit."
+		import sys
+		sys.exit()
+	else:
+		print "Configuration loaded."
+
 
 def load():
 	#open the history file
@@ -101,7 +125,8 @@ while 1:
 		
 		#configure the trade engine
 		te = load_config_into_object({'set':ag},te)
-
+		te.enable_flash_crash_protection = enable_flash_crash_protection 
+		te.flash_crash_protection_delay = flash_crash_protection_delay
 		
 		#preprocess the data
 		current_quartile = te.classify_market(input)
@@ -153,8 +178,8 @@ while 1:
 				#te.classify_market(input)
 				print "creating charts..."
 				te.chart("./report/chart.templ","./report/chart_test_%s.html"%str(quartile))
-				te.chart("./report/chart.templ","./report/chart_test_zoom_%s.html"%str(quartile),60*48)
-				#te.chart("./report/chart.templ","./report/chart_test_now_%s.html"%str(quartile),60* 4)
+				te.chart("./report/chart.templ","./report/chart_test_zoom_%s.html"%str(quartile),chart_zoom_periods)
+				#te.chart("./report/chart.templ","./report/chart_test_now_%s.html"%str(quartile),chart_now_periods)
 				#print "Evaluating target price"
 				if current_quartile == quartile:
 					if ((target >= p['buy']) or (abs(target - p['buy']) < 0.01)) and p['buy'] != 0: #submit the order at or below target

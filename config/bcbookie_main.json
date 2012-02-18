@@ -1,6 +1,7 @@
 {
 	"set" :
 	{
+		"THIS CONFIG FILE IS NO LONGER USED...SEE: global_config.json" : 1,
 		"monitor_mode" : 0,
 		"bid_counter" : 0,
 		"bid_counter_trip" : 1,
@@ -11,7 +12,7 @@
 		"min_bid_price" : 1.0,
 		"max_bid_price" : 20.00,
 		"enable_flash_crash_protection":1,
-		"flash_crash_protection_delay":10800,
+		"flash_crash_protection_delay":180,
 		"enable_underbids" : 1,
 		"enable_text_messaging":1,
 		"config_loaded" : 1

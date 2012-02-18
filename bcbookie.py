@@ -50,7 +50,7 @@ class bookie:
 		self.client = MtGoxHMAC.Client()
 		#flash crash protection delays stop loss orders by three hours - hopefully enough time to for the market to stabilize
 		self.__enable_flash_crash_protection = enable_flash_crash_protection
-		self.__flash_crash_protection_delay = flash_crash_protection_delay
+		self.__flash_crash_protection_delay = flash_crash_protection_delay * 60 #convert min to seconds
 		self.__enable_text_messaging = enable_text_messaging
 		if self.__enable_text_messaging==True:
 			import AWS_SNS
@@ -534,7 +534,7 @@ if __name__ == "__main__":
 	from load_config import *
 
 	#the variable values below are superceded by the configuration loaded from the 
-	#configuration file bcbookie_main.json
+	#configuration file global_config.json
 	#!!!!!!!! to change the values edit the json configuration file NOT the variables below !!!!!!!!
 	monitor_mode = False
 	bid_counter = 0
@@ -546,14 +546,14 @@ if __name__ == "__main__":
 	min_bid_price = 1.0
 	max_bid_price = 20.00
 	enable_flash_crash_protection = False
-	flash_crash_protection_delay = 60 * 60 * 3 #three hours
+	flash_crash_protection_delay = 60 * 3 #three hours
 	enable_underbids = True
-	config_loaded = False
 	enable_text_messaging = False
+	config_loaded = 0
 
 	#load config
 	try:
-		__main__ = load_config_file_into_object('bcbookie_main.json',__main__)
+		__main__ = load_config_file_into_object('global_config.json',__main__)
 	except:
 		print "Error detected while loading the configuration. The application will now exit."
 		import sys
