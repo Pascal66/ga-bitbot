@@ -28,14 +28,14 @@
 		"add_numvar":
 		[
 			["shares",7,2,4.0],
-			["wll",9,0,1],
+			["wll",9,0,50],
 			["wls",7,0,1],
 			["buy_wait",10,0,1],
 			["buy_wait_after_stop_loss",10,0,1],
-			["markup",10,5,0.02],
+			["markup",9,4,0.03],
 			["stop_loss",10,4,0.01],
-			["stop_age",12,0],
-			["macd_buy_trip",14,3]
+			["stop_age",13,0],
+			["macd_buy_trip",10,2,2.0,-2.0]
 		]
 	}
 }

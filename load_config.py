@@ -84,10 +84,6 @@ if __name__ == "__main__":
 
 	print load_config_from_file.__doc__
 
-	d = load_config_from_file("mtgox_user.json")
-	for key in d.keys():
-		print key,":",d[key]
-
 
 	d = load_config_from_file("gene_def.json")
 	for key in d.keys():

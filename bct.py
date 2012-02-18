@@ -40,7 +40,7 @@ class trade_engine:
 							#after a stop loss order
 		self.markup = 0.01		#order mark up
 		self.stop_loss = 0.282		#stop loss
-		self.enable_flash_crash_protection = False	#convert a stop loss order into a short term hold position
+		self.enable_flash_crash_protection = True	#convert a stop loss order into a short term hold position
 		self.flash_crash_protection_delay = 180 #max_hold in minutes
 		self.stop_age = 10000		#stop age - dump after n periods
 		self.macd_buy_trip = -0.66	#macd buy indicator
@@ -82,7 +82,7 @@ class trade_engine:
 		self.balance = 1000			#account balance
 		self.opening_balance = self.balance	#record the starting balance
 		self.score_balance = 0			#cumlative score
-		self.buy_delay = 0		#delay buy counter
+		self.buy_delay = 0			#delay buy counter
 		self.buy_delay_inital = self.buy_delay	#delay buy counter
 		self.macd_pct = 0			
 		self.macd_abs = 0
@@ -137,29 +137,6 @@ class trade_engine:
 		for i in xrange(10):
 			self.market_class.append([t,tr])
 
-		"""
-		#now find the quartiles from a historgram
-		print "hist"
-		length = len(self.market_class)
-		l = [r[1] for r in self.market_class]
-		hist = dict((p,l.count(p)) for p in set(l))
-		keys = hist.keys()
-		keys.sort()
-		total = 0
-		last_key = ""
-		target = 0.25
-		quartiles = []
-		print "searching quartiles"
-		for key in keys:
-			total += hist[key]
-			if total / float(length) > target:
-				print target,last_key
-				quartiles.append(last_key)
-				target += 0.25
-			last_key = key
-			if target == 1.0:
-				break
-		"""
 		#I was overthinking again...
 		quartiles = []
 		l = [r[1] for r in self.market_class]
@@ -305,6 +282,9 @@ class trade_engine:
 		return final_score_balance
 
 	def ai(self):
+		#make sure the two moving averages (window length long and short) don't get inverted
+		if self.wll < self.wls:
+			self.wll += self.wls
 		#decrement the buy wait counter
 		if self.buy_delay > 0:
 			self.buy_delay -= 1
@@ -406,7 +386,7 @@ class trade_engine:
 		current_net_worth += self.balance
 		if not self.score_only:
 			if self.classified_market_data == False or self.quartile == self.market_class[self.period][1]:
-				self.trigger_log.append([self.time,self.inverse_macd()])
+				self.trigger_log.append([self.time,self.get_target()])
 			self.net_worth_log.append([self.time,current_net_worth])
 			if sell > 0:
 				self.sell_log.append([self.time,sell])
@@ -414,7 +394,7 @@ class trade_engine:
 				self.stop_log.append([self.time,stop])
 		return
 	
-	def inverse_macd(self):
+	def get_target(self):
 		#calculates the inverse macd
 		#wolfram alpha used to transform the macd equation to solve for the trigger price:
 		price = 0.0

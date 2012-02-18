@@ -45,6 +45,7 @@ print "Connected to",__server__,":",__port__
 
 
 from bct import *
+#from trade_engine import *
 from genetic import *
 from load_config import *
 import pdb
@@ -320,25 +321,14 @@ if __name__ == "__main__":
 		    
 		#get the next gene
 		ag = g.get_next()
-		    
-		#set the trade engine class vars
-		#te.buy_delay = len(input) - (60 * 12)
-		te.shares = ag['shares']
-		te.wll = ag['wll'] + ag['wls'] + 2 #add the two together to make sure
-					    #the macd moving windows dont get inverted
-		te.wls = ag['wls'] + 1
-		te.buy_wait = ag['buy_wait']
-		te.markup = ag['markup'] + (te.commision * 3.0) #+ 0.025
-		te.stop_loss = ag['stop_loss']
-		te.stop_age = ag['stop_age']
-		te.macd_buy_trip = ag['macd_buy_trip'] * -1.0
-		#te.min_i_neg = ag['min_i_neg']
-		#te.min_i_pos = ag['min_i_pos']
-		te.buy_wait_after_stop_loss = ag['buy_wait_after_stop_loss']
-		#feed the input through the trade engine
+		
+		#configure the trade engine
+		te = load_config_into_object({'set':ag},te)
 
+		#set the quartile to test
 		te.test_quartile(quartile)
 
+		#feed the input through the trade engine
 		try:
 			for i in input:
 				te.input(i[0],i[1])

@@ -419,9 +419,9 @@ class genepool:
 		g['msg'] = msg
 	return
     
-    def add_numvar(self,name,bits,decimal_places,offset=0):
+    def add_numvar(self,name,bits,decimal_places,offset=0,mult=1):
 	#add a variable to the gene
-	self.contains.append([name,bits,decimal_places,offset])   
+	self.contains.append([name,bits,decimal_places,offset,mult])   
 
     def rbit(self):
 	#generate a random bit
@@ -444,12 +444,13 @@ class genepool:
 		name = v[0]
 		var_len = v[1]
 		var_offset = v[3]
+		var_mult = v[4]
 		var = g['gene'][offset:offset+var_len]
 		offset += var_len
 		n = int(var,2)
 		if v[2] > 0:
 		    n = ((n * 1.0) / pow(10,v[2])) 
-		g[name] = n + var_offset
+		g[name] = (n + var_offset) * var_mult
 		
     def decode_gene_dict(self,g_d):
 	offset = 0
@@ -462,7 +463,7 @@ class genepool:
 		n = int(var,2)
 		if v[2] > 0:
 		    n = ((n * 1.0) / pow(10,v[2]))
-		g_d[name] = n + var_offset
+		g_d[name] = (n + var_offset) * var_mult
 	return g_d
 
     def create_id(self):

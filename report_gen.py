@@ -48,7 +48,7 @@ print "Connected to",__server__,":",__port__
 
 
 from bct import *
-
+from load_config import *
 
 max_length = 60 * 24 * 60
 
@@ -99,28 +99,16 @@ while 1:
 		if type(ag) == type([]):
 			ag = ag[0]
 		
-		#THE FOLLOWING SECTION MUST MATCH THE GTS Tool!!!
-		#set the trade engine class vars
-		#te.buy_delay =  len(input) - (60 * 12)
-		te.enable_flash_crash_protection = True
-		te.shares = ag['shares']
-		te.wll = ag['wll'] + ag['wls'] + 2 #add the two together to make sure
-					#the macd moving windows dont get inverted
-		te.wls = ag['wls'] + 1
-		te.buy_wait = ag['buy_wait']
-		te.markup = ag['markup'] + (te.commision * 3.0) #+ 0.025
-		te.stop_loss = ag['stop_loss']
-		te.stop_age = ag['stop_age']
-		te.macd_buy_trip = ag['macd_buy_trip'] * -1.0
-		te.buy_wait_after_stop_loss = ag['buy_wait_after_stop_loss']
-		#feed the input through the trade engine
+		#configure the trade engine
+		te = load_config_into_object({'set':ag},te)
+
 		
 		#preprocess the data
 		current_quartile = te.classify_market(input)
+		#update the gene server with the current market quartile
 		server.put_active_quartile(current_quartile)
 		#select the quartile to test
 		te.test_quartile(quartile)
-		te.net_worth_log = []
 
 		print "_" * 40
 		if current_quartile == quartile:
@@ -128,7 +116,7 @@ while 1:
 		else:
 			print "Quartile:",quartile, "(%.4f)"%ag['score']
 
-		#feed the data
+		#feed the input through the trade engine
 		try:
 			for i in input:
 				te.input(i[0],i[1])
@@ -138,14 +126,9 @@ while 1:
 
 			# Calc the next buy trigger point
 			if len(te.positions) > 0:
-				#testing
-				print "Inverse MACD Result: ",te.inverse_macd()
-
-				#target = te.input_log[-1][1] - (abs(((te.macd_buy_trip - te.macd_pct_log[-1][1]) / 100.0) * te.input_log[-1][1]) * 2.0)
-				#print "Simple Calculation Result: ",target
-				
-				#DEBUG : use the inverse MACD
-				target = te.inverse_macd()
+				#get the target trigger price
+				target = te.get_target()
+				print "Inverse MACD Result (target): ",target
 
 				if target > te.input_log[-1][1]:
 					target = te.input_log[-1][1]
