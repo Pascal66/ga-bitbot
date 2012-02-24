@@ -2,18 +2,18 @@
 	"set" :
 	{
 		"SHARED_SECTION" : 1,
+		"max_length" : 100000,
 		"enable_flash_crash_protection" : 1,
-		"flash_crash_protection_delay" : 180,
+		"flash_crash_protection_delay" : 240,
 
 		"GTS_SECTION" : 1,
-		"max_length" : 87000,
 		"load_throttle" : 1,
-		"load_throttle_sleep_interval" : 0.1,
+		"load_throttle_sleep_interval" : 0.15,
 		"calibrate" : 1,
 		"cycle_time" : 60,
-		"min_cycle_time" : 30,
+		"min_cycle_time" : 40,
 		"cycle_time_step" : 2,
-		"pid_update_rate" : 20,
+		"pid_update_rate" : 15,
 
 		"BCBOOKIE_SECTION" : 1,
 		"monitor_mode" : 0,
@@ -29,8 +29,10 @@
 		"enable_text_messaging":1,
 
 		"REPORTGEN_SECTION" : 1,
-		"chart_zoom_periods" : 3000,
+		"chart_zoom_periods" : 1500,
 		"chart_now_periods" : 200,
+		"win_loss_gate_pct" : 0.80,
+
 
 		"config_loaded" : 1
 	}
