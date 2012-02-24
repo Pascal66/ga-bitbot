@@ -81,7 +81,7 @@ class Client:
 		self.connection = boto.connect_sns(self.key, self.secret)
 		
 	def send(self,text_message):
-		return self.connection.publish(topic='arn:aws:sns:us-east-1:458352940684:bcbookie',message=text_message)
+		return self.connection.publish(topic=self.topic_arn,message=text_message)
 
 if __name__ == "__main__":
 	def ppdict(d):
@@ -110,6 +110,7 @@ if __name__ == "__main__":
 	print "\nAWS_SNS module test"
 	c = Client()
 	b = ppdict(pwdict(c.send('AWS_SNS module test'),'./test_data/aws_send.txt'))
+	print "test message sent."
 	print "done."
 
 
