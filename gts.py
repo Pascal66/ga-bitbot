@@ -224,7 +224,7 @@ if __name__ == "__main__":
 
 		if loop_count%pid_update_rate == 0:
 			#periodicaly reset the watchdog monitor
-			print "watchdog reset"
+			#print "resetting watchdog timer"
 			server.pid_alive(g.id)
 
 		if loop_count > g.pool_size:
@@ -277,6 +277,9 @@ if __name__ == "__main__":
 			
 
 			elif max_gene != None:
+				#debug
+				print max_gene
+				#end debug
 				print "--\tSubmit BOB for id:%s to server (%.2f)"%(str(max_gene['id']),max_gene['score'])
 				server.put_bob(json.dumps(max_gene),quartile)
 				if quartile_cycle == True:
@@ -374,7 +377,7 @@ if __name__ == "__main__":
 				print "--\tSubmit high score for quartile:%s id:%s to server (%.5f)"%(str(quartile),str(ag['id']),score)
 				max_score = score
 				max_score_id = ag['id']
-				max_gene = g.get_by_id(max_score_id)
+				max_gene = ag.copy() #g.get_by_id(max_score_id)
 				if max_gene != None:
 					server.put(json.dumps(max_gene),quartile)
 				else:

@@ -576,8 +576,15 @@ if __name__ == "__main__":
 	
 	print "main: entering main loop"
 	while 1:
-		#get the current quartile
-		b.active_quartile = server.get_active_quartile()
+
+		#get info from the gene_server
+		t = {}
+		try:
+			#get the current quartile
+			b.active_quartile = server.get_active_quartile()
+			t = json.loads(server.get_target())
+		except:
+			print "error: gene_server connection issue"
 
 		print "_"*80
 		print "main: Availble Funds (USDS,BTCS) :" + str(b.update())
@@ -586,8 +593,6 @@ if __name__ == "__main__":
 		if bid_counter == bid_counter_trip:
 			bid_counter = 0
 			"main: Submitting GA Order: "
-
-			t = json.loads(server.get_target())
 
 			#bug fix for issue #12 - verify target order returned from gene server
 			target_order_validated = False
