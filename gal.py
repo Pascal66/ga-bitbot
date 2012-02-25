@@ -25,15 +25,6 @@ This file is part of ga-bitbot.
 __appversion__ = "0.01a"
 print "ga-bitbot system launcher v%s"%__appversion__
 
-WATCHDOG_TIMEOUT = 60 #seconds
-MONITORED_PROCESS_LAUNCH_TIMEOUT = 20 #seconds
-
-monitored_launch = ['pypy gts.py all y run_once','pypy gts.py all n run_once','pypy gts.py 1 n run_once','pypy gts.py 2 n run_once','pypy gts.py 3 n run_once','pypy gts.py 4 n run_once','pypy gts.py 1 y run_once','pypy gts.py 2 y run_once','pypy gts.py 3 y run_once','pypy gts.py 4 y run_once']
-unmonitored_launch = ['python wc_server.py','python report_gen.py']
-
-monitor = {}	#variables to track monitored/unmonitored processes
-no_monitor = []
-
 import atexit
 import sys
 from subprocess import check_output as call, Popen, PIPE
@@ -42,6 +33,35 @@ from os import environ
 import os
 from time import *
 
+print "\n\tcommand line options:\n\t\tserver\t\tlaunches only the server components\n\t\tclient\t\tlaunches only the client components\n\t\tall\t\tlaunches all components"
+print "\n\tthe default configuration will launch all components"
+run_client = 1
+run_server = 1
+if len(sys.argv) >= 1:
+	if sys.argv[1] == 'all':
+		run_client = 1
+		run_server = 1
+		print "launching all components"
+	if sys.argv[1] == 'client':
+		run_client = 1
+		run_server = 0
+		print "launching client components only"
+	if sys.argv[1] == 'server':
+		run_client = 0
+		run_server = 1
+		print "launching server components only"
+else:
+	print "launching all components"
+	sleep(3)
+
+WATCHDOG_TIMEOUT = 60 #seconds
+MONITORED_PROCESS_LAUNCH_TIMEOUT = 20 #seconds
+
+monitored_launch = ['pypy gts.py all y run_once','pypy gts.py all n run_once','pypy gts.py 1 n run_once','pypy gts.py 2 n run_once','pypy gts.py 3 n run_once','pypy gts.py 4 n run_once','pypy gts.py 1 y run_once','pypy gts.py 2 y run_once','pypy gts.py 3 y run_once','pypy gts.py 4 y run_once']
+unmonitored_launch = ['python wc_server.py','python report_gen.py']
+
+monitor = {}	#variables to track monitored/unmonitored processes
+no_monitor = []
 
 def terminate_process(process):
 	if sys.platform == 'win32':
@@ -56,36 +76,6 @@ def terminate_process(process):
 			process.terminate()
 			process.wait()
 
-
-
-
-#open a null file to redirect output from the subprocesses 
-fnull = open(os.devnull,'w')
-
-#update the dataset
-print "Synching the local datafeed..."
-Popen(shlex.split('python bcfeed_synch.py -d')).wait()
-
-#launch the bcfeed script to collect data from the live feed
-print "Starting the live datafeed capture script..."
-p = Popen(shlex.split('python bcfeed.py'),stdin=fnull, stdout=fnull, stderr=fnull)
-no_monitor.append(p)
-
-print "Launching the xmlrpc server..."
-Popen(shlex.split('pypy gene_server.py'),stdin=fnull, stdout=fnull, stderr=fnull)
-sleep(1) #give the server time to start
-
-
-# connect to the xml server
-#
-import gene_server_config
-import xmlrpclib
-import json
-__server__ = gene_server_config.__server__
-__port__ = str(gene_server_config.__port__)
-server = xmlrpclib.Server('http://' + __server__ + ":" + __port__)  
-print "Connected to",__server__,":",__port__
-
 # create and register callback function to do a clean shutdown of the system on exit.
 def shutdown():
 	global monitor
@@ -99,85 +89,120 @@ def shutdown():
 
 atexit.register(shutdown)
 
-a = ""
-while not(a == 'y' or a == 'n'):
-	print "Load archived gene database? (y/n)"
-	a = raw_input()
+#open a null file to redirect output from the subprocesses 
+fnull = open(os.devnull,'w')
 
-if a == 'y':
-	print "Loading the gene database..."
-	print server.reload()
+if run_server:
+	#update the dataset
+	print "Synching the local datafeed..."
+	Popen(shlex.split('python bcfeed_synch.py -d')).wait()
 
-print "Launching GA Clients..."
+	#launch the bcfeed script to collect data from the live feed
+	print "Starting the live datafeed capture script..."
+	p = Popen(shlex.split('python bcfeed.py'),stdin=fnull, stdout=fnull, stderr=fnull)
+	no_monitor.append(p)
+
+	print "Launching the xmlrpc server..."
+	Popen(shlex.split('pypy gene_server.py'),stdin=fnull, stdout=fnull, stderr=fnull)
+	sleep(1) #give the server time to start
 
 
-#collect system process PIDS for monitoring. 
-#(not the same as system OS PIDs -- They are more like GUIDs as this is a multiclient distributed system) 
-epl = json.loads(server.pid_list()) #get the existing pid list
+# connect to the xml server
+#
+import gene_server_config
+import xmlrpclib
+import json
+__server__ = gene_server_config.__server__
+__port__ = str(gene_server_config.__port__)
+server = xmlrpclib.Server('http://' + __server__ + ":" + __port__)  
+print "Connected to",__server__,":",__port__
 
-#start the monitored processes
-for cmd_line in monitored_launch:
-	p = Popen(shlex.split(cmd_line),stdin=fnull, stdout=fnull, stderr=fnull)
-	retry = MONITORED_PROCESS_LAUNCH_TIMEOUT
-	while retry > 0:
-		sleep(1)
-		cpl = json.loads(server.pid_list())	#get the current pid list
-		npl = list(set(epl) ^ set(cpl)) 	#find the new pid(s)
-		epl = cpl				#update the existing pid list
-		if len(npl) > 0:
-			monitor.update({npl[0]:{'cmd':cmd_line,'process':p}})	#store the pid/cmd_line/process
-			print "Monitored Process Launched (PID:",npl[0],"CMD:",cmd_line,")"
-			break
-		else:
-			retry -= 1
-	if retry == 0:
-		print "ERROR: Monitored Process Failed to Launch","(CMD:",cmd_line,")"
 
-#start unmonitored processes
-for cmd_line in unmonitored_launch:
-	p = Popen(shlex.split(cmd_line),stdin=fnull, stdout=fnull, stderr=fnull)
-	print "Unmonitored Process Launched (CMD:",cmd_line,")"
-	no_monitor.append(p)	#store the popen instance
-	sleep(1) #wait a while before starting the report_gen script
+if run_server:
+	a = ""
+	while not(a == 'y' or a == 'n'):
+		print "Load archived gene database? (y/n)"
+		a = raw_input()
+
+	if a == 'y':
+		print "Loading the gene database..."
+		print server.reload()
+
+
+if run_client:
+	print "Launching GA Clients..."
+
+	#collect system process PIDS for monitoring. 
+	#(not the same as system OS PIDs -- They are more like GUIDs as this is a multiclient distributed system) 
+	epl = json.loads(server.pid_list()) #get the existing pid list
+
+	#start the monitored processes
+	for cmd_line in monitored_launch:
+		p = Popen(shlex.split(cmd_line),stdin=fnull, stdout=fnull, stderr=fnull)
+		retry = MONITORED_PROCESS_LAUNCH_TIMEOUT
+		while retry > 0:
+			sleep(1)
+			cpl = json.loads(server.pid_list())	#get the current pid list
+			npl = list(set(epl) ^ set(cpl)) 	#find the new pid(s)
+			epl = cpl				#update the existing pid list
+			if len(npl) > 0:
+				monitor.update({npl[0]:{'cmd':cmd_line,'process':p}})	#store the pid/cmd_line/process
+				print "Monitored Process Launched (PID:",npl[0],"CMD:",cmd_line,")"
+				break
+			else:
+				retry -= 1
+		if retry == 0:
+			print "ERROR: Monitored Process Failed to Launch","(CMD:",cmd_line,")"
+if run_server:
+	#start unmonitored processes
+	for cmd_line in unmonitored_launch:
+		p = Popen(shlex.split(cmd_line),stdin=fnull, stdout=fnull, stderr=fnull)
+		print "Unmonitored Process Launched (CMD:",cmd_line,")"
+		no_monitor.append(p)	#store the popen instance
+		sleep(1) #wait a while before starting the report_gen script
 
 
 print "\nMonitoring Processes..."
 count = 0
 while 1:
-	count += 1
-	#periodicaly tell the server to save the gene db
-	if count == 5:
-		count = 0
-		server.save()
+	if run_server:
+		count += 1
+		#periodicaly tell the server to save the gene db
+		if count == 5:
+			count = 0
+			server.save()
+		if run_client == 0:
+			sleep(60) 
 
-	#process monitor loop
-	for pid in monitor.keys():
-		sleep(5) #check one pid every n seconds.
-		if server.pid_check(pid,WATCHDOG_TIMEOUT) == "NOK":
-			#watchdog timed out
-			print "WATCHDOG: PID",pid,"EXPIRED"
-			#remove the expired PID
-			server.pid_remove(pid)
-			epl = json.loads(server.pid_list()) 	#get the current pid list
-			cmd_line = monitor[pid]['cmd']
-			#terminate the process
-			terminate_process(monitor[pid]['process'])
-			monitor.pop(pid)
-			#launch new process
-			p = Popen(shlex.split(cmd_line),stdin=fnull, stdout=fnull, stderr=fnull)
-			retry = MONITORED_PROCESS_LAUNCH_TIMEOUT
-			while retry > 0:
-				sleep(1)
-				cpl = json.loads(server.pid_list())	#get the current pid list
-				npl = list(set(epl) ^ set(cpl)) 	#find the new pid(s)
-				epl = cpl				#update the existing pid list
-				if len(npl) > 0:
-					monitor.update({npl[0]:{'cmd':cmd_line,'process':p}})	#store the pid/cmd_line/process
-					print "Monitored Process Launched (PID:",npl[0],"CMD:",cmd_line,")"
-					break
-				else:
-					retry -= 1
-			if retry == 0:
-				print "ERROR: Monitored Process Failed to Launch","(CMD:",cmd_line,")"			
+	if run_client:
+		#process monitor loop
+		for pid in monitor.keys():
+			sleep(5) #check one pid every n seconds.
+			if server.pid_check(pid,WATCHDOG_TIMEOUT) == "NOK":
+				#watchdog timed out
+				print "WATCHDOG: PID",pid,"EXPIRED"
+				#remove the expired PID
+				server.pid_remove(pid)
+				epl = json.loads(server.pid_list()) 	#get the current pid list
+				cmd_line = monitor[pid]['cmd']
+				#terminate the process
+				terminate_process(monitor[pid]['process'])
+				monitor.pop(pid)
+				#launch new process
+				p = Popen(shlex.split(cmd_line),stdin=fnull, stdout=fnull, stderr=fnull)
+				retry = MONITORED_PROCESS_LAUNCH_TIMEOUT
+				while retry > 0:
+					sleep(1)
+					cpl = json.loads(server.pid_list())	#get the current pid list
+					npl = list(set(epl) ^ set(cpl)) 	#find the new pid(s)
+					epl = cpl				#update the existing pid list
+					if len(npl) > 0:
+						monitor.update({npl[0]:{'cmd':cmd_line,'process':p}})	#store the pid/cmd_line/process
+						print "Monitored Process Launched (PID:",npl[0],"CMD:",cmd_line,")"
+						break
+					else:
+						retry -= 1
+				if retry == 0:
+					print "ERROR: Monitored Process Failed to Launch","(CMD:",cmd_line,")"			
 
 fnull.close()
