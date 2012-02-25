@@ -32,12 +32,17 @@ import shlex
 from os import environ
 import os
 from time import *
+import __main__
+
+from load_config import *
+
+
 
 print "\n\tcommand line options:\n\t\tserver\t\tlaunches only the server components\n\t\tclient\t\tlaunches only the client components\n\t\tall\t\tlaunches all components"
 print "\n\tthe default configuration will launch all components"
 run_client = 1
 run_server = 1
-if len(sys.argv) >= 1:
+if len(sys.argv) >= 2:
 	if sys.argv[1] == 'all':
 		run_client = 1
 		run_server = 1
@@ -54,8 +59,61 @@ else:
 	print "launching all components"
 	sleep(3)
 
+#the variable values below are superceded by the configuration loaded from the 
+#configuration file global_config.json
+#!!!!!!!! to change the values edit the json configuration file NOT the variables below !!!!!!!!
 WATCHDOG_TIMEOUT = 60 #seconds
 MONITORED_PROCESS_LAUNCH_TIMEOUT = 20 #seconds
+GENE_SERVER_STDERR_FILE = "/dev/null"
+BCFEED_STDERR_FILE = "/dev/null"
+WC_SERVER_STDERR_FILE = "/dev/null"
+REPORT_GEN_STDERR_FILE = "/dev/null"
+GTS_STDERR_FILE = "/dev/null"
+config_loaded = False
+#load config
+try:
+	__main__ = load_config_file_into_object('global_config.json',__main__)
+except:
+	print "Error detected while loading the configuration. The application will now exit."
+	import sys
+	sys.exit()
+else:
+	if config_loaded == False:
+		print "Configuration failed to load. The application will now exit."
+		import sys
+		sys.exit()
+	else:
+		print "Configuration loaded."
+
+#open a null file to redirect stdout/stderr from the launched subprocesses 
+fnull = open(os.devnull,'w')
+
+if GENE_SERVER_STDERR_FILE == "/dev/null":
+	GENE_SERVER_STDERR_FILE = fnull
+else:
+	GENE_SERVER_STDERR_FILE = open(GENE_SERVER_STDERR_FILE,'a')
+
+if BCFEED_STDERR_FILE == "/dev/null":
+	BCFEED_STDERR_FILE = fnull
+else:
+	BCFEED_STDERR_FILE = open(BCFEED_STDERR_FILE,'a')
+
+if WC_SERVER_STDERR_FILE == "/dev/null":
+	WC_SERVER_STDERR_FILE = fnull
+else:
+	WC_SERVER_STDERR_FILE = open(WC_SERVER_STDERR_FILE,'a')
+
+if REPORT_GEN_STDERR_FILE == "/dev/null":
+	REPORT_GEN_STDERR_FILE = fnull
+else:
+	REPORT_GEN_STDERR_FILE = open(REPORT_GEN_STDERR_FILE,'a')
+
+if GTS_STDERR_FILE == "/dev/null":
+	GTS_STDERR_FILE = fnull
+else:
+	GTS_STDERR_FILE = open(GTS_STDERR_FILE,'a')
+
+
 
 monitored_launch = ['pypy gts.py all y run_once','pypy gts.py all n run_once','pypy gts.py 1 n run_once','pypy gts.py 2 n run_once','pypy gts.py 3 n run_once','pypy gts.py 4 n run_once','pypy gts.py 1 y run_once','pypy gts.py 2 y run_once','pypy gts.py 3 y run_once','pypy gts.py 4 y run_once']
 unmonitored_launch = ['python wc_server.py','python report_gen.py']
@@ -89,8 +147,7 @@ def shutdown():
 
 atexit.register(shutdown)
 
-#open a null file to redirect output from the subprocesses 
-fnull = open(os.devnull,'w')
+
 
 if run_server:
 	#update the dataset
@@ -99,11 +156,11 @@ if run_server:
 
 	#launch the bcfeed script to collect data from the live feed
 	print "Starting the live datafeed capture script..."
-	p = Popen(shlex.split('python bcfeed.py'),stdin=fnull, stdout=fnull, stderr=fnull)
+	p = Popen(shlex.split('python bcfeed.py'),stdin=fnull, stdout=fnull, stderr=BCFEED_STDERR_FILE)
 	no_monitor.append(p)
 
 	print "Launching the xmlrpc server..."
-	Popen(shlex.split('pypy gene_server.py'),stdin=fnull, stdout=fnull, stderr=fnull)
+	Popen(shlex.split('pypy gene_server.py'),stdin=fnull, stdout=fnull, stderr=GENE_SERVER_STDERR_FILE)
 	sleep(1) #give the server time to start
 
 
@@ -138,7 +195,7 @@ if run_client:
 
 	#start the monitored processes
 	for cmd_line in monitored_launch:
-		p = Popen(shlex.split(cmd_line),stdin=fnull, stdout=fnull, stderr=fnull)
+		p = Popen(shlex.split(cmd_line),stdin=fnull, stdout=fnull, stderr=GTS_STDERR_FILE)
 		retry = MONITORED_PROCESS_LAUNCH_TIMEOUT
 		while retry > 0:
 			sleep(1)
@@ -189,7 +246,7 @@ while 1:
 				terminate_process(monitor[pid]['process'])
 				monitor.pop(pid)
 				#launch new process
-				p = Popen(shlex.split(cmd_line),stdin=fnull, stdout=fnull, stderr=fnull)
+				p = Popen(shlex.split(cmd_line),stdin=fnull, stdout=fnull, stderr=GTS_STDERR_FILE)
 				retry = MONITORED_PROCESS_LAUNCH_TIMEOUT
 				while retry > 0:
 					sleep(1)

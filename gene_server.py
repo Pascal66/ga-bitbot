@@ -314,7 +314,7 @@ class RequestHandler(SimpleXMLRPCRequestHandler):
 	rpc_paths = ('/gene','/RPC2')
 
 #create the server
-server = SimpleXMLRPCServer((__server__, __port__),requestHandler = RequestHandler,logRequests = True, allow_none = True)
+server = SimpleXMLRPCServer((__server__, __port__),requestHandler = RequestHandler,logRequests = False, allow_none = True)
 
 #register the functions
 #client services

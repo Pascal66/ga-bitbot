@@ -33,7 +33,14 @@
 		"chart_now_periods" : 200,
 		"win_loss_gate_pct" : 0.80,
 
-
+		"GAL_SECTION" : 1,
+		"WATCHDOG_TIMEOUT" : 60,
+		"MONITORED_PROCESS_LAUNCH_TIMEOUT" : 20,
+		"GENE_SERVER_STDERR_FILE" : "./report/gene_server_error_log.txt",
+		"BCFEED_STDERR_FILE" : "/dev/null",
+		"WC_SERVER_STDERR_FILE" : "/dev/null",
+		"REPORT_GEN_STDERR_FILE" : "/dev/null",
+		"GTS_STDERR_FILE" : "./report/gts_error_log.txt",
 		"config_loaded" : 1
 	}
 
