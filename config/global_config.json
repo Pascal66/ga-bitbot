@@ -5,6 +5,7 @@
 		"max_length" : 100000,
 		"enable_flash_crash_protection" : 1,
 		"flash_crash_protection_delay" : 240,
+		"price_format" : "%.5f",
 
 		"GTS_SECTION" : 1,
 		"load_throttle" : 1,
@@ -32,7 +33,6 @@
 		"chart_zoom_periods" : 1500,
 		"chart_now_periods" : 200,
 		"win_loss_gate_pct" : 0.80,
-		"price_format" : "%.5f",
 
 		"GAL_SECTION" : 1,
 		"WATCHDOG_TIMEOUT" : 60,
