@@ -60,6 +60,7 @@ flash_crash_protection_delay = 180
 chart_zoom_periods = 3000
 chart_now_periods = 200
 win_loss_gate_pct = 0.80
+price_format = "%.3f"
 config_loaded = 0
 #load config
 try:
@@ -204,8 +205,8 @@ while 1:
 				if current_quartile == quartile:
 					if ((target >= p['buy']) or (abs(target - p['buy']) < 0.01)) and p['buy'] != 0: #submit the order at or below target
 						#format the orders
-						p['buy'] = float("%.3f"%(p['buy'] - 0.01))
-						p['target'] = float("%.3f"%p['target'])
+						p['buy'] = float(price_format%(p['buy'] - 0.01))
+						p['target'] = float(price_format%p['target'])
 						p.update({'stop_age':(60 * te.stop_age)})
 						if float(te.wins / float(te.wins + te.loss)) > win_loss_gate_pct:
 							#only submit an order if the win/loss ratio is greater than x%

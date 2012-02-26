@@ -269,9 +269,9 @@ class bookie:
 		return True
 
 	def buy(self,qty,buy_price,commit_price,target_price,stop_loss,max_wait,max_hold):
-		buy_price = float("%.2f"%buy_price)
-		target_price = float("%.2f"%target_price)
-		commit_price = float("%.2f"%commit_price)
+		buy_price = float(price_format%buy_price)
+		target_price = float(price_format%target_price)
+		commit_price = float(price_format%commit_price)
 
 		if commit_price > target_price:
 			print "buy: order validation failed, commit price higher than target"
@@ -549,6 +549,7 @@ if __name__ == "__main__":
 	flash_crash_protection_delay = 60 * 3 #three hours
 	enable_underbids = True
 	enable_text_messaging = False
+	price_format = "%.3f"
 	config_loaded = 0
 
 	#load config

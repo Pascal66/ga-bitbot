@@ -32,6 +32,7 @@
 		"chart_zoom_periods" : 1500,
 		"chart_now_periods" : 200,
 		"win_loss_gate_pct" : 0.80,
+		"price_format" : "%.5f",
 
 		"GAL_SECTION" : 1,
 		"WATCHDOG_TIMEOUT" : 60,
