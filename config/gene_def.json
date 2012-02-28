@@ -1,4 +1,7 @@
 {
+	"name":"development gene definition",
+	"version":"0.1",
+	"description":"a development version of gene_def.",
 	"set" :
 	{
 		"prune_threshold" : 0.30,
