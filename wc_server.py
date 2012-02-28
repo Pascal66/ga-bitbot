@@ -89,6 +89,13 @@ def index():
 	trigger += "-"*80 + '<br>' * 2
 
 	clients = "-"*80 + '<br>'
+	gdhl = json.loads(server.get_gene_def_hash_list())
+	clients += "Gene Library (" + str(len(gdhl))  + ')<br>'
+	for gdh in gdhl:
+		clients += "----> "+ gdh + '<br>'
+	clients += "-"*80 + '<br>' * 2
+
+	clients += "-"*80 + '<br>'
 	pid_list = json.loads(server.pid_list(180))
 	clients += "Active Clients (" + str(len(pid_list))  + ')<br>'
 	for pid in pid_list:

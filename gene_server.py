@@ -323,7 +323,7 @@ def get_gene_def_hash_list():
 def get_gene_def(gene_def_hash):
 	global g_gene_library
 	if gene_def_hash in g_gene_library.keys():
-		return json.dumps(g_gene_library[gene_def_hash]['gene_def'])
+		return g_gene_library[gene_def_hash]['gene_def']
 	return json.dumps('NOK:NOT_FOUND')
 
 #system services

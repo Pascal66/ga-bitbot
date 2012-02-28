@@ -34,6 +34,7 @@ import json
 import gene_server_config
 import time
 import sys
+import random
 
 __server__ = gene_server_config.__server__
 __port__ = str(gene_server_config.__port__)
@@ -110,32 +111,14 @@ if __name__ == "__main__":
 			input.append([int(float(t)),float(r)])
 		#print "done loading:", str(len(input)),"records."
 		return input
-	    
-	#configure the gene pool
-	g = genepool()
-	g = load_config_into_object(load_config_from_file("gene_def.json"),g)
-
-	#reset the process watchdog using the gene pool id as the PID (GUID)
-	server.pid_alive(g.id)
-
-	#load the inital data
-	input = load()
-
-
-	#g.set_log("winners.txt")
-	print "Creating the trade engine"
-	te = trade_engine()
-	te.score_only = True
-	te.enable_flash_crash_protection = enable_flash_crash_protection 
-	te.flash_crash_protection_delay = flash_crash_protection_delay
-	#preprocess input data
-	te.classify_market(input)
 
 	#process command line args
 	quartile = ''
 	bs = ''
 	verbose = False
 	run_once = False
+	get_config = False
+
 	print sys.argv
 	if len(sys.argv) >= 3:
 		# Convert the two arguments from strings into numbers
@@ -149,7 +132,10 @@ if __name__ == "__main__":
 					#use with gal.py to auto reset (to address pypy memory leaks)
 					#exit after first local optima found
 					#or in the case of 'all' quartiles being tested, reset after once cycle through the quartiles
-					run_once = True	
+					run_once = True
+				if sys.argv[i] == 'get_config':
+					#if set the gene_def config will be randomly loaded from the server
+					get_config = True
 	
 	#which quartile group to test
 	while not (quartile in ['1','2','3','4','all']):
@@ -161,6 +147,66 @@ if __name__ == "__main__":
 		quartile = 1
 		quartile_cycle = True
     		update_all_scores = True
+
+	#configure the gene pool
+	g = genepool()
+	if get_config == True:
+		print "Loading random gene_def from the server."
+		gd = "UNDEFINED"
+		while gd == "UNDEFINED":
+			#get the gene def config from the server
+			gdhl = json.loads(server.get_gene_def_hash_list())
+			if len(gdhl) < 2:
+				#the default config isn't defined
+				#if there are less then two genes registered then switch to the local config.
+				get_config = False
+				break
+			#pick one at random
+			gdh = random.choice(gdhl)
+			#get the gene_def
+			gd = server.get_gene_def(gdh)
+			#print gd
+			if gd != "UNDEFINED":
+				try:
+					gd = json.loads(gd)
+					#load the remote config
+					g = load_config_into_object(gd,g)
+					#only need to register the client with the existing gene_def hash
+					server.pid_register_client(g.id,gdh)
+					print "gene_def_hash:",gdh
+					print "name",gd['name']
+	 				print "description",gd['description']
+					print "gene_def load complete."
+				except:
+					print "gene_def load error:",gd
+					gd = "UNDEFINED"
+
+
+	#ad = json.loads(json.loads(server.get_gene_def(random.choice(json.loads(server.get_gene_def_hash_list())))))
+
+	if get_config == False:	
+		g = load_config_into_object(load_config_from_file("gene_def.json"),g)
+
+		#register the gene_def file and link to this client using the gene pool id as the PID (GUID)
+		f = open('./config/gene_def.json','r')
+		gdc = f.read()
+		f.close()
+		server.pid_register_gene_def(g.id,gdc)
+
+	#reset the process watchdog
+	server.pid_alive(g.id)
+
+	#load the inital data
+	input = load()
+
+	#g.set_log("winners.txt")
+	print "Creating the trade engine"
+	te = trade_engine()
+	te.score_only = True
+	te.enable_flash_crash_protection = enable_flash_crash_protection 
+	te.flash_crash_protection_delay = flash_crash_protection_delay
+	#preprocess input data
+	te.classify_market(input)
 
 	#bootstrap the population with the winners available from the gene_pool server
 	while not(bs == 'y' or bs == 'n'):
