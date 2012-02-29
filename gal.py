@@ -138,12 +138,16 @@ def terminate_process(process):
 def shutdown():
 	global monitor
 	global no_monitor
+	global run_server
+
 	for p in no_monitor:
 		terminate_process(p)
+
 	for pid in monitor.keys():
 		terminate_process(monitor[pid]['process'])
 	sys.stderr = fnull
-	server.shutdown()
+	if run_server:
+		server.shutdown()
 
 atexit.register(shutdown)
 

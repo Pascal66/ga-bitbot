@@ -493,6 +493,7 @@ class genepool:
 		print g_d['id'],g_d['score']
 		g_d['score'] = None
 		self.pool.append(g_d)
+	self.decode()
 	print "done."
 	return
 

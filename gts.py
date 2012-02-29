@@ -179,7 +179,6 @@ if __name__ == "__main__":
 					gd = "UNDEFINED"
 					get_config = False #force load local gen_def.json config
 
-	#ad = json.loads(json.loads(server.get_gene_def(random.choice(json.loads(server.get_gene_def_hash_list())))))
 
 	if get_config == False:	
 		g = load_config_into_object(load_config_from_file("gene_def.json"),g)
@@ -214,8 +213,8 @@ if __name__ == "__main__":
 		if quartile_cycle == False:
 			update_all_scores = False
 		g.local_optima_trigger = 10
-		bootstrap_bobs = json.loads(server.get_bobs(quartile))
-		bootstrap_all = json.loads(server.get_all(quartile))
+		bootstrap_bobs = json.loads(server.get_bobs(quartile,g.id))
+		bootstrap_all = json.loads(server.get_all(quartile,g.id))
 		print len(bootstrap_all)
 		if (type(bootstrap_bobs) == type([])) and (type(bootstrap_all) == type([])):
 			g.seed()
@@ -324,7 +323,7 @@ if __name__ == "__main__":
 				print max_gene
 				#end debug
 				print "--\tSubmit BOB for id:%s to server (%.2f)"%(str(max_gene['id']),max_gene['score'])
-				server.put_bob(json.dumps(max_gene),quartile)
+				server.put_bob(json.dumps(max_gene),quartile,g.id)
 				if quartile_cycle == True:
 					#if not in bob simulator mode but cycling is enabled then 
 					#the client will cycle through the quartiles as local optimas are found
@@ -357,8 +356,8 @@ if __name__ == "__main__":
 
 			if bob_simulator:
 				#update_all_scores = True	#on the first pass only, bob clients need to resubmit updated scores for every gene 
-				bootstrap_bobs = json.loads(server.get_bobs(quartile))
-			    	bootstrap_all = json.loads(server.get_all(quartile))
+				bootstrap_bobs = json.loads(server.get_bobs(quartile,g.id))
+			    	bootstrap_all = json.loads(server.get_all(quartile,g.id))
 				g.pool_size = len(g.pool)
 				if (type(bootstrap_bobs) == type([])) and (type(bootstrap_all) == type([])):
 					g.seed()
@@ -422,14 +421,14 @@ if __name__ == "__main__":
 				max_score_id = ag['id']
 				max_gene = ag.copy() #g.get_by_id(max_score_id)
 				if max_gene != None:
-					server.put(json.dumps(max_gene),quartile)
+					server.put(json.dumps(max_gene),quartile,g.id)
 				else:
 					print "MAX_GENE is None!!"
 			elif update_all_scores == True:
 				print "--\tUpdating score for quartile:%s id:%s to server (%.5f)"%(str(quartile),str(ag['id']),score)
 				agene = g.get_by_id(ag['id'])
 				if agene != None:
-					server.put(json.dumps(agene),quartile)
+					server.put(json.dumps(agene),quartile,g.id)
 				else:
 					print "Updating Gene Error: Gene is missing!!"
 
