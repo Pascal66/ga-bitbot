@@ -458,6 +458,7 @@ class genepool:
 		name = v[0]
 		var_len = v[1]
 		var_offset = v[3]
+		var_mult = v[4]
 		var = g_d['gene'][offset:offset+var_len]
 		offset += var_len
 		n = int(var,2)

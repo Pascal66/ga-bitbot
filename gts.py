@@ -22,10 +22,6 @@ This file is part of ga-bitbot.
     along with ga-bitbot.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-
-
-
-
 # connect to the xml server
 #
 
@@ -35,6 +31,8 @@ import gene_server_config
 import time
 import sys
 import random
+import __main__
+random.seed(time.time())
 
 __server__ = gene_server_config.__server__
 __port__ = str(gene_server_config.__port__)
@@ -50,13 +48,12 @@ from bct import *
 from genetic import *
 from load_config import *
 import pdb
-import time
+
 
 if __name__ == "__main__":
 	__appversion__ = "0.01a"
 	print "Genetic Bitcoin Trade Simulator v%s"%__appversion__
-	import __main__
-	from load_config import *
+	
 
 	#the variable values below are superceded by the configuration loaded from the 
 	#configuration file global_config.json
@@ -153,7 +150,7 @@ if __name__ == "__main__":
 	if get_config == True:
 		print "Loading random gene_def from the server."
 		gd = "UNDEFINED"
-		while gd == "UNDEFINED":
+		while gd == "UNDEFINED" and get_config == True:
 			#get the gene def config from the server
 			gdhl = json.loads(server.get_gene_def_hash_list())
 			if len(gdhl) < 2:
@@ -180,7 +177,7 @@ if __name__ == "__main__":
 				except:
 					print "gene_def load error:",gd
 					gd = "UNDEFINED"
-
+					get_config = False #force load local gen_def.json config
 
 	#ad = json.loads(json.loads(server.get_gene_def(random.choice(json.loads(server.get_gene_def_hash_list())))))
 

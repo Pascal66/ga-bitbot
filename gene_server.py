@@ -316,6 +316,10 @@ def get_pid_gene_def_hash(pid):
 	else:
 		return "NOK:PID_NOT_FOUND"
 
+def get_default_gene_def_hash():
+	global g_default_group_gene_def_hash
+	return json.dumps(g_default_group_gene_def_hash)
+
 def get_gene_def_hash_list():
 	global g_gene_library
 	return json.dumps(g_gene_library.keys())
@@ -443,8 +447,10 @@ server.register_function(put_gene,'put')
 server.register_function(put_bob,'put_bob')
 server.register_function(get_bobs,'get_bobs')
 server.register_function(get_gene_def_hash_list,'get_gene_def_hash_list')
+server.register_function(get_default_gene_def_hash,'get_default_gene_def_hash')
 server.register_function(get_gene_def,'get_gene_def')
 server.register_function(get_pid_gene_def_hash,'get_pid_gene_def_hash')
+
 #process & monitoring services
 server.register_function(pid_register_gene_def,'pid_register_gene_def')
 server.register_function(pid_register_client,'pid_register_client')

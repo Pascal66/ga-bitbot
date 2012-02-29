@@ -93,6 +93,12 @@ def index():
 	clients += "Gene Library (" + str(len(gdhl))  + ')<br>'
 	for gdh in gdhl:
 		clients += "----> "+ gdh + '<br>'
+		try:
+			clients += "--------> " + json.loads(server.get_gene_def(gdh))['name'] + '<br>'
+		except:
+			pass
+	dgdh = json.loads(server.get_default_gene_def_hash())
+	clients += "Default Gene Def Hash: " + dgdh + '<br>'
 	clients += "-"*80 + '<br>' * 2
 
 	clients += "-"*80 + '<br>'
