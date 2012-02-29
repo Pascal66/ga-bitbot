@@ -419,7 +419,7 @@ class genepool:
 		g['msg'] = msg
 	return
     
-    def add_numvar(self,name,bits,decimal_places,offset=0.0,mult=1.0):
+    def add_numvar(self,name,bits,decimal_places,offset=0,mult=1):
 	#add a variable to the gene
 	self.contains.append([name,bits,decimal_places,offset,mult])   
 

@@ -599,7 +599,11 @@ if __name__ == "__main__":
 			target_order_validated = False
 			if t.has_key('target') and t.has_key('buy') and t.has_key('stop') and t.has_key('stop_age'):
 				if type(t['target']) == float and type(t['buy']) == float:
-					if type(t['stop']) == float and type(t['stop_age']) == int:
+					if type(t['stop']) == float and (type(t['stop_age']) == int or type(t['stop_age']) == float):
+						#patch to cover for a bug in genetic where ints were being generated as floats
+						#the type cast is so user databases don't get broken.
+						#this is temporary, the db's will self heal over time -- need to verify before removing.
+						t['stop_age'] = int(t['stop_age'])
 						target_order_validated = True
 					else:
 						print "main: warning - ignoring invalid target order:"
