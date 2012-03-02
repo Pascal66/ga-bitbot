@@ -188,6 +188,7 @@ if __name__ == "__main__":
 		gdc = f.read()
 		f.close()
 		server.pid_register_gene_def(g.id,gdc)
+		server.pid_register_client(g.id,gdh)
 
 	#reset the process watchdog
 	server.pid_alive(g.id)

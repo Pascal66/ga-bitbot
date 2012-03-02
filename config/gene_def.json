@@ -1,7 +1,7 @@
 {
-	"name":"very high",
+	"name":"low",
 	"version":"0.1",
-	"description":"6 - 7% markup",
+	"description":"1.5 - 2.5% markup",
 	"set" :
 	{
 		"prune_threshold" : 0.30,
@@ -35,7 +35,7 @@
 			["wls",7,0,1],
 			["buy_wait",10,0,1],
 			["buy_wait_after_stop_loss",10,0,1],
-			["markup",10,5,0.06],
+			["markup",10,5,0.015],
 			["stop_loss",10,4,0.01],
 			["stop_age",13,0],
 			["macd_buy_trip",10,2,2.0,-2.0]

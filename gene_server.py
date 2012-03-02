@@ -163,7 +163,7 @@ def put_gene(d,quartile,pid = None):
 	if any(adict['gene'] == d['gene'] for adict in g_gene_library[gdh]['gene_best'][quartile - 1]):
 		print "put_gene: duplicate BOB gene detected"
 		#update the gene
-		put_bob(json.dumps(d),quartile)
+		put_bob(json.dumps(d),quartile,pid)
 		return "OK"
 	
 	#timestamp the gene submission
@@ -310,7 +310,7 @@ def get_pid_gene_def_hash(pid):
 	global g_pids
 	global g_undefined_gene_def_hash
 	if pid == None:
-		return g_default_group_gene_def_hash
+		return g_undefined_gene_def_hash #g_default_group_gene_def_hash
 	elif pid in g_pids.keys():
 		return g_pids[pid]['gene_def_hash']
 	else:

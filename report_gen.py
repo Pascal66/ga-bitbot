@@ -100,9 +100,16 @@ def load():
 	return input
 
 
+
 while 1:
 	skip_sleep_delay = False #default to sleep delay mode between cycles
 				#will be set to true (and skip the sleep delay) if target prices are found.
+
+	#register as a default client (this will allow remote dynamic configuration of the report generation)
+	pid = "REPORT_GEN"
+	gdh = json.loads(server.get_default_gene_def_hash())
+	server.pid_register_client(pid,gdh)
+
 	print "_" * 80
 	print time.ctime()  
 	#load the data set
@@ -116,7 +123,7 @@ while 1:
 		#get the high score gene from the gene server
 		while 1:
 			try:
-				ag = json.loads(server.get(60*60*24,quartile))
+				ag = json.loads(server.get(60*60*24,quartile,pid))
 				break
 			except:
 				print "Gene Server Error"
@@ -125,7 +132,7 @@ while 1:
 		if type(ag) == type([]):
 			ag = ag[0]
 		
-		#configure the trade engine
+		#load the gene dictionary into the trade engine
 		te = load_config_into_object({'set':ag},te)
 		te.enable_flash_crash_protection = enable_flash_crash_protection 
 		te.flash_crash_protection_delay = flash_crash_protection_delay
@@ -133,7 +140,7 @@ while 1:
 		#preprocess the data
 		current_quartile = te.classify_market(input)
 		#update the gene server with the current market quartile
-		server.put_active_quartile(current_quartile)
+		server.put_active_quartile(current_quartile,pid)
 		#select the quartile to test
 		te.test_quartile(quartile)
 
@@ -211,31 +218,31 @@ while 1:
 						if float(te.wins / float(te.wins + te.loss)) > win_loss_gate_pct:
 							#only submit an order if the win/loss ratio is greater than x%
 							print "sending target buy order to server @ $" + str(p['buy'])
-							server.put_target(json.dumps(p))
+							server.put_target(json.dumps(p),pid)
 							skip_sleep_delay = True #if target buy orders are active skip the sleep delay
 						else:
 							print "underperforming trade strategy, order not submitted"
 							p['buy'] = 0.00
 							p['target'] = 0.00
-							server.put_target(json.dumps(p))
+							server.put_target(json.dumps(p),pid)
 						print "-" * 40
-						print "Quartile  :",quartile
-						print "Buy	   :$", p['buy']
-						print "Target	:$",p['target']
-						print "Win Ratio :","%.3f"%((te.wins / float(te.wins + te.loss)) * 100),"%"
+						print "Quartile     :",quartile
+						print "Buy	    :$", p['buy']
+						print "Target	    :$",p['target']
+						print "Win Ratio    :","%.3f"%((te.wins / float(te.wins + te.loss)) * 100),"%"
 						print "-" * 40
 					else:
 						print "Trigger criteria not met, no order set."
-						print "Buy	   :$", p['buy']
-						print "Target	:$",p['target']
+						print "Buy	    :$", p['buy']
+						print "Target	    :$",p['target']
 						print "Input Target :$",target
-						print "Last Price:$",input[-1][1]
-						print "MACD Log: ",te.macd_pct_log[-1][1]
-						print "MACD Trip: ",te.macd_buy_trip
+						print "Last Price   :$",input[-1][1]
+						print "MACD Log     : ",te.macd_pct_log[-1][1]
+						print "MACD Trip    : ",te.macd_buy_trip
 						p.update({'stop_age':(60 * te.stop_age)}) #DEBUG ONLY!! - delete when done.
 						p['buy'] = 0.00
 						p['target'] = 0.00
-						server.put_target(json.dumps(p))
+						server.put_target(json.dumps(p),pid)
 
 					buys.append(p['buy'])
 					targets.append(p['target'])
@@ -253,14 +260,14 @@ while 1:
 
 	for quartile in [1,2,3,4]:
 		band_l = []
-		gl = json.loads(server.get_bobs(quartile))
+		gl = json.loads(server.get_bobs(quartile,pid))
 		if len(gl) > 0:
 			#place a band (a small list of gene set to all 1's) in the data to highlight the break between the bobs and high scores
 			band = "1" * len(gl[0]['gene'])
 			for i in xrange(3):
 				band_l.append({'gene':band})
 		gl += band_l
-		gl += json.loads(server.get_all(quartile))
+		gl += json.loads(server.get_all(quartile,pid))
 		l = []
 		for ag in gl:
 			l.append(ag['gene'])
@@ -276,7 +283,7 @@ while 1:
 		print "sleeping..."
 		print "_" * 80
 		print "\n"
-		time.sleep(1) #generate a report every n seconds
+		time.sleep(60) #generate a report every n seconds
 	else:
 		print "skipping sleep state due to active trigger prices..."
 		print "_" * 80

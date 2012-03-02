@@ -38,7 +38,7 @@ class genepool:
 	#generate a unique gene pool id
 	md = hashlib.md5()
 	md.update(str(time.time()) + str(random.random() * 1000000))
-	self.id = md.hexdigest()[0:8]
+	self.id = md.hexdigest()[0:16]
 	self.prune_threshold = 0.30	#score threshold - percentile (top n%)
 	self.max_prune_threshold = 0.20	#score threshold - percentile (top n%)
 	self.min_prune_threshold = 0.03	#score threshold - percentile (top n%)
