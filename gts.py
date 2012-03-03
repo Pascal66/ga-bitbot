@@ -47,7 +47,7 @@ from bct import *
 #from trade_engine import *
 from genetic import *
 from load_config import *
-import pdb
+
 
 
 if __name__ == "__main__":
@@ -187,7 +187,7 @@ if __name__ == "__main__":
 		f = open('./config/gene_def.json','r')
 		gdc = f.read()
 		f.close()
-		server.pid_register_gene_def(g.id,gdc)
+		gdh = server.pid_register_gene_def(g.id,gdc)
 		server.pid_register_client(g.id,gdh)
 
 	#reset the process watchdog

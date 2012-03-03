@@ -55,7 +55,7 @@ g_default_group_gene_def_hash = g_undefined_gene_def_hash
 
 g_gene_conf = {'gene_def_hash':g_undefined_gene_def_hash,'gene_def':'UNDEFINED','gene_high_scores':[[],[],[],[]],'gene_best':[[],[],[],[]],'g_trgt':json.dumps({'buy':0}),'g_active_quartile':0}
 g_gene_library = {'0db45d2a4141101bdfe48e3314cfbca3':deepcopy(g_gene_conf)} #default library starts with the default UNDEFINED group.
-g_default_group_gene_def_hash = None
+
 
 g_save_counter = 0
 g_trgt = json.dumps({'buy':0})

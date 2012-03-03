@@ -2,7 +2,7 @@
 """
 db_admin_util v0.01 
 
-ga-bitbot system launcher
+ga-bitbot database administration utility
 
 Copyright 2011 Brian Monkaba
 

@@ -108,6 +108,7 @@ while 1:
 	#register as a default client (this will allow remote dynamic configuration of the report generation)
 	pid = "REPORT_GEN"
 	gdh = json.loads(server.get_default_gene_def_hash())
+	print gdh
 	server.pid_register_client(pid,gdh)
 
 	print "_" * 80
@@ -126,7 +127,7 @@ while 1:
 				ag = json.loads(server.get(60*60*24,quartile,pid))
 				break
 			except:
-				print "Gene Server Error"
+				print "warning: gene server error or no data available."
 				time.sleep(10)
 		
 		if type(ag) == type([]):
