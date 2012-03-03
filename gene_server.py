@@ -83,6 +83,7 @@ def get_target(pid=None):
 def put_active_quartile(quartile,pid=None):
 	global g_active_quartile
 	global g_gene_library
+	g_active_quartile = quartile
 	gdh = get_pid_gene_def_hash(pid)
 	g_gene_library[gdh]['g_active_quartile'] = quartile
 	if gdh == g_default_group_gene_def_hash:
@@ -93,7 +94,8 @@ def get_active_quartile(pid=None):
 	global g_active_quartile
 	global g_gene_library
 	gdh = get_pid_gene_def_hash(pid)
-	return g_gene_library[gdh]['g_active_quartile']
+	#return g_gene_library[gdh]['g_active_quartile']
+	return g_active_quartile
  
 def get_gene(n_sec,quartile,pid = None):
 	global g_d
@@ -310,7 +312,7 @@ def get_pid_gene_def_hash(pid):
 	global g_pids
 	global g_undefined_gene_def_hash
 	if pid == None:
-		return g_undefined_gene_def_hash #g_default_group_gene_def_hash
+		return g_undefined_gene_def_hash
 	elif pid in g_pids.keys():
 		return g_pids[pid]['gene_def_hash']
 	else:
@@ -329,6 +331,13 @@ def get_gene_def(gene_def_hash):
 	if gene_def_hash in g_gene_library.keys():
 		return g_gene_library[gene_def_hash]['gene_def']
 	return json.dumps('NOK:NOT_FOUND')
+
+def set_default_gene_def_hash(gd_hash):
+	global g_default_group_gene_def_hash
+	if get_gene_def(gd_hash).find('NOK:') < 0:
+		g_default_group_set = True
+		g_default_group_gene_def_hash = gd_hash
+		return json.dumps(gd_hash)
 
 #system services
 def shutdown():
@@ -450,6 +459,7 @@ server.register_function(get_gene_def_hash_list,'get_gene_def_hash_list')
 server.register_function(get_default_gene_def_hash,'get_default_gene_def_hash')
 server.register_function(get_gene_def,'get_gene_def')
 server.register_function(get_pid_gene_def_hash,'get_pid_gene_def_hash')
+server.register_function(set_default_gene_def_hash,'set_default_gene_def_hash')
 
 #process & monitoring services
 server.register_function(pid_register_gene_def,'pid_register_gene_def')

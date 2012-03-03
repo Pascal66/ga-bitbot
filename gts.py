@@ -115,6 +115,7 @@ if __name__ == "__main__":
 	verbose = False
 	run_once = False
 	get_config = False
+	score_only = False
 
 	print sys.argv
 	if len(sys.argv) >= 3:
@@ -133,12 +134,15 @@ if __name__ == "__main__":
 				if sys.argv[i] == 'get_config':
 					#if set the gene_def config will be randomly loaded from the server
 					get_config = True
+				if sys.argv[i] == 'score_only':
+					#if set the gene_def config will be randomly loaded from the server
+					score_only = True
 	
 	#which quartile group to test
 	while not (quartile in ['1','2','3','4','all']):
 		print "Which quartile group to test? (1,2,3,4):"
 		quartile = raw_input()
-	if quartile != 'all':	
+	if quartile != 'all' and quartile != 'score_only':	
 		quartile = int(quartile)
 	else:
 		quartile = 1
@@ -271,7 +275,7 @@ if __name__ == "__main__":
 			server.pid_alive(g.id)
 
 		if loop_count > g.pool_size:
-			if quartile_cycle == True and bob_simulator == True:
+			if score_only: #quartile_cycle == True and bob_simulator == True:
 				#force a state jump to load the next quartile to retest the genes
 				#in this mode the only function of the client is to cycle through the quartiles to retest existing genes
 				g.local_optima_reached = True 
@@ -307,7 +311,7 @@ if __name__ == "__main__":
 			#preprocess input data
 			te.classify_market(input)
 
-			if quartile_cycle == True and bob_simulator == True:
+			if score_only: #quartile_cycle == True and bob_simulator == True:
 				#jump to the next quartile and skip the bob submission
 				update_all_scores = True
 				quartile += 1
@@ -318,7 +322,6 @@ if __name__ == "__main__":
 						server.pid_exit(g.id)
 						sys.exit()
 			
-
 			elif max_gene != None:
 				#debug
 				print max_gene
@@ -326,7 +329,7 @@ if __name__ == "__main__":
 				print "--\tSubmit BOB for id:%s to server (%.2f)"%(str(max_gene['id']),max_gene['score'])
 				server.put_bob(json.dumps(max_gene),quartile,g.id)
 				if quartile_cycle == True:
-					#if not in bob simulator mode but cycling is enabled then 
+					#if cycling is enabled then 
 					#the client will cycle through the quartiles as local optimas are found
 					#jump to the next quartile
 					quartile += 1

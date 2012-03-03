@@ -2,7 +2,7 @@
 	"set" :
 	{
 		"SHARED_SECTION" : 1,
-		"max_length" : 10000,
+		"max_length" : 30000,
 		"enable_flash_crash_protection" : 1,
 		"flash_crash_protection_delay" : 240,
 		"price_format" : "%.5f",

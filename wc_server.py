@@ -82,22 +82,24 @@ def index():
 	template = f.read()
 	f.close()
 
+	gdhl = json.loads(server.get_gene_def_hash_list())
+	dgdh = json.loads(server.get_default_gene_def_hash())
+	pid = 'WC_SERVER'
+	server.pid_register_client(pid,dgdh)
 	trigger = "-"*80 + '<br>'
 	trigger += "Current Volitility Quartile: " + str(server.get_active_quartile()) + '<br>'
-	trigger += "Buy Order Trigger* @ $"+"%.2f"%json.loads(server.get_target())['buy'] + '<br>' * 2
+	trigger += "Buy Order Trigger* @ $"+"%.2f"%json.loads(server.get_target(pid))['buy'] + '<br>' * 2
 	trigger += "* Will report $0 if target is too far away from the current price.<br> bcbookie also uses additional logic to screen potential orders.<br>"
 	trigger += "-"*80 + '<br>' * 2
 
 	clients = "-"*80 + '<br>'
-	gdhl = json.loads(server.get_gene_def_hash_list())
 	clients += "Gene Library (" + str(len(gdhl))  + ')<br>'
 	for gdh in gdhl:
 		clients += "----> "+ gdh + '<br>'
 		try:
-			clients += "--------> " + json.loads(server.get_gene_def(gdh))['name'] + '<br>'
+			clients += "-------->" + json.loads(server.get_gene_def(gdh))['name'] + '<br>'
 		except:
 			pass
-	dgdh = json.loads(server.get_default_gene_def_hash())
 	clients += "Default Gene Def Hash: " + dgdh + '<br>'
 	clients += "-"*80 + '<br>' * 2
 
@@ -120,7 +122,7 @@ def index():
 	best += "-"*80 + '<br>'
 	for quartile in [1,2,3,4]:
 		try:
-			ag = json.loads(server.get(60*60*24,quartile))
+			ag = json.loads(server.get(60*60*24,quartile,pid))
 		except:
 			ag = {"Gene server didn't return a dictionary.":"Gene server didn't return a dictionary."}
 		best += "-"*80 + '<br>'
