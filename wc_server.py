@@ -74,7 +74,7 @@ def ppdict(d,nest=0):
 	return output
 
 #define client functions
-from bottle import route, run, static_file
+from bottle import route, run, static_file, redirect
 
 @route('/')
 def index():
@@ -95,7 +95,7 @@ def index():
 	clients = "-"*80 + '<br>'
 	clients += "Gene Library (" + str(len(gdhl))  + ')<br>'
 	for gdh in gdhl:
-		clients += "----> "+ gdh + '<br>'
+		clients += "----><a href='./set_default_db/%s'>"%gdh + gdh + "</a><br>"
 		try:
 			clients += "-------->" + json.loads(server.get_gene_def(gdh))['name'] + '<br>'
 		except:
@@ -136,6 +136,11 @@ def index():
 	template = template.replace('{SYS_BEST_GENES}',best)
 	return template
 
+
+@route('/set_default_db/<db_hash>')
+def set_default_db(db_hash = None):
+	server.set_default_gene_def_hash(db_hash)
+	return redirect("/")
 
 @route('/report/<filepath:path>')
 def server_static(filepath):
