@@ -581,9 +581,16 @@ if __name__ == "__main__":
 		#get info from the gene_server
 		t = {}
 		try:
+
+			#register as a default client (this will allow remote dynamic configuration of the report generation)
+			pid = "BCBOOKIE"
+			gdh = json.loads(server.get_default_gene_def_hash())
+			print "using gene_def_hash",gdh
+			server.pid_register_client(pid,gdh)			
+
 			#get the current quartile
-			b.active_quartile = server.get_active_quartile()
-			t = json.loads(server.get_target())
+			b.active_quartile = server.get_active_quartile(pid)
+			t = json.loads(server.get_target(pid))
 		except:
 			print "error: gene_server connection issue"
 
