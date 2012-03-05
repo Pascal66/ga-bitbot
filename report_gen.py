@@ -77,6 +77,24 @@ else:
 	else:
 		print "Configuration loaded."
 
+def generate_empty_charts(quartile):
+	print "creating empty charts..."
+	f = open("./report/chart.templ",'r')
+	templ = f.read()
+	f.close()
+
+	templ = templ.replace('{LAST_UPDATE}','<b>NO ORDERS TO REPORT</b>')
+	templ = templ.replace('{METRICS_REPORT}','')
+	templ = templ.replace('{ORDERS_REPORT}','')
+
+
+	f = open("./report/chart_test_%s.html"%str(quartile),'w')
+	f.write(templ)
+	f.close()
+
+	f = open("./report/chart_test_zoom_%s.html"%str(quartile),'w')
+	f.write(templ)
+	f.close()
 
 def load():
 	#open the history file
@@ -122,131 +140,120 @@ while 1:
 		#create the trade engine	
 		te = trade_engine()
 		#get the high score gene from the gene server
-		while 1:
-			try:
-				ag = json.loads(server.get(60*60*24,quartile,pid))
-				break
-			except:
-				print "warning: gene server error or no data available."
-				time.sleep(10)
-		
-		if type(ag) == type([]):
-			ag = ag[0]
-		
-		#load the gene dictionary into the trade engine
-		te = load_config_into_object({'set':ag},te)
-		te.enable_flash_crash_protection = enable_flash_crash_protection 
-		te.flash_crash_protection_delay = flash_crash_protection_delay
-		
-		#preprocess the data
-		current_quartile = te.classify_market(input)
-		#update the gene server with the current market quartile
-		server.put_active_quartile(current_quartile,pid)
-		#select the quartile to test
-		te.test_quartile(quartile)
-
-		print "_" * 40
-		if current_quartile == quartile:
-			print "Quartile:",quartile, "(%.4f)"%ag['score'],"+active"
-		else:
-			print "Quartile:",quartile, "(%.4f)"%ag['score']
-
-		#feed the input through the trade engine
 		try:
-			for i in input:
-				te.input(i[0],i[1])
+			ag = json.loads(server.get(60*60*24,quartile,pid))
 		except:
-			print "Gene Fault"
+			print "warning: gene server error or no data available."
+			#if the quartile is active set the buy to 0 to prevent old targets from remaining active
+			#this is for fault protection as it should never normaly happen:
+			if quartile == server.get_active_quartile():
+				p = {'buy':0.00}
+				server.put_target(json.dumps(p),pid)
+			#generate empty charts to prevent old data from being reported.
+			generate_empty_charts(quartile)
 		else:
-			if len(te.positions) == 0:
-				#no data to report but the chart reports need to be created to prevent stale data reports or 404 errors.
-				print "creating empty charts..."
-				f = open("./report/chart.templ",'r')
-				templ = f.read()
-				f.close()
-				
-				templ = templ.replace('{LAST_UPDATE}','<b>NO ORDERS TO REPORT</b>')
-				templ = templ.replace('{METRICS_REPORT}','')
-				templ = templ.replace('{ORDERS_REPORT}','')
+		
+			if type(ag) == type([]):
+				ag = ag[0]
+		
+			#load the gene dictionary into the trade engine
+			te = load_config_into_object({'set':ag},te)
+			te.enable_flash_crash_protection = enable_flash_crash_protection 
+			te.flash_crash_protection_delay = flash_crash_protection_delay
+		
+			#preprocess the data
+			current_quartile = te.classify_market(input)
+			#update the gene server with the current market quartile
+			server.put_active_quartile(current_quartile,pid)
+			#select the quartile to test
+			te.test_quartile(quartile)
 
+			print "_" * 40
+			if current_quartile == quartile:
+				print "Quartile:",quartile, "(%.4f)"%ag['score'],"+active"
+			else:
+				print "Quartile:",quartile, "(%.4f)"%ag['score']
 
-				f = open("./report/chart_test_%s.html"%str(quartile),'w')
-				f.write(templ)
-				f.close()
+			#feed the input through the trade engine
+			try:
+				for i in input:
+					te.input(i[0],i[1])
+			except:
+				print "Gene Fault"
+			else:
+				if len(te.positions) == 0:
+					#no data to report but the chart reports need to be created to prevent stale data reports or 404 errors.
+					generate_empty_charts(quartile)
 
-				f = open("./report/chart_test_zoom_%s.html"%str(quartile),'w')
-				f.write(templ)
-				f.close()
+				# Calc the next buy trigger point
+				elif len(te.positions) > 0:
+					#get the target trigger price
+					target = te.get_target()
+					print "Inverse MACD Result (target): ",target
 
-			# Calc the next buy trigger point
-			elif len(te.positions) > 0:
-				#get the target trigger price
-				target = te.get_target()
-				print "Inverse MACD Result (target): ",target
+					if target > te.input_log[-1][1]:
+						target = te.input_log[-1][1]
 
-				if target > te.input_log[-1][1]:
-					target = te.input_log[-1][1]
+					#first check to see if the tested input triggered a buy:
+					if te.positions[-1]['buy_period'] == len(te.input_log) - 1:
+						p = te.positions[-1]
+						target = p['buy']
+					else:
+						print "Last buy order was", len(te.input_log) - te.positions[-1]['buy_period'],"periods ago."
+						#if not try to calculate the trigger point to get the buy orders in early...
+						#print "Trying to trigger with: ",target
+						print "Score: ",te.score()
+						st = input[-1][0] + 2000
+						te.input(st,target)
+						p = te.positions[-1].copy()
+						if p['buy'] != target:
+							#print "Order not triggered @",target
+							p['buy'] = 0.00
+							p['target'] = 0.00
 
-				#first check to see if the tested input triggered a buy:
-				if te.positions[-1]['buy_period'] == len(te.input_log) - 1:
-					p = te.positions[-1]
-					target = p['buy']
-				else:
-					print "Last buy order was", len(te.input_log) - te.positions[-1]['buy_period'],"periods ago."
-					#if not try to calculate the trigger point to get the buy orders in early...
-					#print "Trying to trigger with: ",target
-					print "Score: ",te.score()
-					st = input[-1][0] + 2000
-					te.input(st,target)
-					p = te.positions[-1].copy()
-					if p['buy'] != target:
-						#print "Order not triggered @",target
-						p['buy'] = 0.00
-						p['target'] = 0.00
-
-				#te.classify_market(input)
-				print "creating charts..."
-				te.chart("./report/chart.templ","./report/chart_test_%s.html"%str(quartile))
-				te.chart("./report/chart.templ","./report/chart_test_zoom_%s.html"%str(quartile),chart_zoom_periods)
-				te.chart("./report/chart.templ","./report/chart_test_now_%s.html"%str(quartile),chart_now_periods)
-				#print "Evaluating target price"
-				if current_quartile == quartile:
-					if ((target >= p['buy']) or (abs(target - p['buy']) < 0.01)) and p['buy'] != 0: #submit the order at or below target
-						#format the orders
-						p['buy'] = float(price_format%(p['buy'] - 0.01))
-						p['target'] = float(price_format%p['target'])
-						p.update({'stop_age':(60 * te.stop_age)})
-						if float(te.wins / float(te.wins + te.loss)) > win_loss_gate_pct:
-							#only submit an order if the win/loss ratio is greater than x%
-							print "sending target buy order to server @ $" + str(p['buy'])
-							server.put_target(json.dumps(p),pid)
-							skip_sleep_delay = True #if target buy orders are active skip the sleep delay
+					#te.classify_market(input)
+					print "creating charts..."
+					te.chart("./report/chart.templ","./report/chart_test_%s.html"%str(quartile))
+					te.chart("./report/chart.templ","./report/chart_test_zoom_%s.html"%str(quartile),chart_zoom_periods)
+					te.chart("./report/chart.templ","./report/chart_test_now_%s.html"%str(quartile),chart_now_periods)
+					#print "Evaluating target price"
+					if current_quartile == quartile:
+						if ((target >= p['buy']) or (abs(target - p['buy']) < 0.01)) and p['buy'] != 0: #submit the order at or below target
+							#format the orders
+							p['buy'] = float(price_format%(p['buy'] - 0.01))
+							p['target'] = float(price_format%p['target'])
+							p.update({'stop_age':(60 * te.stop_age)})
+							if float(te.wins / float(te.wins + te.loss)) > win_loss_gate_pct:
+								#only submit an order if the win/loss ratio is greater than x%
+								print "sending target buy order to server @ $" + str(p['buy'])
+								server.put_target(json.dumps(p),pid)
+								skip_sleep_delay = True #if target buy orders are active skip the sleep delay
+							else:
+								print "underperforming trade strategy, order not submitted"
+								p['buy'] = 0.00
+								p['target'] = 0.00
+								server.put_target(json.dumps(p),pid)
+							print "-" * 40
+							print "Quartile     :",quartile
+							print "Buy	    :$", p['buy']
+							print "Target	    :$",p['target']
+							print "Win Ratio    :","%.3f"%((te.wins / float(te.wins + te.loss)) * 100),"%"
+							print "-" * 40
 						else:
-							print "underperforming trade strategy, order not submitted"
+							print "Trigger criteria not met, no order set."
+							print "Buy	    :$", p['buy']
+							print "Target	    :$",p['target']
+							print "Input Target :$",target
+							print "Last Price   :$",input[-1][1]
+							print "MACD Log     : ",te.macd_pct_log[-1][1]
+							print "MACD Trip    : ",te.macd_buy_trip
+							p.update({'stop_age':(60 * te.stop_age)}) #DEBUG ONLY!! - delete when done.
 							p['buy'] = 0.00
 							p['target'] = 0.00
 							server.put_target(json.dumps(p),pid)
-						print "-" * 40
-						print "Quartile     :",quartile
-						print "Buy	    :$", p['buy']
-						print "Target	    :$",p['target']
-						print "Win Ratio    :","%.3f"%((te.wins / float(te.wins + te.loss)) * 100),"%"
-						print "-" * 40
-					else:
-						print "Trigger criteria not met, no order set."
-						print "Buy	    :$", p['buy']
-						print "Target	    :$",p['target']
-						print "Input Target :$",target
-						print "Last Price   :$",input[-1][1]
-						print "MACD Log     : ",te.macd_pct_log[-1][1]
-						print "MACD Trip    : ",te.macd_buy_trip
-						p.update({'stop_age':(60 * te.stop_age)}) #DEBUG ONLY!! - delete when done.
-						p['buy'] = 0.00
-						p['target'] = 0.00
-						server.put_target(json.dumps(p),pid)
 
-					buys.append(p['buy'])
-					targets.append(p['target'])
+						buys.append(p['buy'])
+						targets.append(p['target'])
 	#log the orders
 	#f = open("./report/rg_buys.csv",'a')
 	#f.write(",".join(map(str,buys)) + ",")
