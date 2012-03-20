@@ -86,7 +86,15 @@ if __name__ == "__main__":
 			print "Configuration loaded."
 
 
+	#internal variables
 	quartile_cycle = False
+	quartile = ''
+	bs = ''
+	verbose = False
+	run_once = False
+	get_config = False
+	get_default_config = False
+	score_only = False
 
 	def load():
 		#open the history file
@@ -109,13 +117,6 @@ if __name__ == "__main__":
 		#print "done loading:", str(len(input)),"records."
 		return input
 
-	#process command line args
-	quartile = ''
-	bs = ''
-	verbose = False
-	run_once = False
-	get_config = False
-	score_only = False
 
 	print sys.argv
 	if len(sys.argv) >= 3:
@@ -131,6 +132,10 @@ if __name__ == "__main__":
 					#exit after first local optima found
 					#or in the case of 'all' quartiles being tested, reset after once cycle through the quartiles
 					run_once = True
+				if sys.argv[i] == 'get_default_config':
+					#if set the default gene_def config will be loaded from the server
+					get_default_config = True
+					get_config = True
 				if sys.argv[i] == 'get_config':
 					#if set the gene_def config will be randomly loaded from the server
 					get_config = True
@@ -152,11 +157,15 @@ if __name__ == "__main__":
 	#configure the gene pool
 	g = genepool()
 	if get_config == True:
-		print "Loading random gene_def from the server."
+		print "Loading gene_def from the server."
 		gd = "UNDEFINED"
 		while gd == "UNDEFINED" and get_config == True:
-			#get the gene def config from the server
+			#get the gene def config list from the server
 			gdhl = json.loads(server.get_gene_def_hash_list())
+
+			if get_default_config == True:
+					gdh = json.loads(server.get_default_gene_def_hash())
+					gdhl = [gdh,gdh,gdh]	#create a dummy list with the same (default) hash
 			if len(gdhl) < 2:
 				#the default config isn't defined
 				#if there are less then two genes registered then switch to the local config.
@@ -182,6 +191,9 @@ if __name__ == "__main__":
 					print "gene_def load error:",gd
 					gd = "UNDEFINED"
 					get_config = False #force load local gen_def.json config
+			else:
+				time.sleep(5) #default config is undefined so just wait and try again....
+					      #the script will remain in this loop until the default config is set
 
 
 	if get_config == False:	
