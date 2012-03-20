@@ -626,6 +626,15 @@ class trade_engine:
 		else:
 			periods *= -1
 		
+		#insert all quartiles at the begining of the market class data to ensure correct
+		#chart scaling. This covers the case where the chart period doesn't see all quartiles
+		mc = self.market_class[periods:]
+		t = mc[0][0]
+		for i in range(0,4):
+			t += 1
+			q = (i + 1) / 4.0
+			mc.insert(0,[t,q])
+
 		print "chart: compressing data"
 		wl = str(self.compress_log(self.wl_log[periods:])).replace('L','')
 		ws = str(self.compress_log(self.ws_log[periods:])).replace('L','')
@@ -633,7 +642,7 @@ class trade_engine:
 		input = str(self.compress_log(self.input_log[periods:])).replace('L','')
 		net_worth = str(self.compress_log(self.net_worth_log[periods:],lossless_compression = True)).replace('L','')
 		trigger_price = str(self.compress_log(self.trigger_log[periods:])).replace('L','')
-		volatility_quartile = str(self.compress_log(self.market_class[periods:],lossless_compression = True)).replace('L','')
+		volatility_quartile = str(self.compress_log(mc,lossless_compression = True)).replace('L','')
 
 		buy = str([])
 		sell = str([])

@@ -183,7 +183,11 @@ while 1:
 			else:
 				if len(te.positions) == 0:
 					#no data to report but the chart reports need to be created to prevent stale data reports or 404 errors.
-					generate_empty_charts(quartile)
+					generate_empty_charts(quartile)					
+					if current_quartile == quartile:
+						print "no positions, order not submitted"
+						p = {'buy':0.00}
+						server.put_target(json.dumps(p),pid)
 
 				# Calc the next buy trigger point
 				elif len(te.positions) > 0:
