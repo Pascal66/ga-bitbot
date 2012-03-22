@@ -140,6 +140,8 @@ class bookie:
 								output +='\t\t<td class="o">\n'
 							elif r[key] == 'sold':
 								output +='\t\t<td class="g">\n'
+							elif r[key] == 'closed:commit':
+								output +='\t\t<td class="b">\n'
 							else:
 								output +='\t\t<td>\n'
 						else:

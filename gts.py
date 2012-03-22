@@ -147,12 +147,17 @@ if __name__ == "__main__":
 	while not (quartile in ['1','2','3','4','all']):
 		print "Which quartile group to test? (1,2,3,4):"
 		quartile = raw_input()
-	if quartile != 'all' and quartile != 'score_only':	
+	if quartile != 'all':	
 		quartile = int(quartile)
 	else:
 		quartile = 1
 		quartile_cycle = True
     		update_all_scores = True
+
+	if score_only:
+		update_all_scores = True
+	else:
+		update_all_scores = False
 
 	#configure the gene pool
 	g = genepool()
@@ -227,8 +232,8 @@ if __name__ == "__main__":
 		bs = raw_input()
 	if bs == 'y':
 		bob_simulator = True
-		if quartile_cycle == False:
-			update_all_scores = False
+		#if quartile_cycle == False:
+		#	update_all_scores = False
 		g.local_optima_trigger = 10
 		bootstrap_bobs = json.loads(server.get_bobs(quartile,g.id))
 		bootstrap_all = json.loads(server.get_all(quartile,g.id))
@@ -258,7 +263,7 @@ if __name__ == "__main__":
 	
 	else:
 		bob_simulator = False
-		update_all_scores = False
+		#update_all_scores = False
 		g.local_optima_trigger = 5
 		print "Seeding the initial population"
 		g.seed()
@@ -292,7 +297,7 @@ if __name__ == "__main__":
 				#in this mode the only function of the client is to cycle through the quartiles to retest existing genes
 				g.local_optima_reached = True 
 
-			update_all_scores = False	#on the first pass only, bob clients need to resubmit updated scores for every gene 
+			#update_all_scores = False	#on the first pass only, bob clients need to resubmit updated scores for every gene 
 			loop_count = 0
 			#reset the watchdog monitor
 			server.pid_alive(g.id)

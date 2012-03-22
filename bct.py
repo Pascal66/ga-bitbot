@@ -277,7 +277,7 @@ class trade_engine:
 			#	final_score_balance -= 5000 #999999999
 		else:
 			#no trades generated
-			final_score_balance = -0.123456789
+			final_score_balance = -987654321.123456789
 
 		return final_score_balance
 
