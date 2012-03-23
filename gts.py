@@ -95,6 +95,7 @@ if __name__ == "__main__":
 	get_config = False
 	get_default_config = False
 	score_only = False
+	g = genepool()
 
 	def load():
 		#open the history file
@@ -160,7 +161,6 @@ if __name__ == "__main__":
 		update_all_scores = False
 
 	#configure the gene pool
-	g = genepool()
 	if get_config == True:
 		print "Loading gene_def from the server."
 		gd = "UNDEFINED"
@@ -213,6 +213,8 @@ if __name__ == "__main__":
 
 	#reset the process watchdog
 	server.pid_alive(g.id)
+	#send a copy of the command line args	
+	server.pid_msg(g.id,str(sys.argv))
 
 	#load the inital data
 	input = load()
@@ -273,8 +275,9 @@ if __name__ == "__main__":
 	total_count = 0 #used to calculate overall performance
 	loop_count = 0  # used to trigger pool size calibration and data reload
 
-	max_score = -10000
+	max_score = -100000
 	max_score_id = -1
+	max_gene = None
 	start_time = time.time()
 	print "Running the simulator"
 	while 1:
@@ -288,7 +291,7 @@ if __name__ == "__main__":
 
 		if loop_count%pid_update_rate == 0:
 			#periodicaly reset the watchdog monitor
-			#print "resetting watchdog timer"
+			print "resetting watchdog timer"
 			server.pid_alive(g.id)
 
 		if loop_count > g.pool_size:
@@ -357,7 +360,7 @@ if __name__ == "__main__":
 							server.pid_exit(g.id)
 							sys.exit()
 			else:
-				if max_score > -10000:
+				if max_score > -1000:
 					print "**WARNING** MAX_GENE is gone.: ID",max_score_id
 					print "*"*80
 					print "GENE DUMP:"
@@ -368,7 +371,7 @@ if __name__ == "__main__":
 					sys.exit()
 
 			max_gene = None #clear the max gene
-			max_score = -10000 #reset the high score
+			max_score = -100000 #reset the high score
 
 			if quartile_cycle == False and run_once:
 				print "Run Once Done."

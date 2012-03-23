@@ -614,7 +614,7 @@ class trade_engine:
 
 		return ret_log
 
-	def chart(self,template,filename,periods=-1):
+	def chart(self,template,filename,periods=-1,basic_chart=False):
 		self.log_orders()
 		
 		f = open(template,'r')
@@ -636,22 +636,29 @@ class trade_engine:
 			mc.insert(0,[t,q])
 
 		print "chart: compressing data"
-		wl = str(self.compress_log(self.wl_log[periods:])).replace('L','')
-		ws = str(self.compress_log(self.ws_log[periods:])).replace('L','')
+		if not basic_chart:
+			wl = str(self.compress_log(self.wl_log[periods:])).replace('L','')
+			ws = str(self.compress_log(self.ws_log[periods:])).replace('L','')
+			net_worth = str(self.compress_log(self.net_worth_log[periods:],lossless_compression = True)).replace('L','')
+		else:
+			wl = str([])
+			ws = str([])
+			net_worth = str([])
+
 		macd_pct = str(self.compress_log(self.macd_pct_log[periods:])).replace('L','')
 		input = str(self.compress_log(self.input_log[periods:])).replace('L','')
-		net_worth = str(self.compress_log(self.net_worth_log[periods:],lossless_compression = True)).replace('L','')
-		trigger_price = str(self.compress_log(self.trigger_log[periods:])).replace('L','')
 		volatility_quartile = str(self.compress_log(mc,lossless_compression = True)).replace('L','')
 
 		buy = str([])
 		sell = str([])
 		stop = str([])
-		
+		trigger_price = str([])
+
 		if periods == self.period:
 			buy = str(self.buy_log[periods:]).replace('L','')
 			sell = str(self.sell_log[periods:]).replace('L','')
 			stop = str(self.stop_log[periods:]).replace('L','')
+			trigger_price = str(self.compress_log(self.trigger_log[periods:],lossless_compression = True)).replace('L','')
 		else:
 			print "chart: selecting data"
 			#get the timestamp for the start index

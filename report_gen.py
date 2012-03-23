@@ -61,6 +61,7 @@ chart_zoom_periods = 3000
 chart_now_periods = 200
 win_loss_gate_pct = 0.80
 price_format = "%.3f"
+chart_type = 0
 config_loaded = 0
 #load config
 try:
@@ -217,9 +218,9 @@ while 1:
 
 					#te.classify_market(input)
 					print "creating charts..."
-					te.chart("./report/chart.templ","./report/chart_test_%s.html"%str(quartile))
-					te.chart("./report/chart.templ","./report/chart_test_zoom_%s.html"%str(quartile),chart_zoom_periods)
-					te.chart("./report/chart.templ","./report/chart_test_now_%s.html"%str(quartile),chart_now_periods)
+					te.chart("./report/chart.templ","./report/chart_test_%s.html"%str(quartile),basic_chart=chart_type)
+					te.chart("./report/chart.templ","./report/chart_test_zoom_%s.html"%str(quartile),chart_zoom_periods,basic_chart=chart_type)
+					te.chart("./report/chart.templ","./report/chart_test_now_%s.html"%str(quartile),chart_now_periods,basic_chart=chart_type)
 					#print "Evaluating target price"
 					if current_quartile == quartile:
 						if ((target >= p['buy']) or (abs(target - p['buy']) < 0.01)) and p['buy'] != 0: #submit the order at or below target

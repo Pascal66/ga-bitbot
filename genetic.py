@@ -488,13 +488,13 @@ class genepool:
 	return
 
     def insert_genedict_list(self,g_dl):
-	print "inserting gene dicts..."
+	#print "inserting gene dicts..."
 	for g_d in g_dl:
-		print g_d['id'],g_d['score']
+		#print g_d['id'],g_d['score']
 		g_d['score'] = None
 		self.pool.append(g_d)
 	self.decode()
-	print "done."
+	#print "done."
 	return
 
 
