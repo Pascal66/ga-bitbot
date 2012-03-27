@@ -247,7 +247,7 @@ if __name__ == "__main__":
 			g.insert_genedict_list(bootstrap_bobs)
 			g.insert_genedict_list(bootstrap_all)
 			g.pool_size = len(g.pool)
-			if quartile_cycle == True:
+			if update_all_scores == True:
 				#reset the scores for retesting
 				g.reset_scores()
 			else:
