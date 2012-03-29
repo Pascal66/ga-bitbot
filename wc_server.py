@@ -106,8 +106,8 @@ def index():
 	clients += "-"*80 + '<br>'
 	pid_list = json.loads(server.pid_list(180))
 	clients += "Active Clients (" + str(len(pid_list))  + ')<br>'
-	for pid in pid_list:
-		clients += "----> "+ pid + '<br>'
+	for apid in pid_list:
+		clients += "----> "+ apid + '<br>'
 	clients += "-"*80 + '<br>' * 2
 
 	pids = json.loads(server.get_pids())

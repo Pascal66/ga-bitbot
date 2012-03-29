@@ -115,7 +115,7 @@ else:
 
 
 #at least one client should not run with the get_config option to make sure new gene_def.json config files get loaded into the db.
-monitored_launch = ['pypy gts.py all y run_once get_config',\
+monitored_launch = ['pypy gts.py all y run_once',\
 'pypy gts.py 1 y run_once get_config',\
 'pypy gts.py 2 y run_once get_config',\
 'pypy gts.py 3 y run_once get_config',\

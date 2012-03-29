@@ -339,6 +339,7 @@ if __name__ == "__main__":
 					quartile = 1
 					if run_once:
 						print "Run Once Done."
+						server.pid_msg(g.id,"Run Once Done.")
 						server.pid_exit(g.id)
 						sys.exit()
 			
@@ -357,6 +358,7 @@ if __name__ == "__main__":
 						quartile = 1
 						if run_once:
 							print "Run Once Done."
+							server.pid_msg(g.id,"Run Once Done.")
 							server.pid_exit(g.id)
 							sys.exit()
 			else:
@@ -368,6 +370,8 @@ if __name__ == "__main__":
 						print ag['id'],ag['score']
 					print "*"*80
 					print "HALTED."
+					server.pid_msg(g.id,"HALTED.")
+					server.pid_exit(g.id)
 					sys.exit()
 
 			max_gene = None #clear the max gene
@@ -375,6 +379,7 @@ if __name__ == "__main__":
 
 			if quartile_cycle == False and run_once:
 				print "Run Once Done."
+				server.pid_msg(g.id,"Run Once Done.")
 				server.pid_exit(g.id)
 				sys.exit()
 
