@@ -95,6 +95,7 @@ if __name__ == "__main__":
 	get_config = False
 	get_default_config = False
 	score_only = False
+	pid = None
 	g = genepool()
 
 	def load():
@@ -143,7 +144,17 @@ if __name__ == "__main__":
 				if sys.argv[i] == 'score_only':
 					#if set the gene_def config will be randomly loaded from the server
 					score_only = True
-	
+				if sys.argv[i] == 'pid':
+					#set the pid from the command line
+					try:
+						pid = sys.argv[i + 1]
+					except:
+						pass
+	if pid == None:
+		#if the pid is not set from the command line then
+		#use the genetic class object id
+		pid = g.id
+
 	#which quartile group to test
 	while not (quartile in ['1','2','3','4','all']):
 		print "Which quartile group to test? (1,2,3,4):"
@@ -187,7 +198,7 @@ if __name__ == "__main__":
 					#load the remote config
 					g = load_config_into_object(gd,g)
 					#only need to register the client with the existing gene_def hash
-					server.pid_register_client(g.id,gdh)
+					server.pid_register_client(pid,gdh)
 					print "gene_def_hash:",gdh
 					print "name",gd['name']
 	 				print "description",gd['description']
@@ -208,13 +219,13 @@ if __name__ == "__main__":
 		f = open('./config/gene_def.json','r')
 		gdc = f.read()
 		f.close()
-		gdh = server.pid_register_gene_def(g.id,gdc)
-		server.pid_register_client(g.id,gdh)
+		gdh = server.pid_register_gene_def(pid,gdc)
+		server.pid_register_client(pid,gdh)
 
 	#reset the process watchdog
-	server.pid_alive(g.id)
+	server.pid_alive(pid)
 	#send a copy of the command line args	
-	server.pid_msg(g.id,str(sys.argv))
+	server.pid_msg(pid,str(sys.argv))
 
 	#load the inital data
 	input = load()
@@ -237,8 +248,8 @@ if __name__ == "__main__":
 		#if quartile_cycle == False:
 		#	update_all_scores = False
 		g.local_optima_trigger = 10
-		bootstrap_bobs = json.loads(server.get_bobs(quartile,g.id))
-		bootstrap_all = json.loads(server.get_all(quartile,g.id))
+		bootstrap_bobs = json.loads(server.get_bobs(quartile,pid))
+		bootstrap_all = json.loads(server.get_all(quartile,pid))
 		print len(bootstrap_all)
 		if (type(bootstrap_bobs) == type([])) and (type(bootstrap_all) == type([])):
 			g.seed()
@@ -292,7 +303,7 @@ if __name__ == "__main__":
 		if loop_count%pid_update_rate == 0:
 			#periodicaly reset the watchdog monitor
 			print "resetting watchdog timer"
-			server.pid_alive(g.id)
+			server.pid_alive(pid)
 
 		if loop_count > g.pool_size:
 			if score_only: #quartile_cycle == True and bob_simulator == True:
@@ -303,7 +314,7 @@ if __name__ == "__main__":
 			#update_all_scores = False	#on the first pass only, bob clients need to resubmit updated scores for every gene 
 			loop_count = 0
 			#reset the watchdog monitor
-			server.pid_alive(g.id)
+			server.pid_alive(pid)
 			#benchmark the cycle speed
 			current_time = time.time()
 			elapsed_time = current_time - start_time
@@ -320,7 +331,7 @@ if __name__ == "__main__":
 			performance_metrics = "%.2f"%gps,"G/S; ","%.2f"%((gps*len(input))/1000.0),"KS/S;","  Pool Size: ",g.pool_size,"  Total Processed: ",total_count
 			performance_metrics = " ".join(map(str,performance_metrics))
 			print performance_metrics
-			server.pid_msg(g.id,performance_metrics)
+			server.pid_msg(pid,performance_metrics)
 			
 		if g.local_optima_reached:	
 			test_count = 0
@@ -339,8 +350,8 @@ if __name__ == "__main__":
 					quartile = 1
 					if run_once:
 						print "Run Once Done."
-						server.pid_msg(g.id,"Run Once Done.")
-						server.pid_exit(g.id)
+						server.pid_msg(pid,"Run Once Done.")
+						server.pid_exit(pid)
 						sys.exit()
 			
 			elif max_gene != None:
@@ -348,7 +359,7 @@ if __name__ == "__main__":
 				print max_gene
 				#end debug
 				print "--\tSubmit BOB for id:%s to server (%.2f)"%(str(max_gene['id']),max_gene['score'])
-				server.put_bob(json.dumps(max_gene),quartile,g.id)
+				server.put_bob(json.dumps(max_gene),quartile,pid)
 				if quartile_cycle == True:
 					#if cycling is enabled then 
 					#the client will cycle through the quartiles as local optimas are found
@@ -358,8 +369,8 @@ if __name__ == "__main__":
 						quartile = 1
 						if run_once:
 							print "Run Once Done."
-							server.pid_msg(g.id,"Run Once Done.")
-							server.pid_exit(g.id)
+							server.pid_msg(pid,"Run Once Done.")
+							server.pid_exit(pid)
 							sys.exit()
 			else:
 				if max_score > -1000:
@@ -370,8 +381,8 @@ if __name__ == "__main__":
 						print ag['id'],ag['score']
 					print "*"*80
 					print "HALTED."
-					server.pid_msg(g.id,"HALTED.")
-					server.pid_exit(g.id)
+					server.pid_msg(pid,"HALTED.")
+					server.pid_exit(pid)
 					sys.exit()
 
 			max_gene = None #clear the max gene
@@ -379,14 +390,14 @@ if __name__ == "__main__":
 
 			if quartile_cycle == False and run_once:
 				print "Run Once Done."
-				server.pid_msg(g.id,"Run Once Done.")
-				server.pid_exit(g.id)
+				server.pid_msg(pid,"Run Once Done.")
+				server.pid_exit(pid)
 				sys.exit()
 
 			if bob_simulator:
 				#update_all_scores = True	#on the first pass only, bob clients need to resubmit updated scores for every gene 
-				bootstrap_bobs = json.loads(server.get_bobs(quartile,g.id))
-			    	bootstrap_all = json.loads(server.get_all(quartile,g.id))
+				bootstrap_bobs = json.loads(server.get_bobs(quartile,pid))
+			    	bootstrap_all = json.loads(server.get_all(quartile,pid))
 				g.pool_size = len(g.pool)
 				if (type(bootstrap_bobs) == type([])) and (type(bootstrap_all) == type([])):
 					g.seed()
@@ -450,14 +461,14 @@ if __name__ == "__main__":
 				max_score_id = ag['id']
 				max_gene = ag.copy() #g.get_by_id(max_score_id)
 				if max_gene != None:
-					server.put(json.dumps(max_gene),quartile,g.id)
+					server.put(json.dumps(max_gene),quartile,pid)
 				else:
 					print "MAX_GENE is None!!"
 			elif update_all_scores == True:
 				print "--\tUpdating score for quartile:%s id:%s to server (%.5f)"%(str(quartile),str(ag['id']),score)
 				agene = g.get_by_id(ag['id'])
 				if agene != None:
-					server.put(json.dumps(agene),quartile,g.id)
+					server.put(json.dumps(agene),quartile,pid)
 				else:
 					print "Updating Gene Error: Gene is missing!!"
 

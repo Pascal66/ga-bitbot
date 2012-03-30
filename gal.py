@@ -32,10 +32,21 @@ import shlex
 from os import environ
 import os
 from time import *
+import hashlib
+import random
 import __main__
 
 from load_config import *
 
+
+def make_pid():
+	#simple function which spits out a random hex code
+	#which are used to set globaly unique process ids to spawned clients
+	#generate a unique gene pool id
+	md = hashlib.md5()
+	md.update(str(time()) + str(random.random() * 1000000))
+	return md.hexdigest()[0:16]
+	
 
 
 print "\n\tcommand line options:\n\t\tserver\t\tlaunches only the server components\n\t\tclient\t\tlaunches only the client components\n\t\tall\t\tlaunches all components"
@@ -115,13 +126,13 @@ else:
 
 
 #at least one client should not run with the get_config option to make sure new gene_def.json config files get loaded into the db.
-monitored_launch = ['pypy gts.py all y run_once',\
-'pypy gts.py 1 y run_once get_config',\
-'pypy gts.py 2 y run_once get_config',\
-'pypy gts.py 3 y run_once get_config',\
-'pypy gts.py 4 y run_once get_config',\
-'pypy gts.py all y run_once get_default_config score_only',\
-'pypy gts.py all y run_once get_default_config']
+monitored_launch = ['pypy gts.py all y run_once pid ',\
+'pypy gts.py 1 y run_once get_config pid ',\
+'pypy gts.py 2 y run_once get_config pid ',\
+'pypy gts.py 3 y run_once get_config pid ',\
+'pypy gts.py 4 y run_once get_config pid ',\
+'pypy gts.py all y run_once get_default_config score_only pid ',\
+'pypy gts.py all y run_once get_default_config pid ']
 
 unmonitored_launch = ['python wc_server.py','python report_gen.py']
 
@@ -206,16 +217,17 @@ if run_client:
 
 	#start the monitored processes
 	for cmd_line in monitored_launch:
-		p = Popen(shlex.split(cmd_line),stdin=fnull, stdout=fnull, stderr=GTS_STDERR_FILE)
+		new_pid = make_pid()
+		p = Popen(shlex.split(cmd_line + new_pid),stdin=fnull, stdout=fnull, stderr=GTS_STDERR_FILE)
 		retry = MONITORED_PROCESS_LAUNCH_TIMEOUT
 		while retry > 0:
 			sleep(1)
 			cpl = json.loads(server.pid_list())	#get the current pid list
 			npl = list(set(epl) ^ set(cpl)) 	#find the new pid(s)
 			epl = cpl				#update the existing pid list
-			if len(npl) > 0:
-				monitor.update({npl[0]:{'cmd':cmd_line,'process':p}})	#store the pid/cmd_line/process
-				print "Monitored Process Launched (PID:",npl[0],"CMD:",cmd_line,")"
+			if new_pid in npl:
+				monitor.update({new_pid:{'cmd':cmd_line,'process':p}})	#store the pid/cmd_line/process
+				print "Monitored Process Launched (PID:",new_pid,"CMD:",cmd_line,")"
 				break
 			else:
 				retry -= 1
@@ -236,11 +248,11 @@ while 1:
 	if run_server:
 		count += 1
 		#periodicaly tell the server to save the gene db
-		if count == 5:
+		if count == 10:
 			count = 0
 			server.save()
 		if run_client == 0:
-			sleep(60) 
+			sleep(30) 
 
 	if run_client:
 		#process monitor loop
@@ -257,20 +269,21 @@ while 1:
 				terminate_process(monitor[pid]['process'])
 				monitor.pop(pid)
 				#launch new process
-				p = Popen(shlex.split(cmd_line),stdin=fnull, stdout=fnull, stderr=GTS_STDERR_FILE)
+				new_pid = make_pid()
+				p = Popen(shlex.split(cmd_line + new_pid),stdin=fnull, stdout=fnull, stderr=GTS_STDERR_FILE)
 				retry = MONITORED_PROCESS_LAUNCH_TIMEOUT
 				while retry > 0:
 					sleep(1)
 					cpl = json.loads(server.pid_list())	#get the current pid list
 					npl = list(set(epl) ^ set(cpl)) 	#find the new pid(s)
 					epl = cpl				#update the existing pid list
-					if len(npl) > 0:
-						monitor.update({npl[0]:{'cmd':cmd_line,'process':p}})	#store the pid/cmd_line/process
-						print "Monitored Process Launched (PID:",npl[0],"CMD:",cmd_line,")"
+					if new_pid in npl:
+						monitor.update({new_pid:{'cmd':cmd_line,'process':p}})	#store the pid/cmd_line/process
+						print "Monitored Process Launched (PID:",new_pid,"CMD:",cmd_line,")"
 						break
 					else:
 						retry -= 1
 				if retry == 0:
-					print "ERROR: Monitored Process Failed to Launch","(CMD:",cmd_line,")"			
+					print "ERROR: Monitored Process Failed to Launch","(CMD:",cmd_line,")"		
 
 fnull.close()
