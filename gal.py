@@ -42,7 +42,6 @@ from load_config import *
 def make_pid():
 	#simple function which spits out a random hex code
 	#which are used to set globaly unique process ids to spawned clients
-	#generate a unique gene pool id
 	md = hashlib.md5()
 	md.update(str(time()) + str(random.random() * 1000000))
 	return md.hexdigest()[0:16]
@@ -269,21 +268,24 @@ while 1:
 				terminate_process(monitor[pid]['process'])
 				monitor.pop(pid)
 				#launch new process
-				new_pid = make_pid()
-				p = Popen(shlex.split(cmd_line + new_pid),stdin=fnull, stdout=fnull, stderr=GTS_STDERR_FILE)
-				retry = MONITORED_PROCESS_LAUNCH_TIMEOUT
-				while retry > 0:
-					sleep(1)
-					cpl = json.loads(server.pid_list())	#get the current pid list
-					npl = list(set(epl) ^ set(cpl)) 	#find the new pid(s)
-					epl = cpl				#update the existing pid list
-					if new_pid in npl:
-						monitor.update({new_pid:{'cmd':cmd_line,'process':p}})	#store the pid/cmd_line/process
-						print "Monitored Process Launched (PID:",new_pid,"CMD:",cmd_line,")"
-						break
-					else:
-						retry -= 1
-				if retry == 0:
-					print "ERROR: Monitored Process Failed to Launch","(CMD:",cmd_line,")"		
+				launching = 1
+				while launching == 1:
+					new_pid = make_pid()
+					p = Popen(shlex.split(cmd_line + new_pid),stdin=fnull, stdout=fnull, stderr=GTS_STDERR_FILE)
+					retry = MONITORED_PROCESS_LAUNCH_TIMEOUT
+					while retry > 0:
+						sleep(1)
+						cpl = json.loads(server.pid_list())	#get the current pid list
+						npl = list(set(epl) ^ set(cpl)) 	#find the new pid(s)
+						epl = cpl				#update the existing pid list
+						if new_pid in npl:
+							monitor.update({new_pid:{'cmd':cmd_line,'process':p}})	#store the pid/cmd_line/process
+							print "Monitored Process Launched (PID:",new_pid,"CMD:",cmd_line,")"
+							launching = 0
+							break
+						else:
+							retry -= 1
+					if retry == 0:
+						print "ERROR: Monitored Process Failed to Launch","(CMD:",cmd_line,")"		
 
 fnull.close()

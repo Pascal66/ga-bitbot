@@ -242,7 +242,7 @@ def pid_register_client(pid,gene_def_hash):
 		pid_alive(pid)		
 		g_pids[pid].update({'gene_def_hash':gene_def_hash})		
 		return "OK"
-	return "NOK:HASH NOT FOUND"
+	return "NOK:HASH NOT FOUND:"+gene_def_hash
 
 def pid_alive(pid):
 	global g_pids

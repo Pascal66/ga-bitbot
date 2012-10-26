@@ -2,7 +2,7 @@
 	"set" :
 	{
 		"SHARED_SECTION" : 1,
-		"max_length" : 30000,
+		"max_length" : 200000,
 		"enable_flash_crash_protection" : 1,
 		"flash_crash_protection_delay" : 240,
 		"price_format" : "%.5f",
@@ -37,7 +37,7 @@
 
 		"GAL_SECTION" : 1,
 		"WATCHDOG_TIMEOUT" : 60,
-		"MONITORED_PROCESS_LAUNCH_TIMEOUT" : 20,
+		"MONITORED_PROCESS_LAUNCH_TIMEOUT" : 120,
 		"GENE_SERVER_STDERR_FILE" : "./report/gene_server_error_log.txt",
 		"BCFEED_STDERR_FILE" : "/dev/null",
 		"WC_SERVER_STDERR_FILE" : "/dev/null",

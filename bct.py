@@ -111,7 +111,7 @@ class trade_engine:
 		#quartiles based on the true range indicator
 
 		self.market_class = []
-		atr_depth = 60 * 4 #4 hour atr
+		atr_depth = 60 * 24 #24 hour atr
 		
 		#print "calc the true pct range indicator"
 		last_t = 0
