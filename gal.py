@@ -169,17 +169,19 @@ def shutdown():
 atexit.register(shutdown)
 
 
+#capture the price feeds regardless of client or server mode
+#servers need it for reporting and clients need it for processing
+
+#update the dataset
+print "Synching the local datafeed..."
+Popen(shlex.split('python bcfeed_synch.py -d')).wait()
+
+#launch the bcfeed script to collect data from the live feed
+print "Starting the live datafeed capture script..."
+p = Popen(shlex.split('python bcfeed.py'),stdin=fnull, stdout=fnull, stderr=BCFEED_STDERR_FILE)
+no_monitor.append(p)
 
 if run_server:
-	#update the dataset
-	print "Synching the local datafeed..."
-	Popen(shlex.split('python bcfeed_synch.py -d')).wait()
-
-	#launch the bcfeed script to collect data from the live feed
-	print "Starting the live datafeed capture script..."
-	p = Popen(shlex.split('python bcfeed.py'),stdin=fnull, stdout=fnull, stderr=BCFEED_STDERR_FILE)
-	no_monitor.append(p)
-
 	print "Launching the xmlrpc server..."
 	Popen(shlex.split('pypy gene_server.py'),stdin=fnull, stdout=fnull, stderr=GENE_SERVER_STDERR_FILE)
 	sleep(1) #give the server time to start
