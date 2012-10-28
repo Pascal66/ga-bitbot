@@ -199,14 +199,16 @@ print "Connected to",__server__,":",__port__
 
 
 if run_server:
-	a = ""
-	while not(a == 'y' or a == 'n'):
-		print "Load archived gene database? (y/n)"
-		a = raw_input()
+	pass
+	####  always use the available database
+	#a = ""
+	#while not(a == 'y' or a == 'n'):
+	#	print "Load archived gene database? (y/n)"
+	#	a = raw_input()
 
-	if a == 'y':
-		print "Loading the gene database..."
-		print server.reload()
+	#if a == 'y':
+	#	print "Loading the gene database..."
+	#	print server.reload()
 
 
 if run_client:
