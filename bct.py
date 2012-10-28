@@ -249,7 +249,7 @@ class trade_engine:
 			loss_weighting_factor = self.stop_loss / self.markup
 			
 			final_score_balance *= self.wins / (self.wins + (self.loss * loss_weighting_factor) * 1.0)
-			final_score_balance *= self.markup * len(self.positions)
+			#final_score_balance *= self.markup * len(self.positions)
 
 			#fine tune the score
 			final_score_balance -= self.buy_wait / 1000.0
@@ -259,8 +259,8 @@ class trade_engine:
 			final_score_balance -= (self.stop_age / 1000.0)
 			final_score_balance += self.shares
 
-			#severly penalize the score if the win/ratio is less than 85%
-			if self.wins / (self.wins + self.loss * 1.0) < 0.85:
+			#severly penalize the score if the win/ratio is less than 75%
+			if self.wins / (self.wins + self.loss * 1.0) < 0.75:
 				final_score_balance /= 10000.0
 
 			#risk reward weighting

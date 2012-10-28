@@ -49,6 +49,7 @@ class genepool:
 	self.min_mutate = 0.00		#adds support for adaptive mutation rates
 	self.step_mutate_rate = 0.0001		#step down increment
 
+	self.splice_on_boundry = True	#only splice genes on variable boundries
 	self.multiple_parent = 0.05	#multiple parent rate
 	self.max_multiple_parents = 7	#maximum number of multi parent merge (per parent)
 	self.enable_niche_filter = True
@@ -65,7 +66,7 @@ class genepool:
 	self.contains = []		#gene data config
 	self.genelen = 0 		#calculated gene length	
 	self.iteration = 0		#current iteration
-	self.max_iteration = 30		#max iteration before kill off
+	self.max_iteration = 300		#max iteration before kill off
 	self.log_enable = False
 	self.log_filename = ""
 	self.local_optima_reached = False	#flag to indicate when a local optima has been reached
@@ -193,21 +194,33 @@ class genepool:
 	
 	#splice two genes (66% probablility)
 	if random.random() >= 0.33:	    
-	    l = len(a)
-	    splice = int(random.random() * l)
-	    c = a[:splice] + b[splice:]
-	    #mutate the children (50% probability)
-	    if random.random() > 0.5:
-		c = self.mutate_gene(c)
+		if self.splice_on_boundry == False:
+			#splice anywhere
+			l = len(a)
+			splice = int(random.random() * l)
+
+		else:
+			#splice on a variable boundary
+			l = len(self.contains)
+			splice = 0
+			splice_at = int(random.random() * l)
+			for i in range(0,splice_at):
+				splice += self.contains[i][1] #var length
+
+		c = a[:splice] + b[splice:]
+
+		#mutate the children (50% probability)
+		if random.random() > 0.5:
+			c = self.mutate_gene(c)
 	else:
-	    #select one of the parents (50% probability)
-	    #and mutate it (33% probability)
-	    if random.random() > 0.5:
-		c = a
-	    else:
-		c = b
-	    c = self.mutate_gene(c)
-		
+		#select one of the parents (50% probability)
+		#and mutate it (33% probability)
+		if random.random() > 0.5:
+			c = a
+		else:
+			c = b
+		c = self.mutate_gene(c)
+
 	return c
     
     def next_gen(self):
@@ -528,13 +541,14 @@ class genepool:
 if __name__ == "__main__":
     #test the genetic class    
     g = genepool()
+    g.splice_on_boundry = True
     g.pool_size = 200
     g.niche_min_iteration = 10000
     #16 bit number (65535) with the decimal three places to the left (10^3 = 1000)
     #max value should be 65.535 minus an offset of 200 giving a variable range of -200 to -134.465
-    g.add_numvar("afloat",16,3,-200)
+    g.add_numvar("afloat",32,6,-5000)
     
-    g.add_numvar("aint",6,0,200)
+    g.add_numvar("aint",64,0,200)
 	
     g.seed()
     
