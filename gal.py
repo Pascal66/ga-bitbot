@@ -210,6 +210,7 @@ if run_server:
 	#	print "Loading the gene database..."
 	#	print server.reload()
 
+print server.reload()
 
 if run_client:
 	print "Launching GA Clients..."
