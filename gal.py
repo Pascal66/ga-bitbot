@@ -2,7 +2,7 @@
 """
 gal v0.01 
 
-ga-bitbot system launcher
+ga-bitbot application / system launcher
 
 Copyright 2011 Brian Monkaba
 
@@ -23,7 +23,7 @@ This file is part of ga-bitbot.
 """
 
 __appversion__ = "0.01a"
-print "ga-bitbot system launcher v%s"%__appversion__
+print "ga-bitbot application system launcher v%s"%__appversion__
 
 import atexit
 import sys
@@ -47,26 +47,28 @@ def make_pid():
 	return md.hexdigest()[0:16]
 	
 
+print "-"*80
+print "\n\tCommand line options:\n\t\tserver\t\tlaunches only the server components\n\t\tclient\t\tlaunches only the client components\n\t\tall\t\tlaunches all components"
+print "\n\tThe default configuration is 'all'"
+print "-"*80
 
-print "\n\tcommand line options:\n\t\tserver\t\tlaunches only the server components\n\t\tclient\t\tlaunches only the client components\n\t\tall\t\tlaunches all components"
-print "\n\tthe default configuration will launch all components"
 run_client = 1
 run_server = 1
 if len(sys.argv) >= 2:
 	if sys.argv[1] == 'all':
 		run_client = 1
 		run_server = 1
-		print "launching all components"
+		print "gal: launching all components"
 	if sys.argv[1] == 'client':
 		run_client = 1
 		run_server = 0
-		print "launching client components only"
+		print "gal: launching client components only"
 	if sys.argv[1] == 'server':
 		run_client = 0
 		run_server = 1
-		print "launching server components only"
+		print "gal: launching server components only"
 else:
-	print "launching all components"
+	print "gal: launching all components"
 	sleep(3)
 
 #the variable values below are superceded by the configuration loaded from the 
@@ -84,16 +86,16 @@ config_loaded = False
 try:
 	__main__ = load_config_file_into_object('global_config.json',__main__)
 except:
-	print "Error detected while loading the configuration. The application will now exit."
+	print "gal: Error detected while loading the configuration. The application will now exit."
 	import sys
 	sys.exit()
 else:
 	if config_loaded == False:
-		print "Configuration failed to load. The application will now exit."
+		print "gal: Configuration failed to load. The application will now exit."
 		import sys
 		sys.exit()
 	else:
-		print "Configuration loaded."
+		print "gal: Configuration loaded."
 
 #open a null file to redirect stdout/stderr from the launched subprocesses 
 fnull = open(os.devnull,'w')
@@ -126,11 +128,11 @@ else:
 
 #at least one client should not run with the get_config option to make sure new gene_def.json config files get loaded into the db.
 monitored_launch = ['pypy gts.py all y run_once pid ',\
-'pypy gts.py 1 y run_once get_config pid ',\
-'pypy gts.py 2 y run_once get_config pid ',\
+'pypy gts.py 3 n run_once get_config pid ',\
 'pypy gts.py 3 y run_once get_config pid ',\
+'pypy gts.py 4 n run_once get_config pid ',\
 'pypy gts.py 4 y run_once get_config pid ',\
-'pypy gts.py all y run_once get_default_config score_only pid ',\
+'pypy gts.py all y run_once get_config score_only pid ',\
 'pypy gts.py all y run_once get_default_config pid ']
 
 unmonitored_launch = ['python wc_server.py','python report_gen.py']
@@ -173,16 +175,16 @@ atexit.register(shutdown)
 #servers need it for reporting and clients need it for processing
 
 #update the dataset
-print "Synching the local datafeed..."
+print "gal: Synching the local datafeed..."
 Popen(shlex.split('python bcfeed_synch.py -d')).wait()
 
 #launch the bcfeed script to collect data from the live feed
-print "Starting the live datafeed capture script..."
+print "gal: Starting the live datafeed capture script..."
 p = Popen(shlex.split('python bcfeed.py'),stdin=fnull, stdout=fnull, stderr=BCFEED_STDERR_FILE)
 no_monitor.append(p)
 
 if run_server:
-	print "Launching the xmlrpc server..."
+	print "gal: Launching the xmlrpc server..."
 	Popen(shlex.split('pypy gene_server.py'),stdin=fnull, stdout=fnull, stderr=GENE_SERVER_STDERR_FILE)
 	sleep(1) #give the server time to start
 
@@ -195,7 +197,7 @@ import json
 __server__ = gene_server_config.__server__
 __port__ = str(gene_server_config.__port__)
 server = xmlrpclib.Server('http://' + __server__ + ":" + __port__)  
-print "Connected to",__server__,":",__port__
+print "gal: connected to gene server ",__server__,":",__port__
 
 
 if run_server:
@@ -210,10 +212,10 @@ if run_server:
 	#	print "Loading the gene database..."
 	#	print server.reload()
 
-print server.reload()
+print "gal: gene server db restore: ",server.reload()
 
 if run_client:
-	print "Launching GA Clients..."
+	print "gal: Launching GA Clients..."
 
 	#collect system process PIDS for monitoring. 
 	#(not the same as system OS PIDs -- They are more like GUIDs as this is a multiclient distributed system) 
@@ -231,22 +233,22 @@ if run_client:
 			epl = cpl				#update the existing pid list
 			if new_pid in npl:
 				monitor.update({new_pid:{'cmd':cmd_line,'process':p}})	#store the pid/cmd_line/process
-				print "Monitored Process Launched (PID:",new_pid,"CMD:",cmd_line,")"
+				print "gal: Monitored Process Launched (PID:",new_pid,"CMD:",cmd_line,")"
 				break
 			else:
 				retry -= 1
 		if retry == 0:
-			print "ERROR: Monitored Process Failed to Launch","(CMD:",cmd_line,")"
+			print "gal: ERROR: Monitored Process Failed to Launch","(CMD:",cmd_line,")"
 if run_server:
 	#start unmonitored processes
 	for cmd_line in unmonitored_launch:
 		p = Popen(shlex.split(cmd_line),stdin=fnull, stdout=fnull, stderr=fnull)
-		print "Unmonitored Process Launched (CMD:",cmd_line,")"
+		print "gal: Unmonitored Process Launched (CMD:",cmd_line,")"
 		no_monitor.append(p)	#store the popen instance
 		sleep(1) #wait a while before starting the report_gen script
 
 
-print "\nMonitoring Processes..."
+print "\ngal: Monitoring Processes..."
 count = 0
 while 1:
 	if run_server:
@@ -264,7 +266,7 @@ while 1:
 			sleep(5) #check one pid every n seconds.
 			if server.pid_check(pid,WATCHDOG_TIMEOUT) == "NOK":
 				#watchdog timed out
-				print "WATCHDOG: PID",pid,"EXPIRED"
+				print "gal: WATCHDOG: PID",pid,"EXPIRED"
 				#remove the expired PID
 				server.pid_remove(pid)
 				epl = json.loads(server.pid_list()) 	#get the current pid list
@@ -285,12 +287,12 @@ while 1:
 						epl = cpl				#update the existing pid list
 						if new_pid in npl:
 							monitor.update({new_pid:{'cmd':cmd_line,'process':p}})	#store the pid/cmd_line/process
-							print "Monitored Process Launched (PID:",new_pid,"CMD:",cmd_line,")"
+							print "gal: Monitored Process Launched (PID:",new_pid,"CMD:",cmd_line,")"
 							launching = 0
 							break
 						else:
 							retry -= 1
 					if retry == 0:
-						print "ERROR: Monitored Process Failed to Launch","(CMD:",cmd_line,")"		
+						print "gal: ERROR: Monitored Process Failed to Launch","(CMD:",cmd_line,")"		
 
 fnull.close()

@@ -161,23 +161,25 @@ def put_gene(d,quartile,pid = None):
 				g_gene_library[gdh]['gene_high_scores'][quartile - 1].pop(i)
 				break
 
-	#check the bob dict to see if the gene is already captured
+	if d['score'] != -987654321.12346:	
+		#timestamp the gene submission
+		d['time'] = time.time()
+
+		g_gene_library[gdh]['gene_high_scores'][quartile - 1].append(d)
+		g_gene_library[gdh]['gene_high_scores'][quartile - 1] = sorted(g_gene_library[gdh]['gene_high_scores'][quartile - 1], key=itemgetter('score'),reverse = True)
+	
+		print "put",d['time'],d['score']
+		#prune the dictionary list
+		if len(g_gene_library[gdh]['gene_high_scores'][quartile - 1]) > max_len:
+			g_gene_library[gdh]['gene_high_scores'][quartile - 1] = g_gene_library[gdh]['gene_high_scores'][quartile - 1][:max_len]
+
+	#update the bob dict if needed.
 	if any(adict['gene'] == d['gene'] for adict in g_gene_library[gdh]['gene_best'][quartile - 1]):
-		print "put_gene: duplicate BOB gene detected"
+		print "put_gene: BOB gene detected"
 		#update the gene
 		put_bob(json.dumps(d),quartile,pid)
-		return "OK"
-	
-	#timestamp the gene submission
-	d['time'] = time.time()
 
-	g_gene_library[gdh]['gene_high_scores'][quartile - 1].append(d)
-	g_gene_library[gdh]['gene_high_scores'][quartile - 1] = sorted(g_gene_library[gdh]['gene_high_scores'][quartile - 1], key=itemgetter('score'),reverse = True)
-	
-	print "put",d['time'],d['score']
-	#prune the dictionary list
-	if len(g_gene_library[gdh]['gene_high_scores'][quartile - 1]) > max_len:
-		g_gene_library[gdh]['gene_high_scores'][quartile - 1] = g_gene_library[gdh]['gene_high_scores'][quartile - 1][:max_len]
+
 	return "OK"
 
 def put_bob(d,quartile,pid = None):
@@ -196,16 +198,17 @@ def put_bob(d,quartile,pid = None):
 				g_gene_library[gdh]['gene_best'][quartile - 1].pop(i)
 				break
 
-	#timestamp the gene submission
-	d['time'] = time.time()
+	if d['score'] != -987654321.12346:
+		#timestamp the gene submission
+		d['time'] = time.time()
 
-	g_gene_library[gdh]['gene_best'][quartile - 1].append(d)
-	g_gene_library[gdh]['gene_best'][quartile - 1] = sorted(g_gene_library[gdh]['gene_best'][quartile - 1], key=itemgetter('score'),reverse = True)
+		g_gene_library[gdh]['gene_best'][quartile - 1].append(d)
+		g_gene_library[gdh]['gene_best'][quartile - 1] = sorted(g_gene_library[gdh]['gene_best'][quartile - 1], key=itemgetter('score'),reverse = True)
 	
-	print "put bob",d['time'],d['score']
-	#prune the dictionary list
-	if len(g_gene_library[gdh]['gene_best'][quartile - 1]) > max_bobs:
-		g_gene_library[gdh]['gene_best'][quartile - 1] = g_gene_library[gdh]['gene_best'][quartile - 1][:max_bobs]
+		print "put bob",d['time'],d['score']
+		#prune the dictionary list
+		if len(g_gene_library[gdh]['gene_best'][quartile - 1]) > max_bobs:
+			g_gene_library[gdh]['gene_best'][quartile - 1] = g_gene_library[gdh]['gene_best'][quartile - 1][:max_bobs]
 	return "OK"
 
 #remote process services 

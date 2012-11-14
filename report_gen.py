@@ -47,7 +47,6 @@ server = xmlrpclib.Server('http://' + __server__ + ":" + __port__)
 print "Connected to",__server__,":",__port__
 
 
-from bct import *
 from load_config import *
 import __main__
 
@@ -128,6 +127,8 @@ while 1:
 	pid = "REPORT_GEN"
 	gdh = json.loads(server.get_default_gene_def_hash())
 	print gdh
+	#load the gene def config
+	gd = json.loads(server.get_gene_def(gdh))
 	server.pid_register_client(pid,gdh)
 
 	print "_" * 80
@@ -138,8 +139,7 @@ while 1:
 	buys = []
 	targets = []
 	for quartile in [4,3,2,1]:
-		#create the trade engine	
-		te = trade_engine()
+
 		#get the high score gene from the gene server
 		try:
 			ag = json.loads(server.get(60*60*24,quartile,pid))
@@ -157,13 +157,24 @@ while 1:
 			if type(ag) == type([]):
 				ag = ag[0]
 		
+			#create the trade engine	
+			print "report: loading the fitness function"
+			ff = __import__(gd['fitness_script'])
+			te = ff.trade_engine()
+			te.cache.disable()	#dont use cached data for reporting
+
 			#load the gene dictionary into the trade engine
 			te = load_config_into_object({'set':ag},te)
+			#load the gene def config into the trade engine
+			te = load_config_into_object(gd['fitness_config'],te)
+			#apply global configs
+			te.max_data_len = max_length
 			te.enable_flash_crash_protection = enable_flash_crash_protection 
 			te.flash_crash_protection_delay = flash_crash_protection_delay
 		
 			#preprocess the data
-			current_quartile = te.classify_market(input)
+			#current_quartile = te.classify_market(input)
+			current_quartile = te.initialize()
 			#update the gene server with the current market quartile
 			server.put_active_quartile(current_quartile,pid)
 			#select the quartile to test
@@ -177,8 +188,9 @@ while 1:
 
 			#feed the input through the trade engine
 			try:
-				for i in input:
-					te.input(i[0],i[1])
+				#for i in input:
+				#	te.input(i[0],i[1])
+				te.run()
 			except:
 				print "Gene Fault"
 			else:
@@ -298,6 +310,7 @@ while 1:
 		print "\n"
 		time.sleep(60) #generate a report every n seconds
 	else:
+		time.sleep(10)
 		print "skipping sleep state due to active trigger prices..."
 		print "_" * 80
 		print "\n"

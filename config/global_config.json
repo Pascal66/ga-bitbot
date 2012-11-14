@@ -9,12 +9,12 @@
 
 		"GTS_SECTION" : 1,
 		"load_throttle" : 1,
-		"load_throttle_sleep_interval" : 0.10,
+		"load_throttle_sleep_interval" : 0.05,
 		"calibrate" : 1,
-		"cycle_time" : 120,
-		"min_cycle_time" : 60,
+		"cycle_time" : 60,
+		"min_cycle_time" : 30,
 		"cycle_time_step" : 2,
-		"pid_update_rate" : 15,
+		"pid_update_rate" : 25,
 
 		"BCBOOKIE_SECTION" : 1,
 		"monitor_mode" : 0,

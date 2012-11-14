@@ -106,11 +106,6 @@ class genepool:
 	    f.write(str(msg) + '\n')
 	    f.close()
 	
-	#print "-"*40
-	#print "Winning Gene:"
-	#for key in msg.keys():
-	#    print key," : ",msg[key]
-
     def reset_scores(self):
 	#Reset the scores in the gene pool
 	for i in range(len(self.pool)):
@@ -170,7 +165,7 @@ class genepool:
 	# - need at least three to merge (duh!)
 	# - and should be an odd number (no tied votes)
 	if len(alist) < 3:
-		print "need at least three genes to merge"
+		print "genetic: need at least three genes to merge"
 	n = len(alist[0])
 	half_n = n/2.0
 	sums = map(zero,range(n))
@@ -238,18 +233,18 @@ class genepool:
 
 	#DEBUG
 	c = 0
-	print "Top 10:" + "-" * 73
+	print "genetic: Top 10:" + "-" * 73
 	for g in self.pool:
 		c += 1
 		if c > 10:
 			break
-		print g['score'],g['id']
+		print "genetic: ",g['score'],g['id']
 
-	print "-" * 80
+	print "genetic: ","-" * 80
 
 	winning_gene = self.pool[0]
-	print "Genetic: Pool Length: ",len(self.pool)
-	print "Genetic: HIGH SCORE: ",winning_gene['id']
+	print "genetic: Pool Length: ",len(self.pool)
+	print "genetic: HIGH SCORE: ",winning_gene['id']
 	max_score = winning_gene['score']
 	self.log_dict(winning_gene)
 
@@ -260,11 +255,9 @@ class genepool:
 		self.local_optima_buffer = self.local_optima_buffer[1:]
 
 	if len(self.local_optima_buffer) == self.local_optima_trigger:
-		#print sum(self.local_optima_buffer),self.local_optima_trigger,max_score
-		#print (sum(self.local_optima_buffer) / self.local_optima_trigger) - max_score
 		if abs((sum(self.local_optima_buffer) / self.local_optima_trigger) - max_score) < 0.001:
 			#local optima reached
-			print "#"*25,"local optima reached","#"*25
+			print "genetic: ","#"*25,"local optima reached","#"*25
 			self.local_optima_reached = True
 
 	#remove survivor twins
@@ -336,7 +329,7 @@ class genepool:
 
 	#bit sweep (bit level hill climbing)
 	if random.random() <= self.bit_sweep_rate and self.iteration > self.bit_sweep_min_iteration:
-		print "** Hill Climb Bit Sweep **"
+		print "genetic: running hill climb bit sweep"
 		#random gene
 		i = int(random.random() * (len(gen) - 1))
 		bsl = self.bit_sweep(gen[i]['gene'])
@@ -356,11 +349,11 @@ class genepool:
 	    winning_gene['score'] = 0 #reset the score
 	    gen = [winning_gene]
 	    os = []
-	    print "*"*10,"NEW POPULATION (saving only the winning gene)","*"*10		
+	    print "genetic: ","*"*10,"NEW POPULATION (saving only the winning gene)","*"*10		
 	
 	
 	self.pool = gen + os
-	print "Genetic: Post Filter HIGH SCORE:", self.pool[0]['id']
+	print "genetic: post filter HIGH SCORE:", self.pool[0]['id']
 	#create some fresh genes if pool space is available
 	new_gene_count = 0
 	while len(self.pool) < self.pool_size:
@@ -376,14 +369,14 @@ class genepool:
 	#decode the genes 
 	self.decode()	 
 
-	print "Survivors",len(gen)	
-	print "Offspring",len(os)
-	print "New",new_gene_count  
-	print "Pool Size:",len(self.pool)
-	print "Threshold:",self.prune_threshold
-	print "Mutate:",self.mutate
-	print "Local Optima Buffer:",self.local_optima_buffer
-	print "-" * 80
+	print "genetic: Survivors",len(gen)	
+	print "genetic: Offspring",len(os)
+	print "genetic: New",new_gene_count  
+	print "genetic: Pool Size:",len(self.pool)
+	print "genetic: Threshold:",self.prune_threshold
+	print "genetic: Mutate:",self.mutate
+	print "genetic: Local Optima Buffer:",self.local_optima_buffer
+	print "genetic:", "-" * 72
 	
     def get_next(self):
 	#get the next available unscored gene
@@ -397,17 +390,15 @@ class genepool:
 	while not get_next_gen and len(self.pool) > 0:
 		if self.pool[index]['score'] == None:
 			self.next_index = index
-			#print index,self.next_index,'<---------------'
 			return self.pool[index]
 		if index == self.next_index:
 			self.next_index = 0
 			get_next_gen = 1
-		#print index,self.next_index,get_next_gen,self.pool[index]['id'],self.pool[index]['score']		
 		index += 1
 		if index >= len(self.pool):
 			index = 0	
 		
-	print "GENETIC: NEXT GEN " + "#"*80
+	print "genetic: NEXT GEN " + "#"*80
 	self.next_gen()
 	return self.get_next()
     

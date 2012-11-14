@@ -1,11 +1,15 @@
+<link rel="stylesheet" href="/css/d3.parcoords.css" type="text/css" />
 <link rel="stylesheet" href="/css/ui.css" type="text/css" />
-<link href="/css/custom-theme/jquery-ui-1.9.1.custom.min.css" rel="stylesheet" type="text/css"/>
+<link rel="stylesheet" href="/css/custom-theme/jquery-ui-1.9.1.custom.min.css" type="text/css"/>
+
 <script src="/socket.io/socket.io.js"></script>
 <!--[if lte IE 8]><script language="javascript" type="text/javascript" src="../excanvas.min.js"></script><![endif]-->
 <script language="javascript" type="text/javascript" src="/js/jquery.js"></script>
 <script language="javascript" type="text/javascript" src="/js/jquery.flot.js"></script>
 <script language="javascript" type="text/javascript" src="/js/jquery-ui-1.9.1.custom.min.js"></script>
 <script language="javascript" type="text/javascript" src="/js/knockout-2.1.0.js"></script>
+<script language="javascript" type="text/javascript" src="/js/d3.v2.min.js"></script>
+<script language="javascript" type="text/javascript" src="/js/d3.parcoords.js"></script>
 
 
 <script>
@@ -28,7 +32,7 @@
         <li><a href="#tab-1"><span>Status</span></a></li>
         <li><a href="#tab-2"><span>Buttons</span></a></li>
         <li><a href="#tab-3"><span>Market Depth</span></a></li>
-        <li><a href="#tab-4"><span>Content</span></a></li>
+        <li><a href="#tab-4"><span>Explorer</span></a></li>
         <li><a href="#tab-5"><span>Calc</span></a></li>
         <li><a href="#tab-6"><span>Feed</span></a></li>
         <li><a href="#tab-7"><span>Trades</span></a></li>
@@ -54,10 +58,13 @@
 	<div id="depth_plot" style="width:800px;height:300px;"></div>
     </div>
     <div id="tab-4">
-	<div id="content"></div>
+	Parallel coordinate visualization of the genetic database.
+	<input type="submit" value="Load" id="gene_db_reload_button" class="ui-button-text">
+	<div id="explorer"></div>
+	<div id="pchart"></div>
     </div>
     <div id="tab-5">
-	<div id="gene_def_calc"><h3>gene depth calculator</h3><BR>
+	<div id="gene_def_calc"><h3>gene data definition calculator</h3><BR>
 	BITS<input type="text" value="8" id="bits">
 	DECIMAL<input type="text" value="2" id="decimal">
 	OFFSET<input type="text" value="0" id="offset">
@@ -90,6 +97,9 @@
 	var ch_ticker = 'd5f06780-30a8-4a48-a2f8-7ed181b4a13f';
 	var bid_depth = {};
 	var ask_depth = {};
+	var gene_db = {};
+	var gene_db_data_array = new Array();
+	var pc;	//parrallel coord chart object
 	var spread = 0.025;
 	var plot_x_center = 2.0;
 	var conn = io.connect(window.location.hostname + ':8088/ga_bitbot');
@@ -156,7 +166,92 @@
 		}
 		if (msg.channel == '1min')
 		{
-			$('#debug').append(JSON.stringify(msg) + '<BR>');
+			//$('#debug').append(JSON.stringify(msg) + '<BR>');
+		}
+		if (msg.channel == 'gene_db')
+		{
+			//$('#debug').html(JSON.stringify(msg.value) + '<BR>');
+			gene_db = msg.value;
+
+			//debug...
+			dim_array = new Array();
+			//dim_array.push('db_index');
+			dim_array.push("buy_wait");
+			dim_array.push("buy_wait_after_stop_loss");
+			dim_array.push("wls");
+			dim_array.push("wll");
+			dim_array.push("macd_buy_trip");
+			dim_array.push("markup");
+			dim_array.push("stop_loss");
+			dim_array.push("score");
+
+			//create an array of checkboxes to select from
+			for (var key in Object.keys(gene_db)){
+				
+			}
+			//clear the chart area
+			try{$('#pchart').accordion("destroy");}catch(err){};
+			$("#pchart").html("");
+			//$("#pchart").removeClass();
+
+			var db_index = 0
+			for (var db_lib in gene_db){ 
+				console.log(db_lib);
+				var gene_db_data_array = new Array();
+				var gene_db_library_id = Object.keys(gene_db)[db_index]
+				
+				for (var i = 0; i < gene_db[db_lib]["gene_high_scores"].length; i++)
+				{
+					gene_db[db_lib]["gene_high_scores"][i].forEach(function (db_record)
+					{ 					
+						data_array = new Array();
+						//data_array.push(db_index);
+						data_array.push(db_record["buy_wait"]);
+						data_array.push(db_record["buy_wait_after_stop_loss"]);
+						data_array.push(db_record["wls"]);
+						data_array.push(db_record["wll"]);
+						data_array.push(db_record["macd_buy_trip"]);
+						data_array.push(db_record["markup"]);
+						data_array.push(db_record["stop_loss"]);
+						data_array.push(db_record["score"]);
+
+						db_record['db_index'] = db_index;
+
+						//$('#debug').append(data_array.join() + '<BR>');
+						if (db_record["score"] > 0.0)
+						{
+							gene_db_data_array.push(db_record); //data_array
+							//ts = new Date(db_record['time'] * 1000);
+							//if (i == 3) {console.log(db_record['id']+' : '+ db_record['score']+' : '+ts+' : '+i);}
+						}
+
+					});
+
+					//$('#explorer').html("This text comes before the chart<BR>");
+					if ((gene_db[db_lib]['gene_def'] != "UNDEFINED") && (gene_db_data_array.length > 0)){
+						$("#pchart").append("<h3>"+$.parseJSON(gene_db[db_lib]['gene_def'])['name']+" Quartile: " +(i+1)+"</h3>");
+						$("#pchart").append('<div><p id="pchart_'+gene_db_library_id+'_'+i+'" class="parcoords" style="height:200px">')
+						//$("#pchart_"+ gene_db_library_id+'_'+i).html("<h3>"+$.parseJSON(gene_db[db_lib]['gene_def'])['name']+" Quartile: " +(i+1)+"</h3><BR>");
+				
+						pc = d3.parcoords()("#pchart_"+ gene_db_library_id+'_'+i)
+							.data(gene_db_data_array)
+							.dimensions(dim_array)
+							.alpha(0.40)
+							.color("#400800")
+							.mode("queue")
+							.composite("lighter")
+							.rate(5)
+							.render()
+							.createAxes()
+							.brushable()
+							.reorderable();
+						$("#pchart_"+ gene_db_library_id+'_'+i).append("</p></div><BR>")
+					}
+				}
+				var db_index = db_index + 1;
+			};
+			$('#pchart').accordion();
+
 		}
 		if (msg.channel == 'pids')
 		{
@@ -228,6 +323,9 @@
 	});
 
 
+	$("#gene_db_reload_button").click(function() {
+  		conn.emit('request_gene_db',{});
+	});
 
 
 

@@ -93,19 +93,19 @@ while 1:
 		filename = './report/gene_server_db_dump.csv'
 		print "export raw library dump (csv format) to " + filename
 		f = open(filename,'w')
-		gkeys = gene_library[gene_library.keys()[0]]['gene_best'][0][0].keys()
-		header = 'library,' + ",".join(gkeys) + '\n'
+		gkeys = gene_library[gene_library.keys()[0]]['gene_high_scores'][0][0].keys()
+		header = 'library,type,' + ",".join(gkeys) + '\n'
 		f.write(header)
 		for key in gene_library.keys():
 			for l in gene_library[key]['gene_best']:
 				for d in l:
-					f.write(key)
+					f.write(key + ',gene_best')
 					for agk in gkeys:
 						f.write("," + str(d[agk]))
 					f.write('\n')
 			for l in gene_library[key]['gene_high_scores']:
 				for d in l:
-					f.write(key)
+					f.write(key + ',gene_high_scores')
 					for agk in gkeys:
 						f.write("," + str(d[agk]))
 					f.write('\n')

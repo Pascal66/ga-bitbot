@@ -1,6 +1,6 @@
  *		{ margin: 0; padding: 0; }
-body		{ font-family: Georgia, serif; background: url(../img/bodyzzzz.png) #000000; color: #000000;font-size: 16px; }
-
+body		{ font-family: Georgia, serif; background: url(../img/body.png) #000000; color: #000000;font-size: 16px; }
+text 		{ font-family: Georgia, serif; background: url(../img/body.png) #000000; color: #000000;font-size: 16px; }
 
 .clear		{ clear: both; }
 
@@ -23,19 +23,19 @@ input		{ width: 100px; display: block; padding: 4px; margin: 0 0 10px 0; font-si
 		}
 
 .ui-input-text	{ background: url(../img/button.png) repeat-x top center; border: 2px solid #999;
-			-moz-border-radius: 5px; padding: 5px; color: grey; font-weight: bold;
+			-moz-border-radius: 5px; padding: 5px; color: black; font-weight: bold;
 			-webkit-border-radius: 5px; font-size: 12px;  width: 80px; }
 					  
 .ui-button-text	{ background: url(../img/button.png) repeat-x top center; border: 2px solid #999;
-			-moz-border-radius: 5px; padding: 5px; color: grey; font-weight: bold;
-			-webkit-border-radius: 5px; font-size: 12px;  width: 80px; }
+			-moz-border-radius: 5px; padding: 5px; color: black; font-weight: bold;
+			-webkit-border-radius: 5px; font-size: 12px;  width: 120px; }
 .ui-button-text:hover	{ background: url(../img/button_hover.png) repeat-x top center; color: white; }
 .ui-button-text:active	{ position: relative; top: 0px;border: 4px solid #999;padding: 3px;}
 #spinner        {position:absolute;}
 #title          {color: #c77000;font-size: 24px; }
 #notifications  {-moz-border-radius: 5px; padding: 5px; -webkit-border-radius: 5px;}
 #menu_buttons   {position:absolute;width:90px;top:1em;left:0em;}
-#content        {position:absolute;left:6em;top:2.5em;}
+#explorer        {left:6em;top:2.5em;}
 #debug        	{white-space: pre-wrap;}
 
 #mtgox_feed     {-moz-border-radius: 5px; padding: 5px; -webkit-border-radius: 5px;font-size: 16px;}

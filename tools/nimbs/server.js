@@ -117,8 +117,11 @@ gabb.on('connection', function (socket) {
 	});
 
 
-	socket.on('call', function (p1, fn) {
-		fn(0, 'some data'); // success
+	socket.on('request_gene_db', function () {
+		rpcClient.methodCall('get_db', [], function (error, value) {
+				//console.log('get pids response: ' + value);
+				socket.emit('message', {'channel':'gene_db','value':JSON.parse(value)});
+			});
 	});
 
 });
@@ -249,7 +252,10 @@ function xmlrpcBroadcastBridge()
 				gabb.emit('message', {'channel':'pids','value':JSON.parse(value)});
 			});
 
-
+			//rpcClient.methodCall('get_db', [], function (error, value) {
+				//console.log('get pids response: ' + value);
+			//	gabb.emit('message', {'channel':'gene_db','value':JSON.parse(value)});
+			//});
 			//rpcClient.methodCall('get_target', [pid], function (error, value) {
 			//	console.log('get target response: ' + value +', '+ pid +', '+ gene_def_hash);
 			//});
@@ -263,5 +269,5 @@ function xmlrpcBroadcastBridge()
 
 // periodic timers
 setInterval(log_one_min_trade, 60000); //60 second interval
-setInterval(xmlrpcBroadcastBridge, 3000); //10 second interval
+setInterval(xmlrpcBroadcastBridge, 10000); //10 second interval
 

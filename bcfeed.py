@@ -36,12 +36,12 @@ while 1:
 	#reset the connection if need be
 	while reset_connection == True:
 		try:
-			print "Trying to reset connection..."
+			print "bcfeed: Trying to reset connection..."
 			client = telnetlib.Telnet('bitcoincharts.com',27007)
 			stream_data = client.read_very_eager()
 			reset_connection = False
 		except:
-			print "Connection reset failed. Wait to retry..."
+			print "bcfeed: Connection reset failed. Wait to retry..."
 			sleep(30)
 
 	try:

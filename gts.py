@@ -2,7 +2,7 @@
 """
 gts v0.01 
 
-genetic trade simulator
+genetic test sequencer
 
 Copyright 2011 Brian Monkaba
 
@@ -21,10 +21,7 @@ This file is part of ga-bitbot.
     You should have received a copy of the GNU General Public License
     along with ga-bitbot.  If not, see <http://www.gnu.org/licenses/>.
 """
-
-# connect to the xml server
-#
-
+import traceback
 import xmlrpclib
 import json
 import gene_server_config
@@ -32,29 +29,26 @@ import time
 import sys
 import random
 import __main__
-random.seed(time.time())
-
-__server__ = gene_server_config.__server__
-__port__ = str(gene_server_config.__port__)
-
-#make sure the port number matches the server.
-server = xmlrpclib.Server('http://' + __server__ + ":" + __port__)  
-
-print "Connected to",__server__,":",__port__
-
-
-from bct import *
-#from trade_engine import *
 from genetic import *
 from load_config import *
 
-
+random.seed(time.time())
 
 if __name__ == "__main__":
 	__appversion__ = "0.01a"
-	print "Genetic Bitcoin Trade Simulator v%s"%__appversion__
-	
+	print "Genetic Test Sequencer v%s"%__appversion__
 
+	# connect to the xml server
+	#
+	__server__ = gene_server_config.__server__
+	__port__ = str(gene_server_config.__port__)
+
+	#make sure the port number matches the server.
+	server = xmlrpclib.Server('http://' + __server__ + ":" + __port__)  
+
+	print "gts: connected to gene_server ",__server__,":",__port__
+
+	
 	#the variable values below are superceded by the configuration loaded from the 
 	#configuration file global_config.json
 	#!!!!!!!! to change the values edit the json configuration file NOT the variables below !!!!!!!!
@@ -74,16 +68,16 @@ if __name__ == "__main__":
 	try:
 		__main__ = load_config_file_into_object('global_config.json',__main__)
 	except:
-		print "Error detected while loading the configuration. The application will now exit."
+		print "gts: error detected while loading the configuration. the application will now exit."
 		import sys
 		sys.exit()
 	else:
 		if config_loaded == False:
-			print "Configuration failed to load. The application will now exit."
+			print "gts: configuration failed to load. the application will now exit."
 			import sys
 			sys.exit()
 		else:
-			print "Configuration loaded."
+			print "gts: configuration loaded."
 
 
 	#internal variables
@@ -97,30 +91,9 @@ if __name__ == "__main__":
 	score_only = False
 	pid = None
 	g = genepool()
+	gd = "UNDEFINED"
 
-	def load():
-		#open the history file
-		#print "loading the data set"
-		f = open("./datafeed/bcfeed_mtgoxUSD_1min.csv",'r')
-		#f = open("./datafeed/test_data.csv",'r')
-		d = f.readlines()
-		f.close()
-	
-		if len(d) > max_length:
-			#truncate the dataset
-			d = d[max_length * -1:]
-
-		#load the backtest dataset
-		input = []
-		for row in d[1:]:
-			r = row.split(',')[1] #last price
-			t = row.split(',')[0] #time
-			input.append([int(float(t)),float(r)])
-		#print "done loading:", str(len(input)),"records."
-		return input
-
-
-	print sys.argv
+	#print sys.argv
 	if len(sys.argv) >= 3:
 		# Convert the two arguments from strings into numbers
 		quartile = sys.argv[1]
@@ -173,8 +146,7 @@ if __name__ == "__main__":
 
 	#configure the gene pool
 	if get_config == True:
-		print "Loading gene_def from the server."
-		gd = "UNDEFINED"
+		print "gts: Loading gene_def from the server."
 		while gd == "UNDEFINED" and get_config == True:
 			#get the gene def config list from the server
 			gdhl = json.loads(server.get_gene_def_hash_list())
@@ -199,12 +171,12 @@ if __name__ == "__main__":
 					g = load_config_into_object(gd,g)
 					#only need to register the client with the existing gene_def hash
 					server.pid_register_client(pid,gdh)
-					print "gene_def_hash:",gdh
-					print "name",gd['name']
-	 				print "description",gd['description']
-					print "gene_def load complete."
+					print "gts: gene_def_hash:",gdh
+					print "gts: name",gd['name']
+	 				print "gts: description",gd['description']
+					print "gts: gene_def load complete."
 				except:
-					print "gene_def load error:",gd
+					print "gts: gene_def load error:",gd
 					gd = "UNDEFINED"
 					get_config = False #force load local gen_def.json config
 			else:
@@ -212,8 +184,9 @@ if __name__ == "__main__":
 					      #the script will remain in this loop until the default config is set
 
 
-	if get_config == False:	
-		g = load_config_into_object(load_config_from_file("gene_def.json"),g)
+	if get_config == False:
+		gd = load_config_from_file("gene_def.json")
+		g = load_config_into_object(gd,g)
 
 		#register the gene_def file and link to this client using the gene pool id as the PID (GUID)
 		f = open('./config/gene_def.json','r')
@@ -227,17 +200,17 @@ if __name__ == "__main__":
 	#send a copy of the command line args	
 	server.pid_msg(pid,str(sys.argv))
 
-	#load the inital data
-	input = load()
-
-	#g.set_log("winners.txt")
-	print "Creating the trade engine"
-	te = trade_engine()
+	print "gts: loading the fitness function"
+	ff = __import__(gd['fitness_script'])
+	te = ff.trade_engine()
+	te = load_config_into_object(gd['fitness_config'],te)
 	te.score_only = True
+	#apply global configs
+	te.max_data_len = max_length
 	te.enable_flash_crash_protection = enable_flash_crash_protection 
 	te.flash_crash_protection_delay = flash_crash_protection_delay
-	#preprocess input data
-	te.classify_market(input)
+	print "gts: initializing the fitness function"
+	te.initialize()
 
 	#bootstrap the population with the winners available from the gene_pool server
 	while not(bs == 'y' or bs == 'n'):
@@ -245,12 +218,9 @@ if __name__ == "__main__":
 		bs = raw_input()
 	if bs == 'y':
 		bob_simulator = True
-		#if quartile_cycle == False:
-		#	update_all_scores = False
 		g.local_optima_trigger = 10
 		bootstrap_bobs = json.loads(server.get_bobs(quartile,pid))
 		bootstrap_all = json.loads(server.get_all(quartile,pid))
-		print len(bootstrap_all)
 		if (type(bootstrap_bobs) == type([])) and (type(bootstrap_all) == type([])):
 			g.seed()
 			if len(bootstrap_all) > 100:
@@ -265,20 +235,20 @@ if __name__ == "__main__":
 				#mate the genes before testing
 				g.next_gen() 
 		else: #if no BOBS or high scores..seed with a new population
-			print "no BOBs or high scores available...seeding new pool."
+			print "gts: no BOBs or high scores available...seeding new pool."
 			g.seed()
 
-		print "Update all scores:",update_all_scores
-		print "%s BOBs loaded"%len(bootstrap_bobs)
-		print "%s high scores loaded"%len(bootstrap_all)
+		print "gts: Update all scores:",update_all_scores
+		print "gts: %s BOBs loaded"%len(bootstrap_bobs)
+		print "gts: %s high scores loaded"%len(bootstrap_all)
 
-		print "Pool size: %s"%len(g.pool)
+		print "gts: Pool size: %s"%len(g.pool)
 	
 	else:
 		bob_simulator = False
 		#update_all_scores = False
 		g.local_optima_trigger = 5
-		print "Seeding the initial population"
+		print "gts: Seeding the initial population"
 		g.seed()
 
 	#the counters are all incremented at the same time but are reset by different events:
@@ -290,10 +260,8 @@ if __name__ == "__main__":
 	max_score_id = -1
 	max_gene = None
 	start_time = time.time()
-	print "Running the simulator"
+	print "gts: running the test sequencer"
 	while 1:
-		#print test_count #debug 
-		#periodicaly reload the data set
 		test_count += 1
 		total_count += 1
 		loop_count += 1
@@ -302,7 +270,7 @@ if __name__ == "__main__":
 
 		if loop_count%pid_update_rate == 0:
 			#periodicaly reset the watchdog monitor
-			print "resetting watchdog timer"
+			print "gts: resetting watchdog timer"
 			server.pid_alive(pid)
 
 		if loop_count > g.pool_size:
@@ -321,14 +289,14 @@ if __name__ == "__main__":
 			gps = total_count / elapsed_time
 			pid_update_rate = int(gps * 40)
 			if calibrate == 1:
-				#print "Recalibrating pool size..."
+				print "gts: recalibrating pool size..."
 				g.pool_size = int(gps * cycle_time)
 				cycle_time -= cycle_time_step
 				if cycle_time < min_cycle_time:
 					cycle_time = min_cycle_time
 				if g.pool_size > 10000:
 					g.pool_size = 10000
-			performance_metrics = "%.2f"%gps,"G/S; ","%.2f"%((gps*len(input))/1000.0),"KS/S;","  Pool Size: ",g.pool_size,"  Total Processed: ",total_count
+			performance_metrics = "gts: ","%.2f"%gps,"G/S; ","%.2f"%((gps*te.input_data_length)/1000.0),"KS/S;","  Pool Size: ",g.pool_size,"  Total Processed: ",total_count
 			performance_metrics = " ".join(map(str,performance_metrics))
 			print performance_metrics
 			server.pid_msg(pid,performance_metrics)
@@ -336,11 +304,8 @@ if __name__ == "__main__":
 		if g.local_optima_reached:	
 			test_count = 0
 
-			#load the latest trade data
-			#print "Loading the lastest trade data..."
-			input = load()
-			#preprocess input data
-			te.classify_market(input)
+			#initialize fitness function (load updated data)
+			te.initialize()
 
 			if score_only: #quartile_cycle == True and bob_simulator == True:
 				#jump to the next quartile and skip the bob submission
@@ -349,16 +314,16 @@ if __name__ == "__main__":
 				if quartile > 4:
 					quartile = 1
 					if run_once:
-						print "Run Once Done."
+						print "gts: run once done."
 						server.pid_msg(pid,"Run Once Done.")
 						server.pid_exit(pid)
 						sys.exit()
 			
 			elif max_gene != None:
 				#debug
-				print max_gene
+				print "gts: ",max_gene
 				#end debug
-				print "--\tSubmit BOB for id:%s to server (%.2f)"%(str(max_gene['id']),max_gene['score'])
+				print "gts: submit BOB for id:%s to server (%.2f)"%(str(max_gene['id']),max_gene['score'])
 				server.put_bob(json.dumps(max_gene),quartile,pid)
 				if quartile_cycle == True:
 					#if cycling is enabled then 
@@ -368,19 +333,19 @@ if __name__ == "__main__":
 					if quartile > 4:
 						quartile = 1
 						if run_once:
-							print "Run Once Done."
+							print "gts: run once done."
 							server.pid_msg(pid,"Run Once Done.")
 							server.pid_exit(pid)
 							sys.exit()
 			else:
 				if max_score > -1000:
-					print "**WARNING** MAX_GENE is gone.: ID",max_score_id
+					print "gts: **WARNING** MAX_GENE is gone.: ID",max_score_id
 					print "*"*80
-					print "GENE DUMP:"
+					print "gts: GENE DUMP:"
 					for ag in g.pool:
 						print ag['id'],ag['score']
 					print "*"*80
-					print "HALTED."
+					print "gts: HALTED."
 					server.pid_msg(pid,"HALTED.")
 					server.pid_exit(pid)
 					sys.exit()
@@ -389,7 +354,7 @@ if __name__ == "__main__":
 			max_score = -100000 #reset the high score
 
 			if quartile_cycle == False and run_once:
-				print "Run Once Done."
+				print "gts: run once done."
 				server.pid_msg(pid,"Run Once Done.")
 				server.pid_exit(pid)
 				sys.exit()
@@ -419,7 +384,7 @@ if __name__ == "__main__":
 
 		if test_count > (g.pool_size * 10):
 			test_count = 0
-			print "Reset scores to force retest of winners..."
+			print "gts: reseting scores to force retest of winners..."
 			test_count = 0
 			max_score = 0	#knock the high score down to prevent blocking
 					#latest scoring data which may fall due to
@@ -439,38 +404,40 @@ if __name__ == "__main__":
 		#set the quartile to test
 		te.test_quartile(quartile)
 
-		#feed the input through the trade engine
+		#run the fitness function
 		try:
-			for i in input:
-				te.input(i[0],i[1])
-		except:
+			te.run()
+		except Exception, err:
 			#kill off any genes that crash the trade engine (div by 0 errors for instance)
+			print "gts: ***** GENE FAULT *****"
+			print Exception,err
+			print traceback.format_exc()
+			print "gts: ***** END GENE FAULT *****"
 			g.set_score(ag['id'],g.kill_score)
 		else:
 			#return the score to the gene pool
 			score = te.score()
 			if verbose:
-				print ag['gene'],"\t".join(["%.5f"%max_score,"%.5f"%score,"%.3f"%g.prune_threshold])
+				print "gts: ",ag['gene'],"\t".join(["%.5f"%max_score,"%.5f"%score,"%.3f"%g.prune_threshold])
 			g.set_score(ag['id'],score)
 			g.set_message(ag['id'],"Balance: " + str(te.balance) +"; Wins: " + str(te.wins)+ "; Loss:" + str(te.loss) +  "; Positions: " + str(len(te.positions)))
 
 			#if a new high score is found submit the gene to the server
-			if score > max_score:
-				print "--\tSubmit high score for quartile:%s id:%s to server (%.5f)"%(str(quartile),str(ag['id']),score)
+			if score > max_score and update_all_scores == False:
+				print "gts: submit high score for quartile:%s id:%s to server (%.5f)"%(str(quartile),str(ag['id']),score)
 				max_score = score
 				max_score_id = ag['id']
 				max_gene = ag.copy() #g.get_by_id(max_score_id)
 				if max_gene != None:
 					server.put(json.dumps(max_gene),quartile,pid)
 				else:
-					print "MAX_GENE is None!!"
-			elif update_all_scores == True:
-				print "--\tUpdating score for quartile:%s id:%s to server (%.5f)"%(str(quartile),str(ag['id']),score)
-				agene = g.get_by_id(ag['id'])
-				if agene != None:
-					server.put(json.dumps(agene),quartile,pid)
-				else:
-					print "Updating Gene Error: Gene is missing!!"
-
+					print "gts: MAX_GENE is None!!"
+		if update_all_scores == True:
+			print "gts: updating score for quartile:%s id:%s to server (%.5f)"%(str(quartile),str(ag['id']),score)
+			agene = g.get_by_id(ag['id'])
+			if agene != None:
+				server.put(json.dumps(agene),quartile,pid)
+			else:
+				print "gts: updating gene error: gene is missing!!"
 
 

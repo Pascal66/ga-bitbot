@@ -26,10 +26,14 @@ import pdb
 import time
 from operator import itemgetter
 from math import exp
+import sys
+from cache import *
 
 class trade_engine:
 	def __init__(self):
+		self.cache = cache()
 		#configurable variables
+		self.input_file_name = ""
 		self.score_only = False		#set to true to only calculate what is required for scoring a strategy 
 						#to speed up performance.
 		self.shares = 0.1 		#order size
@@ -50,21 +54,69 @@ class trade_engine:
 		self.min_i_neg = 0		#min periods of declining price
 						#before sell order placed
 		
-		self.stbf = 2.08		#short trade biasing factor
+		self.stbf = 2.02		#short trade biasing factor
 						#-- increase to favor day trading
 						#-- decrease to 2 to eliminate bias
 
-		self.nlsf = 3.0			#non-linear scoring factor - favor the latest trades
+		self.nlsf = 5.0			#non-linear scoring factor - favor the latest trades
 						#max factor = exp(self.nlsf) @ the last sample periord 
 		
 		self.commision = 0.006		#mt.gox commision
 		
 		self.quartile = 1		#define which market detection quartile to trade on (1-4)
+		self.input_data = []
+		self.input_data_length = 0
 		self.market_class = []
+		self.current_quartile = 0
 		self.classified_market_data = False
+		self.max_data_len = 1000000
 		self.reset()
 		return
 
+	def load_input_data(self):
+		print "bct: loading input data"
+		self.input_data = self.cache.get('input_data')
+		if self.input_data == None:
+			f = open(self.input_file_name,'r')
+			d = f.readlines()
+			f.close()
+	
+			if len(d) > self.max_data_len:
+				#truncate the dataset
+				d = d[self.max_data_len * -1:]
+
+			self.input_data = []
+			for row in d[1:]:
+				r = row.split(',')[1] #last price
+				t = row.split(',')[0] #time
+				self.input_data.append([int(float(t)),float(r)])
+		
+			self.cache.set('input_data',self.input_data)
+			self.cache.expire('input_data',60*8)
+		
+		self.input_data_length = len(self.input_data)
+		return self.input_data
+
+	def initialize(self):
+		print "bct: initializing"
+		self.load_input_data()
+		cm = self.cache.get('classify_market')
+		if cm == None:
+			print "bct: classifying market data..."
+			self.classify_market(self.input_data)
+			self.cache.set('classify_market',self.market_class)
+			self.cache.expire('classify_market',60*8)
+		else:
+			print "bct: cached data found."
+			self.market_class = cm
+			self.classified_market_data = True
+		return self.current_quartile
+
+	def run(self):
+		for i in self.input_data:
+			self.input(i[0],i[1])
+		return
+		
 	def reset(self):
 		#metrics and state variables
 		self.history = []			#moving window of the inputs
@@ -99,6 +151,7 @@ class trade_engine:
 		self.wins = 0
 		self.loss = 0
 		self.order_history = "NOT GENERATED"
+		self.current_quartile = 0
 		return
 	
 	def test_quartile(self,quartile):
@@ -111,7 +164,7 @@ class trade_engine:
 		#quartiles based on the true range indicator
 
 		self.market_class = []
-		atr_depth = 60 * 24 #24 hour atr
+		atr_depth = 60 * 1 #one hour atr
 		
 		#print "calc the true pct range indicator"
 		last_t = 0
@@ -158,7 +211,8 @@ class trade_engine:
 			if i < atr_depth + 1:
 				self.market_class[i][1] = 0.0	#ignore early (uncalculated) data 
 		self.classified_market_data = True
-		return int(self.market_class[len(self.market_class)-1][1] * 4)	#return the current quartile (1-4)
+		self.current_quartile = int(self.market_class[len(self.market_class)-1][1] * 4)	#return the current quartile (1-4)
+		return self.current_quartile
 
 	def metrics_report(self):
 		m = ""
@@ -202,7 +256,7 @@ class trade_engine:
 				position['sell_period'] = self.period
 				self.balance += position['actual'] * (position['shares'] - (position['shares'] * self.commision))
 			if position['age'] > 0:
-				self.score_balance += ((position['actual'] * (position['shares'] - (position['shares'] * self.commision))) / (position['buy'] * position['shares'])) * (pow(position['age'],self.stbf) / position['age'] )
+				self.score_balance += ((position['actual'] * (position['shares'] - (position['shares'] * self.commision))) / (position['buy'] * (position['shares'] + 0.0001))) * (pow(position['age'],self.stbf) / position['age'] )
 
 	def score(self):
 		self.dump_open_positions()
@@ -236,7 +290,7 @@ class trade_engine:
 						p['score'] = ((((p['actual'] - p['buy']) / p['buy']) * 100.0)  * self.shares)
 						#apply non-linear scaling to the trade based on the round trip time (age)
 						#favors a faster turn around time on positions
-						p['score'] /= (pow(age,self.stbf) / age )
+						p['score'] /= ((pow(age,self.stbf) / (age + 0.000001) ) + 0.0001)
 						p['score'] *= 1000.0	#increase weighting for losing positions
 
 				#apply e^0 to e^1 weighting to favor the latest trade results
@@ -366,7 +420,8 @@ class trade_engine:
 					self.buy_delay += self.buy_wait_after_stop_loss
 				if stop_order_executed == True:
 					self.balance += position['actual'] * (position['shares'] - (position['shares'] * self.commision))
-					self.score_balance += ((position['actual'] * (position['shares'] - (position['shares'] * self.commision))) / (position['buy'] * position['shares'])) * (pow(position['age'],self.stbf) / position['age'] )
+					if position['age'] > 0:
+						self.score_balance += ((position['actual'] * (position['shares'] - (position['shares'] * self.commision))) / (position['buy'] * (position['shares'] + 0.0001))) * (pow(position['age'],self.stbf) / position['age'] )
 					#update the position in the master list
 					buy_period = position['buy_period']
 					#self.positions = filter(lambda x: x.get('buy_period') != buy_period, self.positions) #delete the old record

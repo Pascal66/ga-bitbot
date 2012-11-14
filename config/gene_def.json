@@ -1,7 +1,19 @@
 {
-	"name":"mid range",
-	"version":"0.1",
-	"description":"2.5 - 6.7% markup",
+	"name":"low markup",
+	"version":"0.5",
+	"description":"0.6 - 1.88% markup",
+
+	"fitness_script":"bct",
+	"fitness_config":
+	{
+		"set" :
+		{
+			"input_file_name": "./datafeed/bcfeed_mtgoxUSD_1min.csv",
+			"nlsf": 7.0,
+			"stbf": 3.50
+		}
+	},
+
 	"set" :
 	{
 		"prune_threshold" : 0.30,
@@ -17,13 +29,13 @@
 		"niche_trigger" : 3,
 		"niche_min_iteration" : 7,
 		"bit_sweep_rate" : 0.40, 
-		"bit_sweep_min_iteration" : 3,
+		"bit_sweep_min_iteration" : 5,
 		"pool_size" : 50,
 		"pool_family_ratio" : 0.99,
 		"pool_max_survivor_ratio" : 0.3,
 		"kill_score" : -10000,
 		"max_iteration" : 60000,
-		"local_optima_trigger" : 10
+		"local_optima_trigger" : 8
 	},
 
 	"call" :
@@ -31,14 +43,17 @@
 		"add_numvar":
 		[
 			["shares",1,0,1.0],
-			["wll",8,0,256],
+			["wll",12,0,2],
 			["wls",6,0,1],
-			["buy_wait",1,0,15],
-			["buy_wait_after_stop_loss",1,0,60],
-			["markup",12,5,0.025],
-			["stop_loss",7,4,0.08],
-			["stop_age",10,0,4000.0],
-			["macd_buy_trip",10,2,2.0,-2.0]
+			["buy_wait",4,0,1],
+			["buy_wait_after_stop_loss",8,0,1],
+			["markup",7,4,0.006],
+			["stop_loss",8,4,0.02],
+			["stop_age",16,0,0,10.0],
+			["macd_buy_trip",10,2,2.0,-2.0],
+			["rsi_enable",1,0,0],
+			["rsi_length",7,0,0],
+			["rsi_gate",7,0,0]
 		]
 	}
 }
