@@ -1,16 +1,16 @@
 {
-	"name":"low markup",
+	"name":"low markup2 BCT ALT",
 	"version":"0.5",
 	"description":"0.6 - 1.88% markup",
 
-	"fitness_script":"bct",
+	"fitness_script":"bct_alt",
 	"fitness_config":
 	{
 		"set" :
 		{
 			"input_file_name": "./datafeed/bcfeed_mtgoxUSD_1min.csv",
 			"nlsf": 7.0,
-			"stbf": 3.50
+			"stbf": 1.02
 		}
 	},
 

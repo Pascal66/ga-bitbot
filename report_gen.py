@@ -142,7 +142,7 @@ while 1:
 
 		#get the high score gene from the gene server
 		try:
-			ag = json.loads(server.get(60*60*24,quartile,pid))
+			ag = json.loads(server.get(60*60*24*7,quartile,pid))
 		except:
 			print "warning: gene server error or no data available."
 			#if the quartile is active set the buy to 0 to prevent old targets from remaining active
@@ -308,9 +308,9 @@ while 1:
 		print "sleeping..."
 		print "_" * 80
 		print "\n"
-		time.sleep(60) #generate a report every n seconds
+		time.sleep(600) #generate a report every n seconds
 	else:
-		time.sleep(10)
+		time.sleep(600)
 		print "skipping sleep state due to active trigger prices..."
 		print "_" * 80
 		print "\n"

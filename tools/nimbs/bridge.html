@@ -230,7 +230,7 @@
 					//$('#explorer').html("This text comes before the chart<BR>");
 					if ((gene_db[db_lib]['gene_def'] != "UNDEFINED") && (gene_db_data_array.length > 0)){
 						$("#pchart").append("<h3>"+$.parseJSON(gene_db[db_lib]['gene_def'])['name']+" Quartile: " +(i+1)+"</h3>");
-						$("#pchart").append('<div><p id="pchart_'+gene_db_library_id+'_'+i+'" class="parcoords" style="height:200px">')
+						$("#pchart").append('<div id="dpc_'+gene_db_library_id+'_'+i+'"><p id="pchart_'+gene_db_library_id+'_'+i+'" class="parcoords" style="height:200px"></p>');
 						//$("#pchart_"+ gene_db_library_id+'_'+i).html("<h3>"+$.parseJSON(gene_db[db_lib]['gene_def'])['name']+" Quartile: " +(i+1)+"</h3><BR>");
 				
 						pc = d3.parcoords()("#pchart_"+ gene_db_library_id+'_'+i)
@@ -245,7 +245,30 @@
 							.createAxes()
 							.brushable()
 							.reorderable();
-						$("#pchart_"+ gene_db_library_id+'_'+i).append("</p></div><BR>")
+						//$("#pchart_"+ gene_db_library_id+'_'+i).append("</p>");
+						$("#dpc_"+ gene_db_library_id+'_'+i).append('<fieldset id="fs_'+gene_db_library_id+'_'+i+'" ></fieldset>');
+						
+						JSON.parse(gene_db[db_lib]['gene_def'])['call']['add_numvar'].forEach(function(item){
+
+							$("#fs_"+ gene_db_library_id+'_'+i).append($(document.createElement("input")).attr({
+							    			 id:	'cb_'+ item[0] + '_' + gene_db_library_id + '_' + i
+							    			,type:	'checkbox'
+							    			,checked:true
+							    		}));
+
+							$("#fs_"+ gene_db_library_id+'_'+i).append($(document.createElement("label")).attr({
+							    			 id:	'label_'+ item[0] + '_' + gene_db_library_id + '_' + i
+							    			,for:	'cb_'+ item[0] + '_' + gene_db_library_id + '_' + i
+							    		}));
+
+							$('#label_'+ item[0] + '_' + gene_db_library_id + '_' + i).html(item[0]);
+							
+							$("#fs_"+ gene_db_library_id+'_'+i).append('<br>');
+
+						});
+						//$('#fs_'+gene_db_library_id+'_'+i).buttonset();
+						$("#pchart_"+ gene_db_library_id+'_'+i).append("</div><BR>");
+
 					}
 				}
 				var db_index = db_index + 1;
@@ -315,7 +338,7 @@
 		offset = parseFloat($("#offset").val());
 		mx = (bits * dec) + offset;
 		$("#calc_result").html(
-			"resolution: " + bits + '<BR>' +
+			"<br>resolution: " + bits + '<BR>' +
 			"div: " + dec + '<BR>' +  
 			"min: " + offset + '<BR>' + 
 			"max: " + mx + '<BR>'

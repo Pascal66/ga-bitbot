@@ -8,14 +8,14 @@ form		{ width: 200px; margin: 50px auto 0; }
 
 legend		{ display: none; }
 
-fieldset	{ border: 5px solid #999;
+fieldset	{ border: 5px solid color: #c77000;
 			-moz-border-radius: 5px; padding: 5px; color: black; font-weight: bold;
-			-webkit-border-radius: 5px; width: 260px; color: #a3a3a3;
+			-webkit-border-radius: 5px; width: 260px; color: #c77000;;
 		}
 
-label		{ width: 115px; text-align: right; float: left; margin: 0 10px 0 0; padding: 9px 0 0 0; font-size: 16px;}
+label		{ text-align: left; font-size: 12px;}
 
-input		{ width: 100px; display: block; padding: 4px; margin: 0 0 10px 0; font-size: 12px;
+input		{  font-size: 12px;
 			color: #3a3a3a; font-family: Georgia, serif;
 			border: 3px solid #999;
 			-moz-border-radius: 5px; padding: 5px; color: black; font-weight: bold;
