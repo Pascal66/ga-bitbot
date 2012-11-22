@@ -36,9 +36,9 @@ def zero(a):
 class genepool:
     def __init__(self):
 	#generate a unique gene pool id
-	md = hashlib.md5()
-	md.update(str(time.time()) + str(random.random() * 1000000))
-	self.id = md.hexdigest()[0:16]
+	self.md = hashlib.md5()
+	self.md.update(str(time.time()) + str(random.random() * 1000000))
+	self.id = self.md.hexdigest()[0:16]
 	self.prune_threshold = 0.30	#score threshold - percentile (top n%)
 	self.max_prune_threshold = 0.20	#score threshold - percentile (top n%)
 	self.min_prune_threshold = 0.03	#score threshold - percentile (top n%)
@@ -475,8 +475,10 @@ class genepool:
 	self.id_index += 1
 	if self.id_index > 99999:
 		self.id_index = 9999
-	return str(int(time.time())).replace('.','')[4:] + str(self.id_index) + '-' + self.id
-
+	#return str(int(time.time())).replace('.','')[4:] + str(self.id_index) + '-' + self.id
+	self.md.update(str(int(time.time()))+str(self.id_index) + '-' + self.id)
+	return self.md.hexdigest()[0:16] +'-'+self.id
+	
     def create_gene(self):
 	gene = ""
 	for j in range(self.genelen):

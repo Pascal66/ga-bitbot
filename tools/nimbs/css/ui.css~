@@ -13,7 +13,7 @@ fieldset	{ border: 5px solid color: #c77000;
 			-webkit-border-radius: 5px; width: 260px; color: #c77000;;
 		}
 
-label		{ text-align: left; float: right; font-size: 12px;}
+label		{ text-align: left; font-size: 12px;}
 
 input		{  font-size: 12px;
 			color: #3a3a3a; font-family: Georgia, serif;
@@ -21,6 +21,10 @@ input		{  font-size: 12px;
 			-moz-border-radius: 5px; padding: 5px; color: black; font-weight: bold;
 			-webkit-border-radius: 5px;
 		}
+
+.ui-input-label-text	{ background: url(../img/label.png) repeat-x top center; border: 2px solid #999;
+			-moz-border-radius: 5px; padding: 5px; color: black; font-weight: bold;
+			-webkit-border-radius: 5px; font-size: 1em;}
 
 .ui-input-text	{ background: url(../img/button.png) repeat-x top center; border: 2px solid #999;
 			-moz-border-radius: 5px; padding: 5px; color: black; font-weight: bold;
@@ -35,11 +39,14 @@ input		{  font-size: 12px;
 #title          {color: #c77000;font-size: 24px; }
 #notifications  {-moz-border-radius: 5px; padding: 5px; -webkit-border-radius: 5px;}
 #menu_buttons   {position:absolute;width:90px;top:1em;left:0em;}
-#explorer        {left:6em;top:2.5em;}
-#debug        	{white-space: pre-wrap;}
+#explorer       {left:6em;top:2.5em;}
+#debug        	{white-space: pre-wrap;-moz-border-radius: 5px; padding: 5px; -webkit-border-radius: 5px;font-size: 12px;font-family: Courier New, monospace;}
 
 #mtgox_feed     {-moz-border-radius: 5px; padding: 5px; -webkit-border-radius: 5px;font-size: 16px;}
 
 #pids     	{-moz-border-radius: 5px; padding: 5px; -webkit-border-radius: 5px;font-size: 14px;font-family: Courier New, monospace;}
 
 #gene_def_calc	{}
+#trades	{padding: 0px; color: #FBF604; font-weight: bold; -webkit-border-radius: 5px; font-size: 1em;}
+#ticker	{padding: 0px; color: #FBF604; font-weight: bold; -webkit-border-radius: 5px; font-size: 1em;}
+#depth	{border: 2px solid #999; -moz-border-radius: 5px; padding: px; color: #FBF604; font-weight: bold; -webkit-border-radius: 5px; font-size: 1em;}

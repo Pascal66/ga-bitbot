@@ -127,15 +127,15 @@ else:
 
 
 #at least one client should not run with the get_config option to make sure new gene_def.json config files get loaded into the db.
-monitored_launch = ['pypy gts.py all y run_once pid ',\
+monitored_launch = ['pypy gts.py all n run_once pid ',\
 'pypy gts.py 3 n run_once get_config pid ',\
-'pypy gts.py 3 y run_once get_config pid ',\
+'pypy gts.py 3 n run_once get_config pid ',\
 'pypy gts.py 4 n run_once get_config pid ',\
-'pypy gts.py 4 y run_once get_config pid ',\
+'pypy gts.py 4 n run_once get_default_config pid ',\
 'pypy gts.py all y run_once get_config score_only pid ',\
-'pypy gts.py all y run_once get_default_config pid ']
+'pypy gts.py all y run_once get_config pid ']
 
-unmonitored_launch = ['python wc_server.py','python report_gen.py']
+unmonitored_launch = ['pypy wc_server.py','pypy report_gen.py']
 
 monitor = {}	#variables to track monitored/unmonitored processes
 no_monitor = []

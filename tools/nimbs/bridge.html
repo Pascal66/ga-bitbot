@@ -10,7 +10,7 @@
 <script language="javascript" type="text/javascript" src="/js/knockout-2.1.0.js"></script>
 <script language="javascript" type="text/javascript" src="/js/d3.v2.min.js"></script>
 <script language="javascript" type="text/javascript" src="/js/d3.parcoords.js"></script>
-
+<script language="javascript" type="text/javascript" src="/jslib/pcf2.js"></script>
 
 <script>
   $(document).ready(function() {
@@ -35,7 +35,7 @@
         <li><a href="#tab-4"><span>Explorer</span></a></li>
         <li><a href="#tab-5"><span>Calc</span></a></li>
         <li><a href="#tab-6"><span>Feed</span></a></li>
-        <li><a href="#tab-7"><span>Trades</span></a></li>
+        <li><a href="#tab-7"><span>MtGox Feed</span></a></li>
         <li><a href="#tab-8"><span>PIDS</span></a></li>
         <li><a href="#tab-9"><span>Debug</span></a></li>
     </ul>
@@ -55,7 +55,13 @@
 	</div>
     </div>
     <div id="tab-3">
-	<div id="depth_plot" style="width:800px;height:300px;"></div>
+	<div id='gox'>
+		<div id="trades"></div>
+		<div id="ticker"></div>
+		<div id="depth"></div>
+		<div id="depth_plot" style="width:800px;height:300px;"></div>
+		<br>Depth plot is zoomed on both axis to show detail.
+	</div>
     </div>
     <div id="tab-4">
 	Parallel coordinate visualization of the genetic database.
@@ -65,10 +71,10 @@
     </div>
     <div id="tab-5">
 	<div id="gene_def_calc"><h3>gene data definition calculator</h3><BR>
-	BITS<input type="text" value="8" id="bits">
-	DECIMAL<input type="text" value="2" id="decimal">
-	OFFSET<input type="text" value="0" id="offset">
-	<input type="submit" value="Calculate" id="calc_button" class="ui-button-text">
+	<label class="ui-input-label-text">BITS</label><input type="text" value="8" id="bits"><br><br>
+	<label class="ui-input-label-text">DECIMAL</label><input type="text" value="2" id="decimal"><br><br>
+	<label class="ui-input-label-text">OFFSET</label><input type="text" value="0" id="offset"><br><br>
+	<input type="submit" value="Calculate" id="calc_button" class="ui-button-text"><br><br>
 	<span id="calc_result"></span>
 	</div>
     </div>
@@ -76,9 +82,9 @@
 	<div id="mtgox_feed"></div>
     </div>
     <div id="tab-7">
-	<div id="trades">trades</div>
-	<div id="ticker">ticker</div>
-	<div id="depth">depth</div>
+	<div id="_trades"></div>
+	<div id="_ticker"></div>
+	<div id="_depth"></div>
     </div>
     <div id="tab-8">
 	<div id="pids"></div>
@@ -140,7 +146,7 @@
 	function onConnect(msg)
 	{
 		if (this.socket.connected) {
-			$('#notifications').html("connected<br>");
+			$('#notifications').html('<label class="ui-input-label-text">connected</label><br>');
 			//sub = {"channel":ch_depth, "op":"subscribe"};
 			//this.send(sub);
 		}
@@ -151,7 +157,7 @@
 	}
 	function onDisconnect(msg)
 	{
-		$('#notifications').html("disconnected<br>");
+		$('#notifications').html('<label class="ui-input-label-text">disconnected</label><br>');
 	}
 	function onMessage(msg)
 	{
@@ -170,108 +176,60 @@
 		}
 		if (msg.channel == 'gene_db')
 		{
-			//$('#debug').html(JSON.stringify(msg.value) + '<BR>');
+			$("#gene_db_reload_button").attr({value:'Reload'});
+			$('#debug').html('<br>');
 			gene_db = msg.value;
-
-			//debug...
-			dim_array = new Array();
-			//dim_array.push('db_index');
-			dim_array.push("buy_wait");
-			dim_array.push("buy_wait_after_stop_loss");
-			dim_array.push("wls");
-			dim_array.push("wll");
-			dim_array.push("macd_buy_trip");
-			dim_array.push("markup");
-			dim_array.push("stop_loss");
-			dim_array.push("score");
-
-			//create an array of checkboxes to select from
-			for (var key in Object.keys(gene_db)){
-				
-			}
-			//clear the chart area
 			try{$('#pchart').accordion("destroy");}catch(err){};
 			$("#pchart").html("");
 			//$("#pchart").removeClass();
 
 			var db_index = 0
-			for (var db_lib in gene_db){ 
-				console.log(db_lib);
-				var gene_db_data_array = new Array();
-				var gene_db_library_id = Object.keys(gene_db)[db_index]
+			for (var db_lib in gene_db){
+				if (gene_db[db_lib]['gene_def'] != "UNDEFINED"){
+					console.log(db_lib);
 				
-				for (var i = 0; i < gene_db[db_lib]["gene_high_scores"].length; i++)
-				{
-					gene_db[db_lib]["gene_high_scores"][i].forEach(function (db_record)
-					{ 					
-						data_array = new Array();
-						//data_array.push(db_index);
-						data_array.push(db_record["buy_wait"]);
-						data_array.push(db_record["buy_wait_after_stop_loss"]);
-						data_array.push(db_record["wls"]);
-						data_array.push(db_record["wll"]);
-						data_array.push(db_record["macd_buy_trip"]);
-						data_array.push(db_record["markup"]);
-						data_array.push(db_record["stop_loss"]);
-						data_array.push(db_record["score"]);
-
-						db_record['db_index'] = db_index;
-
-						//$('#debug').append(data_array.join() + '<BR>');
-						if (db_record["score"] > 0.0)
-						{
-							gene_db_data_array.push(db_record); //data_array
-							//ts = new Date(db_record['time'] * 1000);
-							//if (i == 3) {console.log(db_record['id']+' : '+ db_record['score']+' : '+ts+' : '+i);}
-						}
-
+					var gene_db_data_array = new Array();
+					var gene_db_dimensions_array = new Array();
+					var gene_db_library_id = Object.keys(gene_db)[db_index];
+				
+					//get the data dimensions
+					dim_array = new Array();
+					JSON.parse(gene_db[db_lib]['gene_def'])['call']['add_numvar'].forEach(function(item){	
+						dim_array.push(item[0]);
+						console.log(item);
 					});
+					dim_array.push('score');
 
-					//$('#explorer').html("This text comes before the chart<BR>");
-					if ((gene_db[db_lib]['gene_def'] != "UNDEFINED") && (gene_db_data_array.length > 0)){
-						$("#pchart").append("<h3>"+$.parseJSON(gene_db[db_lib]['gene_def'])['name']+" Quartile: " +(i+1)+"</h3>");
-						$("#pchart").append('<div id="dpc_'+gene_db_library_id+'_'+i+'"><p id="pchart_'+gene_db_library_id+'_'+i+'" class="parcoords" style="height:200px"></p>');
-						//$("#pchart_"+ gene_db_library_id+'_'+i).html("<h3>"+$.parseJSON(gene_db[db_lib]['gene_def'])['name']+" Quartile: " +(i+1)+"</h3><BR>");
-				
-						pc = d3.parcoords()("#pchart_"+ gene_db_library_id+'_'+i)
-							.data(gene_db_data_array)
-							.dimensions(dim_array)
-							.alpha(0.40)
-							.color("#400800")
-							.mode("queue")
-							.composite("lighter")
-							.rate(5)
-							.render()
-							.createAxes()
-							.brushable()
-							.reorderable();
-						//$("#pchart_"+ gene_db_library_id+'_'+i).append("</p>");
-						$("#dpc_"+ gene_db_library_id+'_'+i).append('<fieldset id="fs_'+gene_db_library_id+'_'+i+'" ></fieldset>');
-						
-						JSON.parse(gene_db[db_lib]['gene_def'])['call']['add_numvar'].forEach(function(item){
-
-							$("#fs_"+ gene_db_library_id+'_'+i).append($(document.createElement("input")).attr({
-							    			 id:	'cb_'+ item[0] + '_' + gene_db_library_id + '_' + i
-							    			,type:	'checkbox'
-							    			,checked:true
-							    		}));
-
-							$("#fs_"+ gene_db_library_id+'_'+i).append($(document.createElement("label")).attr({
-							    			 id:	'label_'+ item[0] + '_' + gene_db_library_id + '_' + i
-							    			,for:	'cb_'+ item[0] + '_' + gene_db_library_id + '_' + i
-							    		}));
-
-							$('#label_'+ item[0] + '_' + gene_db_library_id + '_' + i).html(item[0]);
-							
-							$("#fs_"+ gene_db_library_id+'_'+i).append('<br>');
+					//for each quartile
+					for (var i = 0; i < gene_db[db_lib]["gene_high_scores"].length; i++)
+					{
+						//get the high scores
+						gene_db[db_lib]["gene_high_scores"][i].forEach(function (db_record)
+						{ 					
+							if (db_record["score"] > 0.0) //filter any scores below zero
+							{
+								gene_db_data_array.push(db_record); //data_array
+								ts = new Date(db_record['time'] * 1000);
+								//console.log(db_lib +' : '+ db_record['id']+' : '+ db_record['score']+' : '+ts+' : '+i);
+								$('#debug').append(db_lib +' : '+ db_record['id']+' : '+ db_record['score']+' : '+ts+' : '+i +'<br>');
+							}
 
 						});
-						//$('#fs_'+gene_db_library_id+'_'+i).buttonset();
-						$("#pchart_"+ gene_db_library_id+'_'+i).append("</div><BR>");
-
+						//create the chart
+						if (gene_db_data_array.length > 0){
+							$("#pchart").append("<h3>"+$.parseJSON(gene_db[db_lib]['gene_def'])['name']+" Quartile: " +(i+1)+"</h3>");
+							$("#pchart").append('<div id="dpc_'+gene_db_library_id+'_'+i+'"><p id="pchart_'+gene_db_library_id+'_'+i+'" ></p>');
+						
+							c = new pcf();
+							c.setRenderTarget("#pchart_"+ gene_db_library_id+'_'+i);
+							c.setData(gene_db_data_array);
+							c.setDimensions(dim_array);
+							c.viewLegend(true);
+							c.render();
+						}
 					}
+					var db_index = db_index + 1;
 				}
-				var db_index = db_index + 1;
 			};
 			$('#pchart').accordion();
 
@@ -301,19 +259,22 @@
 			{
 				ask_depth[msg.depth.price] = parseFloat(msg.depth.total_volume_int) / 100000000.0;
 			}
-			$('#depth').html(msg.depth.type_str + ': price $'+ parseFloat(msg.depth.price).toFixed(3) + "  amount " + parseFloat(msg.depth.volume).toFixed(3) + '<br>');
+			$('#depth').html($(document.createElement("label")).html('Depth').addClass('ui-input-label-text'));
+			$('#depth').append(' ' + msg.depth.type_str + ': $'+ parseFloat(msg.depth.price).toFixed(3) + "  amount " + parseFloat(msg.depth.volume).toFixed(3) + '<br><br>');
 		}
 
 		if (msg.channel == ch_trades)
 		{
 			//plot_x_center = msg.trade.price;
-			$('#trades').html(' price: ' + msg.trade.price + '  amount: ' + msg.trade.amount + '<br>');
+			$('#trades').html($(document.createElement("label")).html('Trade').addClass('ui-input-label-text'));
+			$('#trades').append(' price: ' + msg.trade.price + '  amount: ' + msg.trade.amount + '<br><br>');
 		}
 
 		if (msg.channel == ch_ticker)
 		{
 			plot_x_center = msg.ticker.buy.value;
-			$('#ticker').html('buy: ' + msg.ticker.buy.display +'  sell: ' + msg.ticker.sell.display + '<br>');
+			$('#ticker').html($(document.createElement("label")).html('Ticker').addClass('ui-input-label-text'));
+			$('#ticker').append(' buy: ' + msg.ticker.buy.display +'  sell: ' + msg.ticker.sell.display + '<br><br>');
 		}
 
 	}
@@ -347,6 +308,7 @@
 
 
 	$("#gene_db_reload_button").click(function() {
+		$("#gene_db_reload_button").attr({value:'Loading...'});
   		conn.emit('request_gene_db',{});
 	});
 

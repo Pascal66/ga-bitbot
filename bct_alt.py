@@ -38,7 +38,7 @@ class trade_engine:
 						#to speed up performance.
 		self.shares = 0.1 		#order size
 		self.wll = 180			#window length long
-		self.wls = 2		#window length short
+		self.wls = 2			#window length short
 		self.buy_wait = 0		#min sample periods between buy orders
 		self.buy_wait_after_stop_loss = 6	#min sample periods between buy orders
 							#after a stop loss order
@@ -48,6 +48,9 @@ class trade_engine:
 		self.flash_crash_protection_delay = 180 #max_hold in minutes
 		self.stop_age = 10000		#stop age - dump after n periods
 		self.macd_buy_trip = -0.66	#macd buy indicator
+		self.rsi_enable = 0		#relative strength indicator
+		self.rsi_length = 1
+		self.rsi_gate = 50
 		self.min_i_pos = 0		#min periods of increasing price
 						#before buy order placed
 		
@@ -126,6 +129,7 @@ class trade_engine:
 		self.wl_log = []			#record of the wl
 		self.ws_log = []			#record of the ws
 		self.macd_pct_log = []
+		self.rsi_log = []
 		self.buy_log = []
 		self.sell_log = []
 		self.stop_log = []
@@ -142,6 +146,9 @@ class trade_engine:
 		self.avg_ws = 0
 		self.ema_short = 0
 		self.ema_long = 0
+		self.rsi = 0
+		self.rsi_gain = []
+		self.rsi_loss = []
 		self.i_pos = 0				#periods of increasing price
 		self.i_neg = 0				#periods of decreasing price
 		self.positions_open = []		#open order subset of all trade positions
@@ -225,6 +232,9 @@ class trade_engine:
 		m += "\nMACD Trigger: " + str(self.macd_buy_trip) + "%"
 		m += "\nEMA Window Long: " + str(self.wll)
 		m += "\nEMA Window Short: " + str(self.wls)
+		m += "\nRSI Enable: " + str(self.rsi_enable)
+		m += "\nRSI Length: " + str(self.rsi_length)
+		m += "\nRSI Gate: " + str(self.rsi_gate)
 		m += "\niPos: " + str(self.i_pos)
 		m += "\niNeg: " + str(self.i_neg)
 		m += "\nShort Trade Bias: " + str(self.stbf)
@@ -264,15 +274,13 @@ class trade_engine:
 			exp_scale = self.nlsf / self.period #float(self.positions[-1]['buy_period'])	
 			final_score_balance = 0
 			for p in self.positions:
-				p['score'] = 0
-				p['age'] = float(p['age'])
+				p['age'] = float(p['sell_period'] - p['buy_period'])
 				p['score'] = (((p['actual'] - p['buy']) / p['buy']) * 100.0 ) * self.shares
 				#apply non-linear scaling to the trade based on the round trip time (age)
 				#favors a faster turn around time on positions
-				try:				
-					p['score'] *= p['age']/pow(p['age'],self.stbf)
-				except:
-					print "AGE IS NEGATIVE WTF: ", p['age']
+
+				p['score'] *= (p['age'] + 1)/(pow(p['age'],self.stbf) + 1)
+
 
 				#apply e^0 to e^1 weighting to favor the latest trade results
 				p['score'] *= exp(exp_scale * p['buy_period']) 
@@ -324,32 +332,31 @@ class trade_engine:
 		#decrement the buy wait counter
 		if self.buy_delay > 0:
 			self.buy_delay -= 1
-		#place buy orders, set price targets and stop loss limits
 		current_price = self.history[0]
-		#if the balance is sufficient to place an order and there is no buy delay
 		buy = current_price * -1
-		#but only if the classified input data matches the quartile assigned 
-		#OR if the input data was not pre-classified in which case quartile partitioning is disabled. 
+		initiate_buy_order = False
 		if self.classified_market_data == False or self.quartile == self.market_class[self.period][1]:
 			if self.balance > (current_price * self.shares) and self.buy_delay == 0 :
 				if self.macd_pct < self.macd_buy_trip:
-					#set delay until next buy order
-					self.buy_delay = self.buy_wait
-					self.balance -= (current_price * self.shares)
-					actual_shares  = self.shares - (self.shares * self.commision)
-					buy = current_price
-					target = (buy * self.markup) + buy
-					stop = buy - (buy * self.stop_loss)
-					self.buy_log.append([self.time,buy])
+					if self.rsi_enable == 0:
+						initiate_buy_order = True
+					elif self.rsi < self.rsi_gate:
+						initiate_buy_order = True
 
-					new_position = {'master_index':len(self.positions),'age':0,'buy_period':self.period,'sell_period':0,'trade_pos': self.balance,'shares':actual_shares,'buy':buy,'cost':self.shares*buy,'target':target,'stop':stop,'status':"active",'actual':0,'score':0}
-					self.positions.append(new_position.copy())
-					#maintain a seperate subset of open positions to speed up the search to close the open positions
-					#after a long run there may be thousands of closed positions 
-					#it was killing performance searching all of them for the few open positions at any given time
-					self.positions_open.append(new_position.copy()) 
-				
-		
+		if initiate_buy_order == True:
+			#set delay until next buy order
+			self.buy_delay = self.buy_wait
+			self.balance -= (current_price * self.shares)
+			actual_shares  = self.shares - (self.shares * self.commision)
+			buy = current_price
+			target = (buy * self.markup) + buy
+			stop = buy - (buy * self.stop_loss)
+			self.buy_log.append([self.time,buy])
+			new_position = {'master_index':len(self.positions),'age':0,'buy_period':self.period,'sell_period':0,'trade_pos': self.balance,'shares':actual_shares,'buy':buy,'cost':self.shares*buy,'target':target,'stop':stop,'status':"active",'actual':0,'score':0}
+			self.positions.append(new_position.copy())
+			#maintain a seperate subset of open positions to speed up the search to close the open positions
+			self.positions_open.append(new_position.copy()) 
+
 		current_net_worth = 0
 		
 		#check for sold and stop loss orders
@@ -358,18 +365,15 @@ class trade_engine:
 		updated = False
 		for position in self.positions_open:
 			#handle sold positions
-			if position['status'] == "active" and position['target'] <= current_price: #and self.i_neg >= self.min_i_neg:
+			if position['status'] == "active" and position['target'] <= current_price:
 				updated = True
 				position['status'] = "sold"
-				position['actual'] = current_price
+				position['actual'] = position['target']
 				sell = current_price
 				position['sell_period'] = self.period
 				self.wins += 1
 				self.balance += position['target'] * (position['shares'] - (position['shares'] * self.commision))
-				#update the position in the master list
 				buy_period = position['buy_period']
-				#self.positions = filter(lambda x: x.get('buy_period') != buy_period, self.positions) #delete the old record
-				#self.positions.append(position.copy()) #and add the updated record
 				self.positions[position['master_index']] = position.copy()
 			#handle the stop orders
 			elif position['status'] == "active" and (position['stop'] >= current_price or position['age'] >= self.stop_age):
@@ -397,28 +401,29 @@ class trade_engine:
 					position['actual'] = current_price
 					stop = current_price
 					position['sell_period'] = self.period
-					self.loss += 1 #- (position['actual'] / position['target'])  #fractional loss
+					self.loss += 1
 					self.buy_delay += self.buy_wait_after_stop_loss
 				if stop_order_executed == True:
 					self.balance += position['actual'] * (position['shares'] - (position['shares'] * self.commision))					
 					#update the position in the master list
 					buy_period = position['buy_period']
-					#self.positions = filter(lambda x: x.get('buy_period') != buy_period, self.positions) #delete the old record
-					#self.positions.append(position.copy()) #and add the updated record
 					self.positions[position['master_index']] = position.copy()
 			#handle active (open) positions	
 			elif position['status'] == "active":
-				#position remains open, capture the current value
-				current_net_worth += current_price * (position['shares'] - (position['shares'] * self.commision))
+				if not self.score_only:
+					#position remains open, capture the current value
+					current_net_worth += current_price * (position['shares'] - (position['shares'] * self.commision))
 				position['age'] += 1
 
 		#remove any closed positions from the open position subset
 		if updated == True:
 			self.positions_open = filter(lambda x: x.get('status') == 'active', self.positions_open)
 
-		#add the balance to the net worth
-		current_net_worth += self.balance
+		
 		if not self.score_only:
+			#add the balance to the net worth
+			current_net_worth += self.balance
+
 			if self.classified_market_data == False or self.quartile == self.market_class[self.period][1]:
 				self.trigger_log.append([self.time,self.get_target()])
 			self.net_worth_log.append([self.time,current_net_worth])
@@ -447,9 +452,50 @@ class trade_engine:
 			price = self.ema_long * 0.7
 		return price
 
+
+	def rs(self):
+		#DEBUG
+		#self.rsi_length = 20
+
+		#relative strength indicator
+		if self.rsi_enable == 1 and len(self.history) > 1:
+			#determine if period is a gain or loss and bin the absolute difference
+			delta = self.history[0] - self.history[1]
+			if delta > 0:
+				#gain
+				self.rsi_gain.insert(0,delta)
+				self.rsi_loss.insert(0,0)
+			elif delta < 0:
+				#loss
+				self.rsi_gain.insert(0,0)
+				self.rsi_loss.insert(0,abs(delta))
+			else:
+				#no movement
+				self.rsi_gain.insert(0,0)
+				self.rsi_loss.insert(0,0)
+				
+		else:
+			self.rsi = 50
+
+
+		if len(self.rsi_gain) > self.rsi_length:
+			self.rsi_gain = self.rsi_gain[:self.rsi_length]
+		if len(self.rsi_loss) > self.rsi_length:
+			self.rsi_loss = self.rsi_loss[:self.rsi_length]
+
+		#calculate average gain and loss
+		avg_gain = sum(self.rsi_gain)/len(self.rsi_gain) if (len(self.rsi_gain)) > 0 else 0
+		avg_loss = sum(self.rsi_loss)/len(self.rsi_loss) if (len(self.rsi_loss)) > 0 else 0
+		rs = avg_gain / (avg_loss + 0.00001)
+		self.rsi = (100.0 - ( 100.0 / (1 + rs)))
+		#log the indicator
+		if not self.score_only:
+			self.rsi_log.append([self.time,self.rsi])
+		return
+		
 	def macd(self):
 		#wait until there is enough data to fill the moving windows
-		if len(self.history) == self.wll:
+		if len(self.history) >= self.wll:
 			s = 0
 			l = 0
 			
@@ -477,17 +523,7 @@ class trade_engine:
 			#long and short emas
 			self.macd_abs = self.ema_short - self.ema_long
 			self.macd_pct = (self.macd_abs / self.ema_short) * 100
-			
-			
-			"""
-			#track the number of sequential positive and negative periods
-			if self.history[0] - self.history[1] > 0:
-				self.i_neg = 0
-				self.i_pos += 1
-			if self.history[0] - self.history[1] < 0:
-				self.i_pos = 0
-				self.i_neg += 1
-			"""
+
 			if not self.score_only:
 				#track the max & min macd pcts (metric)
 				if self.macd_pct > self.metric_macd_pct_max:
@@ -511,16 +547,19 @@ class trade_engine:
 		print ",".join(map(str,[self.history[0],self.macd_pct,self.buy_wait]))
 	
 	def input(self,time_stamp,record):
-		#self.time = int(time.mktime(time.strptime(time_stamp))) * 1000
-		self.time = int(time_stamp * 1000) 
-		self.input_log.append([self.time,record])
+		if not self.score_only:
+			#self.time = int(time.mktime(time.strptime(time_stamp))) * 1000
+			self.time = int(time_stamp * 1000) 
+			self.input_log.append([self.time,record])
 		
 		###Date,Sell,Buy,Last,Vol,High,Low,###
 		self.history.insert(0,record)
-		if len(self.history) > self.wll:
+		if len(self.history) > (self.wll + self.wls):
 			self.history.pop()	#maintain a moving window of
 					#the last wll records
 		self.macd()		#calc macd
+		if self.rsi_enable:
+			self.rs()		#calc RSI
 		self.ai()		#call the trade ai
 		self.period += 1	#increment the period counter
 		#self.display()
@@ -536,7 +575,7 @@ class trade_engine:
 		self.order_history = "<table class='imgtbl'>\n"
 		self.order_history +="<tr>"
 		for key in keys:
-			self.order_history +="<th>%s</tht>"%key
+			self.order_history +="<th>%s</th>"%key
 		self.order_history +="</tr>\n"
 
 		#only htmlize the last positions so the browser doesn't blow up ;)
@@ -678,10 +717,18 @@ class trade_engine:
 			wl = str([])
 			ws = str([])
 			net_worth = str([])
-
+	
 		macd_pct = str(self.compress_log(self.macd_pct_log[periods:])).replace('L','')
 		input = str(self.compress_log(self.input_log[periods:])).replace('L','')
 		volatility_quartile = str(self.compress_log(mc,lossless_compression = True)).replace('L','')
+
+		if self.rsi_enable:
+			#rsi = str(self.compress_log(self.rsi_log[periods:])).replace('L','')
+			rsi = str(self.compress_log(self.rsi_log[periods:]))
+			##DEBUG
+			macd_pct = rsi
+			tmpl = tmpl.replace("MACD PCT","RSI")
+
 
 		buy = str([])
 		sell = str([])
