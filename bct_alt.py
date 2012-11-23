@@ -28,11 +28,13 @@ from operator import itemgetter
 from math import exp
 import sys
 import paths
+from logs import *
 from cache import *
 
 class trade_engine:
 	def __init__(self):
 		self.cache = cache()
+		self.logs = logs()
 		#configurable variables
 		self.input_file_name = ""
 		self.score_only = False		#set to true to only calculate what is required for scoring a strategy 
@@ -52,7 +54,6 @@ class trade_engine:
 		self.rsi_enable = 0		#enable/disable the relative strength indicator
 		self.rsi_length = 1		#RSI length
 		self.rsi_period_length = 10	#RSI period length
-		self.rsi_period_buffer = []	#RSI period buffer 
 		self.rsi_gate = 50		#RSI gate (RSI must be below gate to enable buy orders)
 		self.min_i_pos = 0		#min periods of increasing price
 						#before buy order placed
@@ -85,17 +86,17 @@ class trade_engine:
 		self.history = []			#moving window of the inputs
 		self.period = 0				#current input period
 		self.time = 0				#current period timestamp
-		self.input_log = []			#record of the inputs
-		self.wl_log = []			#record of the wl
-		self.ws_log = []			#record of the ws
-		self.macd_pct_log = []
-		self.rsi_log = []
-		self.buy_log = []
-		self.sell_log = []
-		self.stop_log = []
-		self.net_worth_log = []
-		self.trigger_log = []
-		self.logs = {}
+		#self.input_log = []			#record of the inputs
+		#self.wl_log = []			#record of the wl
+		#self.ws_log = []			#record of the ws
+		#self.macd_pct_log = []
+		#self.rsi_log = []
+		#self.buy_log = []
+		#self.sell_log = []
+		#self.stop_log = []
+		#self.net_worth_log = []
+		#self.trigger_log = []
+		self.logs.reset()
 		self.balance = 1000			#account balance
 		self.opening_balance = self.balance	#record the starting balance
 		self.score_balance = 0			#cumlative score
@@ -126,7 +127,7 @@ class trade_engine:
 
 	def load_input_data(self):
 		print "bct: loading input data"
-		self.input_data = self.cache.get('input_data')
+		self.input_data = self.cache.get(self.input_file_name)
 		if self.input_data == None:
 			f = open(self.input_file_name,'r')
 			d = f.readlines()
@@ -142,21 +143,21 @@ class trade_engine:
 				t = row.split(',')[0] #time
 				self.input_data.append([int(float(t)),float(r)])
 		
-			self.cache.set('input_data',self.input_data)
-			self.cache.expire('input_data',60*8)
+			self.cache.set(self.input_file_name,self.input_data)
+			self.cache.expire(self.input_file_name,60*8)
 		
 		self.input_data_length = len(self.input_data)
-		return self.input_data
+		return
 
 	def initialize(self):
 		print "bct: initializing"
 		self.load_input_data()
-		cm = self.cache.get('classify_market')
+		cm = self.cache.get(self.input_file_name + '::classify_market')
 		if cm == None:
 			print "bct: classifying market data..."
 			self.classify_market(self.input_data)
-			self.cache.set('classify_market',self.market_class)
-			self.cache.expire('classify_market',60*8)
+			self.cache.set(self.input_file_name + '::classify_market',self.market_class)
+			self.cache.expire(self.input_file_name + '::classify_market',60*8)
 		else:
 			print "bct: cached data found."
 			self.market_class = cm
@@ -360,7 +361,8 @@ class trade_engine:
 			buy = current_price
 			target = (buy * self.markup) + buy
 			stop = buy - (buy * self.stop_loss)
-			self.buy_log.append([self.time,buy])
+			#self.buy_log.append([self.time,buy])
+			self.logs.append('buy',[self.time,buy])
 			new_position = {'master_index':len(self.positions),'age':0,'buy_period':self.period,'sell_period':0,'trade_pos': self.balance,'shares':actual_shares,'buy':buy,'cost':self.shares*buy,'target':target,'stop':stop,'status':"active",'actual':0,'score':0}
 			self.positions.append(new_position.copy())
 			#maintain a seperate subset of open positions to speed up the search to close the open positions
@@ -434,12 +436,16 @@ class trade_engine:
 			current_net_worth += self.balance
 
 			if self.classified_market_data == False or self.quartile == self.market_class[self.period][1]:
-				self.trigger_log.append([self.time,self.get_target()])
-			self.net_worth_log.append([self.time,current_net_worth])
+				#self.trigger_log.append([self.time,self.get_target()])
+				self.logs.append('trigger',[self.time,self.get_target()])
+			#self.net_worth_log.append([self.time,current_net_worth])
+			self.logs.append('net_worth',[self.time,current_net_worth])
 			if sell > 0:
-				self.sell_log.append([self.time,sell])
+				#self.sell_log.append([self.time,sell])
+				self.logs.append('sell',[self.time,sell])
 			if stop > 0:
-				self.stop_log.append([self.time,stop])
+				#self.stop_log.append([self.time,stop])
+				self.logs.append('stop',[self.time,stop])
 		return
 	
 	def get_target(self):
@@ -477,7 +483,8 @@ class trade_engine:
 			#buffer not full - no update to RSI
 			#log the indicator
 			if not self.score_only:
-				self.rsi_log.append([self.time,self.rsi])
+				#self.rsi_log.append([self.time,self.rsi])
+				self.logs.append('rsi',[self.time,self.rsi])
 			return
 
 		#relative strength indicator
@@ -517,7 +524,8 @@ class trade_engine:
 
 		#log the indicator
 		if not self.score_only:
-			self.rsi_log.append([self.time,self.rsi])
+			#self.rsi_log.append([self.time,self.rsi])
+			self.logs.append('rsi',[self.time,self.rsi])
 		return
 		
 	def macd(self):
@@ -564,9 +572,13 @@ class trade_engine:
 
 		#log the indicators
 		if not self.score_only:
-			self.macd_pct_log.append([self.time,self.macd_pct])
-			self.wl_log.append([self.time,self.ema_long])
-			self.ws_log.append([self.time,self.ema_short])
+			#self.macd_pct_log.append([self.time,self.macd_pct])
+			#self.wl_log.append([self.time,self.ema_long])
+			#self.ws_log.append([self.time,self.ema_short])
+
+			self.logs.append('macd',[self.time,self.macd_pct])
+			self.logs.append('wll',[self.time,self.ema_long])
+			self.logs.append('wls',[self.time,self.ema_short])
 		
 		
 	def display(self):
@@ -574,10 +586,12 @@ class trade_engine:
 		print ",".join(map(str,[self.history[0],self.macd_pct,self.buy_wait]))
 	
 	def input(self,time_stamp,record):
+		self.period += 1	#increment the period counter
 		if not self.score_only:
 			#self.time = int(time.mktime(time.strptime(time_stamp))) * 1000
 			self.time = int(time_stamp * 1000) 
-			self.input_log.append([self.time,record])
+			#self.input_log.append([self.time,record])
+			self.logs.append('price',[self.time,record])
 		
 		###Date,Sell,Buy,Last,Vol,High,Low,###
 		self.history.insert(0,record)
@@ -588,7 +602,6 @@ class trade_engine:
 		if self.rsi_enable:
 			self.rs()		#calc RSI
 		self.ai()		#call the trade ai
-		self.period += 1	#increment the period counter
 		#self.display()
 		return
 
@@ -653,21 +666,21 @@ class trade_engine:
 		#log the transactions to a file
 		#used with excel / gdocs to chart price and buy/sell indicators
 		f = open(filename,'w')
-		
-		for i in xrange(len(self.input_log)):
+		input_log = self.logs.get('price')
+		for i in xrange(len(input_log)):
 			for position in self.positions:
 				if position['buy_period'] == i:
 					#print position['buy_period'],i
-					self.input_log[i].append('buy')
-					self.input_log[i].append(position['sell_period'] - position['buy_period'])
-					self.input_log[i].append(position['status'])
-					self.input_log[i].append(i)
+					input_log[i].append('buy')
+					input_log[i].append(position['sell_period'] - position['buy_period'])
+					input_log[i].append(position['status'])
+					input_log[i].append(i)
 				if position['sell_period'] == i:
-					self.input_log[i].append('sell')
-					self.input_log[i].append('0')
-					self.input_log[i].append(position['status'])
-					self.input_log[i].append(i)
-			r = ",".join(map(str,self.input_log[i]))
+					input_log[i].append('sell')
+					input_log[i].append('0')
+					input_log[i].append(position['status'])
+					input_log[i].append(i)
+			r = ",".join(map(str,input_log[i]))
 			f.write(r)
 			f.write('\n')
 		f.close()
@@ -737,21 +750,20 @@ class trade_engine:
 
 		print "chart: compressing data"
 		if not basic_chart:
-			wl = str(self.compress_log(self.wl_log[periods:])).replace('L','')
-			ws = str(self.compress_log(self.ws_log[periods:])).replace('L','')
-			net_worth = str(self.compress_log(self.net_worth_log[periods:],lossless_compression = True)).replace('L','')
+			wl = str(self.compress_log(self.logs.get('wll')[periods:])).replace('L','')
+			ws = str(self.compress_log(self.logs.get('wls')[periods:])).replace('L','')
+			net_worth = str(self.compress_log(self.logs.get('net_worth')[periods:],lossless_compression = True)).replace('L','')
 		else:
 			wl = str([])
 			ws = str([])
 			net_worth = str([])
 	
-		macd_pct = str(self.compress_log(self.macd_pct_log[periods:])).replace('L','')
-		input = str(self.compress_log(self.input_log[periods:])).replace('L','')
+		macd_pct = str(self.compress_log(self.logs.get('macd')[periods:])).replace('L','')
+		input = str(self.compress_log(self.logs.get('price')[periods:])).replace('L','')
 		volatility_quartile = str(self.compress_log(mc,lossless_compression = True)).replace('L','')
 
 		if self.rsi_enable:
-			#rsi = str(self.compress_log(self.rsi_log[periods:])).replace('L','')
-			rsi = str(self.compress_log(self.rsi_log[periods:]))
+			rsi = str(self.compress_log(self.logs.get('rsi')[periods:],lossless_compression = True))
 			##DEBUG
 			macd_pct = rsi
 			tmpl = tmpl.replace("MACD PCT","RSI")
@@ -761,32 +773,37 @@ class trade_engine:
 		sell = str([])
 		stop = str([])
 		trigger_price = str([])
+		self.logs.addkey('buy')		#add keys to the log
+		self.logs.addkey('sell')	# - creates an empty log if it doesn't exist already
+		self.logs.addkey('stop')
+		self.logs.addkey('trigger')
+
 
 		if periods == self.period:
-			buy = str(self.buy_log[periods:]).replace('L','')
-			sell = str(self.sell_log[periods:]).replace('L','')
-			stop = str(self.stop_log[periods:]).replace('L','')
-			trigger_price = str(self.compress_log(self.trigger_log[periods:],lossless_compression = True)).replace('L','')
+			buy = str(self.logs.get('buy')[periods:]).replace('L','')
+			sell = str(self.logs.get('sell')[periods:]).replace('L','')
+			stop = str(self.logs.get('stop')[periods:]).replace('L','')
+			trigger_price = str(self.compress_log(self.logs.get('trigger')[periods:],lossless_compression = True)).replace('L','')
 		else:
 			print "chart: selecting data"
 			#get the timestamp for the start index
-			time_stamp = self.input_log[periods:periods+1][0][0]
+			time_stamp = self.logs.get('price')[periods:periods+1][0][0]
 			#search the following for the time stamp
-			for i in xrange(len(self.buy_log)):
-				if self.buy_log[i][0] >= time_stamp:
-					buy = str(self.buy_log[i:]).replace('L','')
+			for i in xrange(len(self.logs._log['buy'])):
+				if self.logs._log['buy'][i][0] >= time_stamp:
+					buy = str(self.logs._log['buy'][i:]).replace('L','')
 					break
-			for i in xrange(len(self.sell_log)):
-				if self.sell_log[i][0] >= time_stamp:
-					sell = str(self.sell_log[i:]).replace('L','')
+			for i in xrange(len(self.logs._log['sell'])):
+				if self.logs._log['sell'][i][0] >= time_stamp:
+					sell = str(self.logs._log['sell'][i:]).replace('L','')
 					break
-			for i in xrange(len(self.stop_log)):
-				if self.stop_log[i][0] >= time_stamp:
-					stop = str(self.stop_log[i:]).replace('L','')
+			for i in xrange(len(self.logs._log['stop'])):
+				if self.logs._log['stop'][i][0] >= time_stamp:
+					stop = str(self.logs._log['stop'][i:]).replace('L','')
 					break
-			for i in xrange(len(self.trigger_log)):
-				if self.trigger_log[i][0] >= time_stamp:
-					trigger_price = str(self.trigger_log[i:]).replace('L','')
+			for i in xrange(len(self.logs._log['trigger'])):
+				if self.logs._log['trigger'][i][0] >= time_stamp:
+					trigger_price = str(self.logs._log['trigger'][i:]).replace('L','')
 					break
 		
 		print "chart: filling the template"

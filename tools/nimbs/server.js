@@ -207,7 +207,7 @@ app.get('/', function (req, res) {
 });
 
 
-// archive the 1 min volume weighted trade data
+// send and archive the 1 min volume weighted trade data
 function log_one_min_trade()
 {
 	var volume = 0;

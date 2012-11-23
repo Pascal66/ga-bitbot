@@ -209,15 +209,18 @@ while 1:
 					target = te.get_target()
 					print "Inverse MACD Result (target): ",target
 
-					if target > te.input_log[-1][1]:
-						target = te.input_log[-1][1]
+					#if target > te.input_log[-1][1]:
+					#	target = te.input_log[-1][1]
+
+					if target > te.history[1]:
+						target = te.history[1]
 
 					#first check to see if the tested input triggered a buy:
-					if te.positions[-1]['buy_period'] == len(te.input_log) - 1:
+					if te.positions[-1]['buy_period'] == te.period - 1:
 						p = te.positions[-1]
 						target = p['buy']
 					else:
-						print "Last buy order was", len(te.input_log) - te.positions[-1]['buy_period'],"periods ago."
+						print "Last buy order was", te.period - te.positions[-1]['buy_period'],"periods ago."
 						#if not try to calculate the trigger point to get the buy orders in early...
 						#print "Trying to trigger with: ",target
 						print "Score: ",te.score()
@@ -263,7 +266,7 @@ while 1:
 							print "Target	    :$",p['target']
 							print "Input Target :$",target
 							print "Last Price   :$",input[-1][1]
-							print "MACD Log     : ",te.macd_pct_log[-1][1]
+							print "MACD Log     : ",te.logs.get('macd')[-1][1]
 							print "MACD Trip    : ",te.macd_buy_trip
 							p.update({'stop_age':(60 * te.stop_age)}) #DEBUG ONLY!! - delete when done.
 							p['buy'] = 0.00
