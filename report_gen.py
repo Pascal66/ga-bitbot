@@ -34,6 +34,7 @@ print "Genetic Bitcoin Report Generator v%s"%__appversion__
 
 import xmlrpclib
 import json
+import paths
 import gene_server_config
 import time
 

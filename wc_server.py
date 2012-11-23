@@ -36,7 +36,8 @@ import xmlrpclib
 import json
 import time
 import socket
-
+import paths
+from bottle import route, run, static_file, redirect
 #define the server port
 PORT = 8080
 
@@ -74,7 +75,7 @@ def ppdict(d,nest=0):
 	return output
 
 #define client functions
-from bottle import route, run, static_file, redirect
+
 
 @route('/')
 def index():

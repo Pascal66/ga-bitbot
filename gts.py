@@ -29,6 +29,7 @@ import time
 import sys
 import random
 import __main__
+import paths
 from genetic import *
 from load_config import *
 

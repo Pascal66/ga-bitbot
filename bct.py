@@ -27,6 +27,7 @@ import time
 from operator import itemgetter
 from math import exp
 import sys
+import paths
 from cache import *
 
 class trade_engine:

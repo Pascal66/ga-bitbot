@@ -25,6 +25,7 @@ import pdb
 import pickle
 from operator import itemgetter
 from time import *
+import paths
 import MtGoxHMAC
 
 # connect to the xml server

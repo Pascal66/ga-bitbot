@@ -35,7 +35,7 @@ from time import *
 import hashlib
 import random
 import __main__
-
+import paths
 from load_config import *
 
 

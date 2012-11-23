@@ -27,6 +27,7 @@ import time
 from operator import itemgetter
 from math import exp
 import sys
+import paths
 from cache import *
 
 class trade_engine:
@@ -48,9 +49,11 @@ class trade_engine:
 		self.flash_crash_protection_delay = 180 #max_hold in minutes
 		self.stop_age = 10000		#stop age - dump after n periods
 		self.macd_buy_trip = -0.66	#macd buy indicator
-		self.rsi_enable = 0		#relative strength indicator
-		self.rsi_length = 1
-		self.rsi_gate = 50
+		self.rsi_enable = 0		#enable/disable the relative strength indicator
+		self.rsi_length = 1		#RSI length
+		self.rsi_period_length = 10	#RSI period length
+		self.rsi_period_buffer = []	#RSI period buffer 
+		self.rsi_gate = 50		#RSI gate (RSI must be below gate to enable buy orders)
 		self.min_i_pos = 0		#min periods of increasing price
 						#before buy order placed
 		
@@ -74,6 +77,51 @@ class trade_engine:
 		self.classified_market_data = False
 		self.max_data_len = 1000000
 		self.reset()
+		return
+
+
+	def reset(self):
+		#metrics and state variables
+		self.history = []			#moving window of the inputs
+		self.period = 0				#current input period
+		self.time = 0				#current period timestamp
+		self.input_log = []			#record of the inputs
+		self.wl_log = []			#record of the wl
+		self.ws_log = []			#record of the ws
+		self.macd_pct_log = []
+		self.rsi_log = []
+		self.buy_log = []
+		self.sell_log = []
+		self.stop_log = []
+		self.net_worth_log = []
+		self.trigger_log = []
+		self.logs = {}
+		self.balance = 1000			#account balance
+		self.opening_balance = self.balance	#record the starting balance
+		self.score_balance = 0			#cumlative score
+		self.buy_delay = 0			#delay buy counter
+		self.buy_delay_inital = self.buy_delay	#delay buy counter
+		self.macd_pct = 0			
+		self.macd_abs = 0
+		self.avg_wl = 0
+		self.avg_ws = 0
+		self.ema_short = 0
+		self.ema_long = 0
+		self.rsi = 0				#RSI indicator value
+		self.rsi_gain = []			#RSI avg gain buffer
+		self.rsi_loss = []			#RSI avg loss buffer
+		self.rsi_period_buffer = []		#RSI period buffer
+		self.rsi_period_last = 50		#RSI last buffered period
+		self.i_pos = 0				#periods of increasing price
+		self.i_neg = 0				#periods of decreasing price
+		self.positions_open = []		#open order subset of all trade positions
+		self.positions = []			#all trade positions
+		self.metric_macd_pct_max = -10000	#macd metrics
+		self.metric_macd_pct_min = 10000
+		self.wins = 0
+		self.loss = 0
+		self.order_history = "NOT GENERATED"
+		self.current_quartile = 0
 		return
 
 	def load_input_data(self):
@@ -120,46 +168,7 @@ class trade_engine:
 			self.input(i[0],i[1])
 		return
 		
-	def reset(self):
-		#metrics and state variables
-		self.history = []			#moving window of the inputs
-		self.period = 0				#current input period
-		self.time = 0				#current period timestamp
-		self.input_log = []			#record of the inputs
-		self.wl_log = []			#record of the wl
-		self.ws_log = []			#record of the ws
-		self.macd_pct_log = []
-		self.rsi_log = []
-		self.buy_log = []
-		self.sell_log = []
-		self.stop_log = []
-		self.net_worth_log = []
-		self.trigger_log = []
-		self.balance = 1000			#account balance
-		self.opening_balance = self.balance	#record the starting balance
-		self.score_balance = 0			#cumlative score
-		self.buy_delay = 0			#delay buy counter
-		self.buy_delay_inital = self.buy_delay	#delay buy counter
-		self.macd_pct = 0			
-		self.macd_abs = 0
-		self.avg_wl = 0
-		self.avg_ws = 0
-		self.ema_short = 0
-		self.ema_long = 0
-		self.rsi = 0
-		self.rsi_gain = []
-		self.rsi_loss = []
-		self.i_pos = 0				#periods of increasing price
-		self.i_neg = 0				#periods of decreasing price
-		self.positions_open = []		#open order subset of all trade positions
-		self.positions = []			#all trade positions
-		self.metric_macd_pct_max = -10000	#macd metrics
-		self.metric_macd_pct_min = 10000
-		self.wins = 0
-		self.loss = 0
-		self.order_history = "NOT GENERATED"
-		self.current_quartile = 0
-		return
+
 	
 	def test_quartile(self,quartile):
 		#valid inputs are 1-4
@@ -457,10 +466,24 @@ class trade_engine:
 		#DEBUG
 		#self.rsi_length = 20
 
+		#buffer input until period length has been reached
+		#this allows the RSI period to differ from the system period
+		# TODO: Make the RSI buffered period volume weighted
+		self.rsi_period_buffer.append(self.history[0])
+		if len(self.rsi_period_buffer) == self.rsi_period_length:
+			period = sum(self.rsi_period_buffer)/self.rsi_period_length if (self.rsi_period_length) > 0 else 0
+			self.rsi_period_buffer = []
+		else:
+			#buffer not full - no update to RSI
+			#log the indicator
+			if not self.score_only:
+				self.rsi_log.append([self.time,self.rsi])
+			return
+
 		#relative strength indicator
-		if self.rsi_enable == 1 and len(self.history) > 1:
+		if self.rsi_enable == 1:
 			#determine if period is a gain or loss and bin the absolute difference
-			delta = self.history[0] - self.history[1]
+			delta = period - self.rsi_period_last
 			if delta > 0:
 				#gain
 				self.rsi_gain.insert(0,delta)
@@ -488,6 +511,10 @@ class trade_engine:
 		avg_loss = sum(self.rsi_loss)/len(self.rsi_loss) if (len(self.rsi_loss)) > 0 else 0
 		rs = avg_gain / (avg_loss + 0.00001)
 		self.rsi = (100.0 - ( 100.0 / (1 + rs)))
+
+		#update the last period
+		self.rsi_period_last = period
+
 		#log the indicator
 		if not self.score_only:
 			self.rsi_log.append([self.time,self.rsi])
