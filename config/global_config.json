@@ -27,7 +27,7 @@
 		"min_bid_price" : 1.0,
 		"max_bid_price" : 20.00,
 		"enable_underbids" : 1,
-		"enable_text_messaging":1,
+		"enable_text_messaging":0,
 
 		"REPORTGEN_SECTION" : 1,
 		"chart_zoom_periods" : 1500,

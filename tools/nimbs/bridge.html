@@ -4,18 +4,33 @@
 
 <script src="/socket.io/socket.io.js"></script>
 <!--[if lte IE 8]><script language="javascript" type="text/javascript" src="../excanvas.min.js"></script><![endif]-->
-<script language="javascript" type="text/javascript" src="/js/jquery.js"></script>
-<script language="javascript" type="text/javascript" src="/js/jquery.flot.js"></script>
-<script language="javascript" type="text/javascript" src="/js/jquery-ui-1.9.1.custom.min.js"></script>
 <script language="javascript" type="text/javascript" src="/js/knockout-2.1.0.js"></script>
+<script language="javascript" type="text/javascript" src="/js/knockout.mapping-latest.js"></script>
 <script language="javascript" type="text/javascript" src="/js/d3.v2.min.js"></script>
 <script language="javascript" type="text/javascript" src="/js/d3.parcoords.js"></script>
+
+
+<script language="javascript" type="text/javascript" src="/js/jquery.js"></script>
+<script language="javascript" type="text/javascript" src="/js/jquery.flot.js"></script>
+<script language="javascript" type="text/javascript" src="/js/jquery.flot.resize.js"></script>
+<script language="javascript" type="text/javascript" src="/js/jquery-ui-1.9.1.custom.min.js"></script>
+
+
 <script language="javascript" type="text/javascript" src="/jslib/pcf2.js"></script>
+<script language="javascript" type="text/javascript" src="/jslib/gene_db.js"></script>
+
+
+
+
 
 <script>
   $(document).ready(function() {
     $("#tabs").tabs();
   });
+
+var gene_db_view_model = "None";
+var gdbl = new gene_db_lib();
+
 </script>
 
 
@@ -30,7 +45,6 @@
 <div id="tabs">
     <ul>
         <li><a href="#tab-1"><span>Status</span></a></li>
-        <li><a href="#tab-2"><span>Buttons</span></a></li>
         <li><a href="#tab-3"><span>Market Depth</span></a></li>
         <li><a href="#tab-4"><span>Explorer</span></a></li>
         <li><a href="#tab-5"><span>Calc</span></a></li>
@@ -42,30 +56,22 @@
     <div id="tab-1">
 	<div id="notifications">notifications go here</div> 
     </div>
-    <div id="tab-2">
-        <div id="menu_buttons" style="position:relative;right:-1em;">
-	<input type="submit" value="Home" id="dashboard_button" class="ui-button-text">
-	<input type="submit" value="Upload" id="upload_button" class="ui-button-text">
-	<input type="submit" value="Search" id="search_button" class="ui-button-text">
-	<input type="submit" value="Alerts" id="alerts_button" class="ui-button-text">
-	<input type="submit" value="Report" id="report_button" class="ui-button-text">
-	<input type="submit" value="Logs" id="logs_button" class="ui-button-text">
-	<input type="submit" value="Monitor" id="monitor_button" class="ui-button-text">
-	<input type="submit" value="Admin" id="admin_button" class="ui-button-text">
-	</div>
-    </div>
     <div id="tab-3">
-	<div id='gox'>
-		<div id="trades"></div>
-		<div id="ticker"></div>
-		<div id="depth"></div>
-		<div id="depth_plot" style="width:800px;height:300px;"></div>
-		<br>Depth plot is zoomed on both axis to show detail.
+	<div id='gox' style="display:block;">
+		<div id="gox_group">
+			<div id="depth_plot_l" style="width:50%;height:20%;display:inline-block;padding: 3px;">
+				<div id="trades" style="width:100%;"></div>
+				<div id="ticker" style="width:100%;"></div>
+				<div id="depth" style="width:100%;"></div>
+			</div>
+		</div>
+		<div id="depth_plot" style="width:100%;height:40%;display:block;"></div>
+		<br><p style="color: #355535">Depth plot is zoomed on both axis to show detail.</p>
 	</div>
     </div>
     <div id="tab-4">
 	Parallel coordinate visualization of the genetic database.
-	<input type="submit" value="Load" id="gene_db_reload_button" class="ui-button-text">
+	<input type="submit" value="Load" id="gene_db_reload_button" class="ui-button-text"><br>
 	<div id="explorer"></div>
 	<div id="pchart"></div>
     </div>
@@ -79,7 +85,16 @@
 	</div>
     </div>
     <div id="tab-6">
-	<div id="mtgox_feed"></div>
+	<div id="mtgox_feed">
+
+<div data-bind="foreach: gene_db_lib_entries, visible: gene_db_lib_entries().length > 0">
+    <li>
+        <div data-bind="value: gene_def_hash"></div>
+    </li> 
+</div>
+
+
+	</div>
     </div>
     <div id="tab-7">
 	<div id="_trades"></div>
@@ -115,7 +130,7 @@
 	// setup plot
 	var options = {
 		series: { shadowSize: 0 }, // drawing is faster without shadows
-		yaxis: { min: 0, max: 800 },
+		yaxis: { min: 0, max: 200 },
 		xaxis: { show: true }
 	};
 	
@@ -175,64 +190,9 @@
 			//$('#debug').append(JSON.stringify(msg) + '<BR>');
 		}
 		if (msg.channel == 'gene_db')
-		{
-			$("#gene_db_reload_button").attr({value:'Reload'});
-			$('#debug').html('<br>');
-			gene_db = msg.value;
-			try{$('#pchart').accordion("destroy");}catch(err){};
-			$("#pchart").html("");
-			//$("#pchart").removeClass();
-
-			var db_index = 0
-			for (var db_lib in gene_db){
-				if (gene_db[db_lib]['gene_def'] != "UNDEFINED"){
-					console.log(db_lib);
-				
-					var gene_db_data_array = new Array();
-					var gene_db_dimensions_array = new Array();
-					var gene_db_library_id = Object.keys(gene_db)[db_index];
-				
-					//get the data dimensions
-					dim_array = new Array();
-					JSON.parse(gene_db[db_lib]['gene_def'])['call']['add_numvar'].forEach(function(item){	
-						dim_array.push(item[0]);
-						console.log(item);
-					});
-					dim_array.push('score');
-
-					//for each quartile
-					for (var i = 0; i < gene_db[db_lib]["gene_high_scores"].length; i++)
-					{
-						//get the high scores
-						gene_db[db_lib]["gene_high_scores"][i].forEach(function (db_record)
-						{ 					
-							if (db_record["score"] > 0.0) //filter any scores below zero
-							{
-								gene_db_data_array.push(db_record); //data_array
-								ts = new Date(db_record['time'] * 1000);
-								//console.log(db_lib +' : '+ db_record['id']+' : '+ db_record['score']+' : '+ts+' : '+i);
-								$('#debug').append(db_lib +' : '+ db_record['id']+' : '+ db_record['score']+' : '+ts+' : '+i +'<br>');
-							}
-
-						});
-						//create the chart
-						if (gene_db_data_array.length > 0){
-							$("#pchart").append("<h3>"+$.parseJSON(gene_db[db_lib]['gene_def'])['name']+" Quartile: " +(i+1)+"</h3>");
-							$("#pchart").append('<div id="dpc_'+gene_db_library_id+'_'+i+'"><p id="pchart_'+gene_db_library_id+'_'+i+'" ></p>');
-						
-							c = new pcf();
-							c.setRenderTarget("#pchart_"+ gene_db_library_id+'_'+i);
-							c.setData(gene_db_data_array);
-							c.setDimensions(dim_array);
-							c.viewLegend(true);
-							c.render();
-						}
-					}
-					var db_index = db_index + 1;
-				}
-			};
-			$('#pchart').accordion();
-
+		{			
+			//gene_db = msg.value;
+			set_gene_db(msg.value);
 		}
 		if (msg.channel == 'pids')
 		{
@@ -277,6 +237,86 @@
 			$('#ticker').append(' buy: ' + msg.ticker.buy.display +'  sell: ' + msg.ticker.sell.display + '<br><br>');
 		}
 
+	}
+
+
+	function set_gene_db(gdb)
+	{
+		gene_db = gdb;	
+		//gdbl.load(gene_db);
+
+		//if (gene_db_view_model == "None"){gene_db_view_model = ko.mapping.fromJS({'db_lib':gene_db,'testing':'asdf'})
+		//} else {
+		//	
+		//	ko.mapping.fromJS({'db_lib':gene_db,'testing':'asdf'},gene_db_view_model);
+		//}
+
+
+		$("#gene_db_reload_button").attr({value:'Reload'});
+		$('#debug').html('<br>');
+	
+		$("#explorer").html("");
+		var db_index = 0
+		for (var db_lib in gene_db){
+			if (gene_db[db_lib]['gene_def'] != "UNDEFINED"){
+				console.log(db_lib);		
+				$('#explorer').append('<input id="load_'+db_lib+'" type="submit" value="'+db_lib+'" class= "ui-button-text">')
+				$('#load_'+db_lib).click(function(){renderGeneDB(this.value);console.log(this);}); // Add a click handler
+
+			}
+		};
+	}
+
+
+
+	function renderGeneDB(db_lib)
+	{
+		var gene_db_data_array = new Array();
+		var gene_db_dimensions_array = new Array();
+		var gene_db_library_id = db_lib;
+
+
+		try{$('#pchart').accordion("destroy");}catch(err){};
+		$("#pchart").html("");
+
+
+		//get the data dimensions
+		dim_array = new Array();
+		JSON.parse(gene_db[db_lib]['gene_def'])['call']['add_numvar'].forEach(function(item){	
+			dim_array.push(item[0]);
+			console.log(item);
+		});
+		dim_array.push('score');
+
+		//for each quartile
+		for (var i = 0; i < gene_db[db_lib]["gene_high_scores"].length; i++)
+		{
+			//get the high scores
+			gene_db[db_lib]["gene_high_scores"][i].forEach(function (db_record)
+			{ 					
+				if (db_record["score"] > 0.0) //filter any scores below zero
+				{
+					gene_db_data_array.push(db_record); //data_array
+					ts = new Date(db_record['time'] * 1000);
+					//console.log(db_lib +' : '+ db_record['id']+' : '+ db_record['score']+' : '+ts+' : '+i);
+					$('#debug').append(db_lib +' : '+ db_record['id']+' : '+ db_record['score']+' : '+ts+' : '+i +'<br>');
+				}
+
+			});
+			//create the chart
+			if (gene_db_data_array.length > 0){
+				$("#pchart").append("<h3>"+$.parseJSON(gene_db[db_lib]['gene_def'])['name']+" Quartile: " +(i+1)+"</h3>");
+				$("#pchart").append('<div id="dpc_'+gene_db_library_id+'_'+i+'"><p id="pchart_'+gene_db_library_id+'_'+i+'" ></p>');
+	
+				c = new pcf();
+				c.setRenderTarget("#pchart_"+ gene_db_library_id+'_'+i);
+				c.setData(gene_db_data_array);
+				c.setDimensions(dim_array);
+				c.viewLegend(true);
+				c.render();
+			}
+		}
+		$('#pchart').accordion();
 	}
 
 

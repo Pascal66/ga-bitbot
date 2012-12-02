@@ -24,6 +24,7 @@ This file is part of ga-bitbot.
 
 
 from Crypto.Cipher import AES
+from Crypto import Random
 import hashlib
 import json
 import time
@@ -65,12 +66,13 @@ except:
 print "\n"
 print "Generating the encrypted API KEY file..."
 hash_pass = hashlib.sha256(password + salt).digest()
-encryptor = AES.new(hash_pass, AES.MODE_CBC)
+iv = Random.new().read(AES.block_size)
+encryptor = AES.new(hash_pass, AES.MODE_CBC,iv)
 text = json.dumps({"key":key,"secret":secret,"topic_arn":topic_arn})
 #pad the text
 pad_len = 16 - len(text)%16
 text += " " * pad_len
-ciphertext = encryptor.encrypt(text)
+ciphertext = iv + encryptor.encrypt(text)
 f = open('./config/aws_api_key.txt','w')
 f.write(ciphertext)
 f.close()
@@ -83,12 +85,13 @@ f = open('./config/salt.txt','r')
 salt = f.read()
 f.close()
 hash_pass = hashlib.sha256(password + salt).digest()
-decryptor = AES.new(hash_pass, AES.MODE_CBC)
-text = decryptor.decrypt(d)
-d = json.loads(text)
-if d['key'] == key and d['secret'] == secret:
-	print "Passed verification"
-else:
+decryptor = AES.new(hash_pass, AES.MODE_CBC,d[:AES.block_size])
+text = decryptor.decrypt(d[AES.block_size:])
+try:
+	d = json.loads(text)
+except:
 	print "Failed verification...try again."
+else:
+	print "Passed verification."
 
 print "\nDon't forget your password:",password," This is what ga-bitbot will request to enable the AWS text messaging service."

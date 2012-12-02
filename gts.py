@@ -64,19 +64,30 @@ if __name__ == "__main__":
 	enable_flash_crash_protection = False
 	flash_crash_protection_delay = 60 * 3 #three hours
 	config_loaded = 0
+	#!!!!!!!!!!!!!!!!end of loaded config values!!!!!!!! 
+
+	#define the module exit function
+	profile = False
+	def gts_exit(msg,pid=None):
+		global profile
+		if pid != None:
+			server.pid_msg(pid,msg)
+			server.pid_exit(pid)
+		if profile == True:
+			print "gts: profiler saving gts_call_graph.png to ./report/"
+			pycallgraph.make_dot_graph('./report/gts_call_graph.png')
+		print msg
+		sys.exit()
+
 
 	#load config
 	try:
 		__main__ = load_config_file_into_object('global_config.json',__main__)
 	except:
-		print "gts: error detected while loading the configuration. the application will now exit."
-		import sys
-		sys.exit()
+		gts_exit("gts: error detected while loading the configuration. the application will now exit.")
 	else:
 		if config_loaded == False:
-			print "gts: configuration failed to load. the application will now exit."
-			import sys
-			sys.exit()
+			gts_exit("gts: configuration failed to load. the application will now exit.")
 		else:
 			print "gts: configuration loaded."
 
@@ -90,11 +101,11 @@ if __name__ == "__main__":
 	get_config = False
 	get_default_config = False
 	score_only = False
+	profile = False
 	pid = None
 	g = genepool()
 	gd = "UNDEFINED"
 
-	#print sys.argv
 	if len(sys.argv) >= 3:
 		# Convert the two arguments from strings into numbers
 		quartile = sys.argv[1]
@@ -118,6 +129,15 @@ if __name__ == "__main__":
 				if sys.argv[i] == 'score_only':
 					#if set the gene_def config will be randomly loaded from the server
 					score_only = True
+				if sys.argv[i] == 'profile':
+					try:
+						import pycallgraph
+					except:
+						print "gts: pycallgraph module not installed. Profiling disabled."
+					else:
+						pycallgraph.start_trace()
+						profile = True
+						print "gts: running pycallgraph profiler"
 				if sys.argv[i] == 'pid':
 					#set the pid from the command line
 					try:
@@ -196,6 +216,7 @@ if __name__ == "__main__":
 		gdh = server.pid_register_gene_def(pid,gdc)
 		server.pid_register_client(pid,gdh)
 
+
 	#reset the process watchdog
 	server.pid_alive(pid)
 	#send a copy of the command line args	
@@ -204,12 +225,13 @@ if __name__ == "__main__":
 	print "gts: loading the fitness function"
 	ff = __import__(gd['fitness_script'])
 	te = ff.trade_engine()
-	te = load_config_into_object(gd['fitness_config'],te)
-	te.score_only = True
 	#apply global configs
-	te.max_data_len = max_length
+	te.max_length = max_length
 	te.enable_flash_crash_protection = enable_flash_crash_protection 
 	te.flash_crash_protection_delay = flash_crash_protection_delay
+	#load the gene_def fitness_config
+	te = load_config_into_object(gd['fitness_config'],te)
+	te.score_only = True
 	print "gts: initializing the fitness function"
 	te.initialize()
 
@@ -315,10 +337,7 @@ if __name__ == "__main__":
 				if quartile > 4:
 					quartile = 1
 					if run_once:
-						print "gts: run once done."
-						server.pid_msg(pid,"Run Once Done.")
-						server.pid_exit(pid)
-						sys.exit()
+						gts_exit("gts: run once done.",pid)
 			
 			elif max_gene != None:
 				#debug
@@ -334,10 +353,7 @@ if __name__ == "__main__":
 					if quartile > 4:
 						quartile = 1
 						if run_once:
-							print "gts: run once done."
-							server.pid_msg(pid,"Run Once Done.")
-							server.pid_exit(pid)
-							sys.exit()
+							gts_exit("gts: run once done.",pid)
 			else:
 				if max_score > -1000:
 					print "gts: **WARNING** MAX_GENE is gone.: ID",max_score_id
@@ -346,19 +362,14 @@ if __name__ == "__main__":
 					for ag in g.pool:
 						print ag['id'],ag['score']
 					print "*"*80
-					print "gts: HALTED."
-					server.pid_msg(pid,"HALTED.")
-					server.pid_exit(pid)
-					sys.exit()
+					gts_exit("gts: HALTED.",pid)
 
 			max_gene = None #clear the max gene
 			max_score = -100000 #reset the high score
 
 			if quartile_cycle == False and run_once:
 				print "gts: run once done."
-				server.pid_msg(pid,"Run Once Done.")
-				server.pid_exit(pid)
-				sys.exit()
+				gts_exit("gts: run once done.",pid)
 
 			if bob_simulator:
 				#update_all_scores = True	#on the first pass only, bob clients need to resubmit updated scores for every gene 
@@ -422,6 +433,10 @@ if __name__ == "__main__":
 				print "gts: ",ag['gene'],"\t".join(["%.5f"%max_score,"%.5f"%score,"%.3f"%g.prune_threshold])
 			g.set_score(ag['id'],score)
 			g.set_message(ag['id'],"Balance: " + str(te.balance) +"; Wins: " + str(te.wins)+ "; Loss:" + str(te.loss) +  "; Positions: " + str(len(te.positions)))
+
+
+			if score > 1000 and profile == True:
+				gts_exit("gts: profiling complete")
 
 			#if a new high score is found submit the gene to the server
 			if score > max_score and update_all_scores == False:

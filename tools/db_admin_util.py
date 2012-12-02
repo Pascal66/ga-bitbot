@@ -32,7 +32,6 @@ import sys
 import gene_server_config
 import xmlrpclib
 
-
 builtin_db_hash = '0db45d2a4141101bdfe48e3314cfbca3'
 
 __server__ = gene_server_config.__server__
@@ -61,7 +60,7 @@ if gene_server_running == True:
 
 
 #load the db
-f = open('./config/gene_server_db_library.json','r')
+f = open('../config/gene_server_db_library.json','r')
 d = f.read()
 gene_library = json.loads(d)
 f.close()
@@ -196,7 +195,7 @@ while 1:
 					print "can not delete built-in UNDEFINED database"
 			if ui == 'e':
 				print "exporting database gene_def ["+str(index)+"]",gene_library.keys()[index]
-				filename = './config/gene_def_'+gene_library.keys()[index]+'.json'
+				filename = '../config/gene_def_'+gene_library.keys()[index]+'.json'
 				print "writing file " + filename
 				f = open(filename,'w')
 				f.write(gene_library[gene_library.keys()[index]]['gene_def'])
@@ -206,7 +205,7 @@ while 1:
 		if commit_enable == True:
 			print "commiting changes"
 			#save the db
-			f = open('./config/gene_server_db_library.json','w')
+			f = open('../config/gene_server_db_library.json','w')
 			f.write(json.dumps(gene_library))
 			f.close()
 			status = "no changes to commit"

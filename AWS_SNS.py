@@ -65,8 +65,8 @@ class Client:
 			f = open('./config/aws_api_key.txt')
 			ciphertext = f.read()
 			f.close()
-			decryptor = AES.new(hash_pass, AES.MODE_CBC)
-			plaintext = decryptor.decrypt(ciphertext)
+			decryptor = AES.new(hash_pass, AES.MODE_CBC,ciphertext[:AES.block_size])
+			plaintext = decryptor.decrypt(ciphertext[AES.block_size:])
 			d = json.loads(plaintext)
 			self.key = d['key']
 			self.secret = d['secret']

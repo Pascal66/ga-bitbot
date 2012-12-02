@@ -76,7 +76,7 @@ class trade_engine:
 		self.market_class = []
 		self.current_quartile = 0
 		self.classified_market_data = False
-		self.max_data_len = 1000000
+		self.max_length = 1000000
 		self.reset()
 		return
 
@@ -108,7 +108,7 @@ class trade_engine:
 		self.avg_ws = 0
 		self.ema_short = 0
 		self.ema_long = 0
-		self.rsi = 0				#RSI indicator value
+		self.rsi = 50				#RSI indicator value
 		self.rsi_gain = []			#RSI avg gain buffer
 		self.rsi_loss = []			#RSI avg loss buffer
 		self.rsi_period_buffer = []		#RSI period buffer
@@ -127,25 +127,25 @@ class trade_engine:
 
 	def load_input_data(self):
 		print "bct: loading input data"
-		self.input_data = self.cache.get(self.input_file_name)
+		cache_label = self.input_file_name +'::'+str(self.max_length)
+		self.input_data = self.cache.get(cache_label)
 		if self.input_data == None:
 			f = open(self.input_file_name,'r')
 			d = f.readlines()
 			f.close()
-	
-			if len(d) > self.max_data_len:
-				#truncate the dataset
-				d = d[self.max_data_len * -1:]
+
+			if len(d) > self.max_length:
+				d = d[self.max_length * -1:]
 
 			self.input_data = []
 			for row in d[1:]:
 				r = row.split(',')[1] #last price
 				t = row.split(',')[0] #time
 				self.input_data.append([int(float(t)),float(r)])
-		
-			self.cache.set(self.input_file_name,self.input_data)
-			self.cache.expire(self.input_file_name,60*8)
-		
+
+			self.cache.set(cache_label,self.input_data)
+			self.cache.expire(cache_label,60*15)
+
 		self.input_data_length = len(self.input_data)
 		return
 
@@ -156,8 +156,9 @@ class trade_engine:
 		if cm == None:
 			print "bct: classifying market data..."
 			self.classify_market(self.input_data)
-			self.cache.set(self.input_file_name + '::classify_market',self.market_class)
-			self.cache.expire(self.input_file_name + '::classify_market',60*8)
+			cache_label = self.input_file_name + '::classify_market::len::'+str(self.input_data_length)
+			self.cache.set(cache_label,self.market_class)
+			self.cache.expire(cache_label,60*15)
 		else:
 			print "bct: cached data found."
 			self.market_class = cm
@@ -273,7 +274,10 @@ class trade_engine:
 				position['status'] = "dumped"
 				position['actual'] = self.history[1]	#HACK! go back in time one period to make sure we're using a real price
 									#and not a buy order target from the reporting script.
-				position['sell_period'] = self.period
+				if position['buy_period'] != self.period:		
+					position['sell_period'] = self.period
+				else:
+					position['sell_period'] = self.period + 1 #hold for at least one period
 				self.balance += position['actual'] * (position['shares'] - (position['shares'] * self.commision))
 			
 
@@ -292,7 +296,7 @@ class trade_engine:
 				p['score'] *= (p['age'] + 1)/(pow(p['age'],self.stbf) + 1)
 
 
-				#apply e^0 to e^1 weighting to favor the latest trade results
+				#apply e^0 to e^nlsf weighting to favor the latest trade results
 				p['score'] *= exp(exp_scale * p['buy_period']) 
 				final_score_balance += p['score']
 
@@ -311,6 +315,7 @@ class trade_engine:
 			final_score_balance += (self.wls / 1000.0)
 			final_score_balance -= (self.stop_age / 1000.0)
 			final_score_balance += self.shares
+			final_score_balance += (128.0 - self.rsi_gate) / 1000.0 
 
 			#severly penalize the score if the win/ratio is less than 75%
 			if self.wins / (self.wins + self.loss * 1.0) < 0.75:
@@ -488,7 +493,7 @@ class trade_engine:
 			return
 
 		#relative strength indicator
-		if self.rsi_enable == 1:
+		if self.rsi_enable > 0:
 			#determine if period is a gain or loss and bin the absolute difference
 			delta = period - self.rsi_period_last
 			if delta > 0:
@@ -599,7 +604,7 @@ class trade_engine:
 			self.history.pop()	#maintain a moving window of
 					#the last wll records
 		self.macd()		#calc macd
-		if self.rsi_enable:
+		if self.rsi_enable > 0:
 			self.rs()		#calc RSI
 		self.ai()		#call the trade ai
 		#self.display()
@@ -762,7 +767,7 @@ class trade_engine:
 		input = str(self.compress_log(self.logs.get('price')[periods:])).replace('L','')
 		volatility_quartile = str(self.compress_log(mc,lossless_compression = True)).replace('L','')
 
-		if self.rsi_enable:
+		if self.rsi_enable > 0:
 			rsi = str(self.compress_log(self.logs.get('rsi')[periods:],lossless_compression = True))
 			##DEBUG
 			macd_pct = rsi

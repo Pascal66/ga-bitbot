@@ -164,14 +164,15 @@ while 1:
 			te = ff.trade_engine()
 			te.cache.disable()	#dont use cached data for reporting
 
-			#load the gene dictionary into the trade engine
-			te = load_config_into_object({'set':ag},te)
-			#load the gene def config into the trade engine
-			te = load_config_into_object(gd['fitness_config'],te)
 			#apply global configs
-			te.max_data_len = max_length
+			te.max_length = max_length
 			te.enable_flash_crash_protection = enable_flash_crash_protection 
 			te.flash_crash_protection_delay = flash_crash_protection_delay
+			#load the gene dictionary into the trade engine
+			te = load_config_into_object({'set':ag},te)
+			#load the gene def fitness config into the trade engine
+			te = load_config_into_object(gd['fitness_config'],te)
+			
 		
 			#preprocess the data
 			#current_quartile = te.classify_market(input)

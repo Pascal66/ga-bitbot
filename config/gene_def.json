@@ -1,7 +1,7 @@
 {
-	"name":"mid markup3 BCT ALT",
+	"name":"long window med markup - reduced stop age",
 	"version":"0.5",
-	"description":"2.0 - 4.55% markup",
+	"description":"2.4 - 3.67% markup",
 
 	"fitness_script":"bct_alt",
 	"fitness_config":
@@ -9,8 +9,11 @@
 		"set" :
 		{
 			"input_file_name": "./datafeed/bcfeed_mtgoxUSD_1min.csv",
-			"nlsf": 7.0,
-			"stbf": 1.02
+			"nlsf": 3.0,
+			"stbf": 1.035,
+			"max_length" : 100000,
+			"enable_flash_crash_protection" : 1,
+			"flash_crash_protection_delay" : 240
 		}
 	},
 
@@ -28,11 +31,11 @@
 		"max_multiple_parents" : 7,
 		"niche_trigger" : 3,
 		"niche_min_iteration" : 7,
-		"bit_sweep_rate" : 0.40, 
+		"bit_sweep_rate" : 0.30, 
 		"bit_sweep_min_iteration" : 5,
 		"pool_size" : 50,
 		"pool_family_ratio" : 0.99,
-		"pool_max_survivor_ratio" : 0.3,
+		"pool_max_survivor_ratio" : 0.4,
 		"kill_score" : -10000,
 		"max_iteration" : 60000,
 		"local_optima_trigger" : 8
@@ -47,12 +50,12 @@
 			["wls",6,0,1],
 			["buy_wait",4,0,1],
 			["buy_wait_after_stop_loss",8,0,1],
-			["markup",8,4,0.02],
+			["markup",7,4,0.024],
 			["stop_loss",8,4,0.02],
-			["stop_age",16,0,0,10.0],
+			["stop_age",12,0,0,0.0],
 			["macd_buy_trip",10,2,2.0,-2.0],
-			["rsi_enable",1,0,0],
-			["rsi_length",7,0,3],
+			["rsi_enable",1,0,1],
+			["rsi_length",10,0,3],
 			["rsi_gate",6,0,36]
 		]
 	}

@@ -67,11 +67,13 @@ def load_config_into_object(config_dict,obj):
 	if 'call' in config_dict:
 		for func in config_dict['call']:
 			#print type(func),func
-			for args in config_dict['call'][func]:
-				#print type(args),args
-				apply(getattr(obj,func),args)
-				#print "load_config_into_object: called func: %s with args: %s"%(func,args)
-
+			try:
+				getattr(obj,func)
+			except:
+				print "load_config: warning: "+func+" function not found in " + str(obj)
+			else:
+				for args in config_dict['call'][func]:
+					apply(getattr(obj,func),args)
 	return obj
 
 def load_config_file_into_object(config_file,obj):
