@@ -50,6 +50,8 @@ class trade_engine:
 		self.enable_flash_crash_protection = True	#convert a stop loss order into a short term hold position
 		self.flash_crash_protection_delay = 180 #max_hold in minutes
 		self.stop_age = 10000		#stop age - dump after n periods
+
+		self.atr_depth = 60 * 1 		#period depth of the averae true range, used to split input data into quartiles
 		self.macd_buy_trip = -0.66	#macd buy indicator
 		self.rsi_enable = 0		#enable/disable the relative strength indicator
 		self.rsi_length = 1		#RSI length
@@ -142,25 +144,26 @@ class trade_engine:
 				r = row.split(',')[1] #last price
 				t = row.split(',')[0] #time
 				self.input_data.append([int(float(t)),float(r)])
-
+			"bct: input data loaded from file."
 			self.cache.set(cache_label,self.input_data)
 			self.cache.expire(cache_label,60*15)
-
+		else:
+			print "bct: cached data found.",cache_label
 		self.input_data_length = len(self.input_data)
 		return
 
 	def initialize(self):
-		print "bct: initializing"
+		print "bct_alt: initializing"
 		self.load_input_data()
-		cm = self.cache.get(self.input_file_name + '::classify_market')
+		cache_label = self.input_file_name + '::classify_market::'+str(self.max_length)+'::atr_depth::'+str(self.atr_depth)
+		cm = self.cache.get(cache_label)
 		if cm == None:
 			print "bct: classifying market data..."
 			self.classify_market(self.input_data)
-			cache_label = self.input_file_name + '::classify_market::len::'+str(self.input_data_length)
 			self.cache.set(cache_label,self.market_class)
 			self.cache.expire(cache_label,60*15)
 		else:
-			print "bct: cached data found."
+			print "bct: cached market classification data found.",cache_label
 			self.market_class = cm
 			self.classified_market_data = True
 		return self.current_quartile
@@ -182,7 +185,6 @@ class trade_engine:
 		#quartiles based on the true range indicator
 
 		self.market_class = []
-		atr_depth = 60 * 1 #one hour atr
 		
 		#print "calc the true pct range indicator"
 		last_t = 0
@@ -192,8 +194,8 @@ class trade_engine:
 		for i in xrange(len(input_list)):
 			t,p = input_list[i]
 			t = int(t * 1000) 
-			if i > atr_depth + 1:
-				dsp = [r[1] for r in input_list[i - atr_depth - 1:i]]	#get the price data set
+			if i > self.atr_depth + 1:
+				dsp = [r[1] for r in input_list[i - self.atr_depth - 1:i]]	#get the price data set
 				dsp_min = min(dsp)
 				dsp_max = max(dsp)
 				tr = (dsp_max - dsp_min) / dsp_min #put in terms of pct chg
@@ -226,7 +228,7 @@ class trade_engine:
 				self.market_class[i][1] = 0.75
 			if p > quartiles[2]:
 				self.market_class[i][1] = 1.0
-			if i < atr_depth + 1:
+			if i < self.atr_depth + 1:
 				self.market_class[i][1] = 0.0	#ignore early (uncalculated) data 
 		self.classified_market_data = True
 		self.current_quartile = int(self.market_class[len(self.market_class)-1][1] * 4)	#return the current quartile (1-4)

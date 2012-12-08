@@ -149,6 +149,7 @@ function onConnect(msg)
 		conn.send(sub);
 		sub = {"channel":ch_ticker,"op":"subscribe"};
 		conn.send(sub);
+		console.log('CONNECTED : ' + serverUrl);
 	}
 }
 function onError(msg)
@@ -157,7 +158,7 @@ function onError(msg)
 }
 function onDisconnect(msg)
 {
-	console.log('DISCONNECTED :' + serverUrl);
+	console.log('DISCONNECTED : ' + serverUrl);
 }
 function onMessage(msg)
 {

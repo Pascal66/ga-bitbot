@@ -222,15 +222,22 @@ if __name__ == "__main__":
 	#send a copy of the command line args	
 	server.pid_msg(pid,str(sys.argv))
 
-	print "gts: loading the fitness function"
-	ff = __import__(gd['fitness_script'])
+	ff = None
+	if gd.has_key('fitness_script'):
+		print "gts: loading the fitness module",gd['fitness_script']
+		ff = __import__(gd['fitness_script'])
+	else:
+		print "gts: no fitness module defined, loading default (bct)"
+		ff = __import__('bct')
 	te = ff.trade_engine()
+
 	#apply global configs
 	te.max_length = max_length
 	te.enable_flash_crash_protection = enable_flash_crash_protection 
 	te.flash_crash_protection_delay = flash_crash_protection_delay
-	#load the gene_def fitness_config
-	te = load_config_into_object(gd['fitness_config'],te)
+	#load the gene_def fitness_config, if available
+	if gd.has_key('fitness_config'):
+		te = load_config_into_object(gd['fitness_config'],te)
 	te.score_only = True
 	print "gts: initializing the fitness function"
 	te.initialize()

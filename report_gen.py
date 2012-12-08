@@ -160,7 +160,12 @@ while 1:
 		
 			#create the trade engine	
 			print "report: loading the fitness function"
-			ff = __import__(gd['fitness_script'])
+			ff = None
+			if gd.has_key('fitness_script'):
+				ff = __import__(gd['fitness_script'])
+			else:
+				ff = __import__('bct')
+			ff = reload(ff)	#make sure we're not using a cached version of the module
 			te = ff.trade_engine()
 			te.cache.disable()	#dont use cached data for reporting
 
@@ -171,9 +176,9 @@ while 1:
 			#load the gene dictionary into the trade engine
 			te = load_config_into_object({'set':ag},te)
 			#load the gene def fitness config into the trade engine
-			te = load_config_into_object(gd['fitness_config'],te)
+			if gd.has_key('fitness_config'):
+				te = load_config_into_object(gd['fitness_config'],te)
 			
-		
 			#preprocess the data
 			#current_quartile = te.classify_market(input)
 			current_quartile = te.initialize()

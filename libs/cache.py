@@ -32,7 +32,7 @@ sys.path.append('/usr/local/lib/python2.7/dist-packages/')
 try:
 	import redis
 	using_redis = True
-	print "redis module detected"
+	print "cache: redis module detected"
 except:
 	redis = None
 	using_redis = False
@@ -48,25 +48,25 @@ class cache:
 			try:
 				self.r = redis.StrictRedis(host='127.0.0.1',port=6379,db=0)
 			except:
-				print "can't connect to redis server, caching disabled"
+				print "cache: can't connect to redis server, caching disabled"
 				self.using_redis = False
 			try:
 				self.r.get('testing connection')
 			except:
-				print "can't connect to redis server, caching disabled"
+				print "cache: can't connect to redis server, caching disabled"
 				self.using_redis = False
 
 
 	def set(self,key,value):
 		if self.using_redis:
-			print "cache: set"
+			print "cache: set",key
 			return self.r.set(key,cPickle.dumps(value))
 		else:
 			return None
 
 	def get(self,key):
 		if self.using_redis:
-			print "cache: get"
+			print "cache: get",key
 			value = self.r.get(key)
 			if value == None:
 				return None
@@ -77,11 +77,12 @@ class cache:
 
 	def expire(self,key,expiration):
 		if self.using_redis:
+			print "cache: set expire",key
 			return self.r.expire(key,expiration)
 		return None
 
 	def disable(self):
-		print "cache: disable"
+		print "cache: disabled"
 		self.using_redis = False
 		return
 

@@ -46,12 +46,19 @@ password = raw_input()
 
 
 print "\n"
-print "Generating the local password salt..."
-pre_salt = str(time.time() * random.random() * 1000000) + 'H7gfJ8756Jg7HBJGtbnm856gnnblkjiINBMBV734'
-salt = hashlib.sha512(pre_salt).digest()
-f = open('./config/salt.txt','w')
-f.write(salt)
-f.close()
+try:
+	f = open('./config/salt.txt','r')
+	salt = f.read()
+	f.close()
+	print "Using the current local password salt..."
+except:
+	print "Generating the local password salt..."
+	pre_salt = str(time.time() * random.random() * 1000000) + 'H7gfJ8756Jg7HBJGtbnm856gnnblkjiINBMBV734'
+	salt = hashlib.sha512(pre_salt).digest()
+	f = open('./config/salt.txt','w')
+	f.write(salt)
+	f.close()
+
 
 
 print "\n"

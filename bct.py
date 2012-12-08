@@ -34,7 +34,7 @@ class trade_engine:
 	def __init__(self):
 		self.cache = cache()
 		#configurable variables
-		self.input_file_name = ""
+		self.input_file_name = "./datafeed/bcfeed_mtgoxUSD_1min.csv"	#default input file
 		self.score_only = False		#set to true to only calculate what is required for scoring a strategy 
 						#to speed up performance.
 		self.shares = 0.1 		#order size

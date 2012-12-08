@@ -89,7 +89,7 @@ while 1:
 			gene_library[key]['gene_high_scores'] = [[],[],[],[]]
 		status = "uncommited changes"
 	elif ui == 'r':
-		filename = './report/gene_server_db_dump.csv'
+		filename = '../report/gene_server_db_dump.csv'
 		print "export raw library dump (csv format) to " + filename
 		f = open(filename,'w')
 		gkeys = gene_library[gene_library.keys()[0]]['gene_high_scores'][0][0].keys()

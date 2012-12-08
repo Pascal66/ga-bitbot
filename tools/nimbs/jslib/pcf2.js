@@ -50,9 +50,11 @@ function pcf(){
 	this.viewRate = 6;
 	this.viewFormDiv = "";
 	this.viewFormRenderTarget = "";
+	this.viewStatsRenderTarget = "";
 	this.viewChartRenderTarget = "";
 	this.viewLegendRenderTarget = "";
 	this.viewLegendEnable = false;
+	this.viewStatsEnable = false;
 	this.chartWidth = 900;
 	this.chartHeight = 250;
 	this.pchart;
@@ -73,7 +75,9 @@ pcf.prototype.setComposite = function(d){this.viewComposite = d;};
 pcf.prototype.setRate = function(d){this.viewRate = d;return this.viewRate;};
 pcf.prototype.getRate = function(d){ return this.viewRate;};
 pcf.prototype.setRenderTarget = function(d){ this.viewFormRenderTarget = d;};
+pcf.prototype.setStatsTarget = function(d){ this.viewStatsRenderTarget = d;};
 pcf.prototype.viewLegend = function(val){ this.viewLegendEnable = val;};
+pcf.prototype.viewStats = function(val){ this.viewStatsEnable = val;};
 pcf.prototype.render = function(){
 	$(this.viewFormRenderTarget).html('');	//clear render target
 	//mediator.channels = {};
@@ -98,6 +102,9 @@ pcf.prototype.render = function(){
 		.createAxes()
 		.brushable()
 		.reorderable();
+	if (this.viewStatsEnable == true){
+		$(this.viewStatsRenderTarget).html('STATS');
+	}
 	if (this.viewLegendEnable == true){
 		this.viewLegendRenderTarget = this.viewFormDiv + '_pcf_legend';
 		jQuery('<div/>',{id: this.viewLegendRenderTarget.replace('#',''), width: this.chartWidth}).appendTo(this.viewFormDiv);

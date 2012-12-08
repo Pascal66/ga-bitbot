@@ -73,6 +73,7 @@ var gdbl = new gene_db_lib();
 	Parallel coordinate visualization of the genetic database.
 	<input type="submit" value="Load" id="gene_db_reload_button" class="ui-button-text"><br>
 	<div id="explorer"></div>
+	<div id="dbstats"></div>
 	<div id="pchart"></div>
     </div>
     <div id="tab-5">
@@ -278,7 +279,18 @@ var gdbl = new gene_db_lib();
 
 		try{$('#pchart').accordion("destroy");}catch(err){};
 		$("#pchart").html("");
+		$("#dbstats").html("");
+		$("#debug").html("");
+		
+		gd = JSON.parse(gene_db[db_lib]['gene_def'])
+		$("#dbstats").append("Name: " +gd['name'] + "<br>");
+		$("#dbstats").append("Version: " +gd['version'] + "<br>");
+		$("#dbstats").append("Description: " +gd['description'] + "<br>");
 
+		bob_count = gene_db[db_lib]['gene_best'][0].length + gene_db[db_lib]['gene_best'][1].length + gene_db[db_lib]['gene_best'][2].length + gene_db[db_lib]['gene_best'][3].length
+		$("#dbstats").append("Best of the best count: " +bob_count + "<br>");
+		hs_count = gene_db[db_lib]['gene_high_scores'][0].length + gene_db[db_lib]['gene_high_scores'][1].length + gene_db[db_lib]['gene_high_scores'][2].length + gene_db[db_lib]['gene_high_scores'][3].length
+		$("#dbstats").append("High score pop. count: " +hs_count + "<br>");
 
 		//get the data dimensions
 		dim_array = new Array();
@@ -305,14 +317,16 @@ var gdbl = new gene_db_lib();
 			});
 			//create the chart
 			if (gene_db_data_array.length > 0){
-				$("#pchart").append("<h3>"+$.parseJSON(gene_db[db_lib]['gene_def'])['name']+" Quartile: " +(i+1)+"</h3>");
+				$("#pchart").append("<h3>Quartile: " +(i+1)+"</h3>");
 				$("#pchart").append('<div id="dpc_'+gene_db_library_id+'_'+i+'"><p id="pchart_'+gene_db_library_id+'_'+i+'" ></p>');
 	
 				c = new pcf();
 				c.setRenderTarget("#pchart_"+ gene_db_library_id+'_'+i);
+				//c.setStatsTarget("#dbstats");
 				c.setData(gene_db_data_array);
 				c.setDimensions(dim_array);
 				c.viewLegend(true);
+				//c.viewStats(true);
 				c.render();
 			}
 		}
