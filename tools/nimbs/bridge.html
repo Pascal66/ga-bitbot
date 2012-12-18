@@ -1,6 +1,6 @@
 <link rel="stylesheet" href="/css/d3.parcoords.css" type="text/css" />
 <link rel="stylesheet" href="/css/ui.css" type="text/css" />
-<link rel="stylesheet" href="/css/custom-theme/jquery-ui-1.9.1.custom.min.css" type="text/css"/>
+<link rel="stylesheet" href="/css/custom-goy/jquery-ui-1.9.2.custom.css" title="default" id="SS" type="text/css"/>
 
 <script src="/socket.io/socket.io.js"></script>
 <!--[if lte IE 8]><script language="javascript" type="text/javascript" src="../excanvas.min.js"></script><![endif]-->
@@ -10,11 +10,11 @@
 <script language="javascript" type="text/javascript" src="/js/d3.parcoords.js"></script>
 
 
-<script language="javascript" type="text/javascript" src="/js/jquery.js"></script>
+<script language="javascript" type="text/javascript" src="/js/jquery-1.8.3.js"></script>
 <script language="javascript" type="text/javascript" src="/js/jquery.flot.js"></script>
 <script language="javascript" type="text/javascript" src="/js/jquery.flot.resize.js"></script>
-<script language="javascript" type="text/javascript" src="/js/jquery-ui-1.9.1.custom.min.js"></script>
-
+<script language="javascript" type="text/javascript" src="/js/jquery-ui-1.9.2.custom.min.js"></script>
+<script language="javascript" type="text/javascript" src="/js/jquery.dataTables.min.js"></script>
 
 <script language="javascript" type="text/javascript" src="/jslib/pcf2.js"></script>
 <script language="javascript" type="text/javascript" src="/jslib/gene_db.js"></script>
@@ -25,7 +25,21 @@
 
 <script>
   $(document).ready(function() {
-    $("#tabs").tabs();
+	$("#tabs").tabs();
+	$("#tabs").tabs({ show: { effect: "slide", duration: 900 } });
+
+	//$('#SS').attr('href',"/css/custom-goy/jquery-ui-1.9.2.custom.css");
+
+	$('#dbstats').hide();
+	$('#explorer').hide();
+
+	$('#calc_button').button();
+	$('#gene_db_reload_button').button();
+
+
+	//fire off an initial db info request
+	requestDBLibInfo();
+
   });
 
 var gene_db_view_model = "None";
@@ -36,11 +50,6 @@ var gdbl = new gene_db_lib();
 
 
 <body>
-<h3 id="title">ga-bitbot streaming bridge</h3><br>
-
-
-
-
 
 <div id="tabs">
     <ul>
@@ -54,7 +63,8 @@ var gdbl = new gene_db_lib();
         <li><a href="#tab-9"><span>Debug</span></a></li>
     </ul>
     <div id="tab-1">
-	<div id="notifications">notifications go here</div> 
+	<div id="notifications">notifications go here</div>
+	<div id="dbinfo">dbinfo goes here</div>
     </div>
     <div id="tab-3">
 	<div id='gox' style="display:block;">
@@ -70,18 +80,19 @@ var gdbl = new gene_db_lib();
 	</div>
     </div>
     <div id="tab-4">
-	Parallel coordinate visualization of the genetic database.
-	<input type="submit" value="Load" id="gene_db_reload_button" class="ui-button-text"><br>
+	<input type="submit" value="Load DB Library" id="gene_db_reload_button" class="ui-button-text">
+	<br>
+	<br>
 	<div id="explorer"></div>
 	<div id="dbstats"></div>
 	<div id="pchart"></div>
     </div>
     <div id="tab-5">
 	<div id="gene_def_calc"><h3>gene data definition calculator</h3><BR>
-	<label class="ui-input-label-text">BITS</label><input type="text" value="8" id="bits"><br><br>
+	<label  class="ui-input-label-text">BITS</label><input type="text" value="8" id="bits"><br><br>
 	<label class="ui-input-label-text">DECIMAL</label><input type="text" value="2" id="decimal"><br><br>
 	<label class="ui-input-label-text">OFFSET</label><input type="text" value="0" id="offset"><br><br>
-	<input type="submit" value="Calculate" id="calc_button" class="ui-button-text"><br><br>
+	<input type="submit" value="Calculate" id="calc_button"><br><br>
 	<span id="calc_result"></span>
 	</div>
     </div>
@@ -195,6 +206,11 @@ var gdbl = new gene_db_lib();
 			//gene_db = msg.value;
 			set_gene_db(msg.value);
 		}
+		if (msg.channel == 'gene_db_stripped')
+		{			
+			//gene_db = msg.value;
+			set_gene_db_info(msg.value);
+		}
 		if (msg.channel == 'pids')
 		{
 			//console.log(msg);
@@ -241,8 +257,58 @@ var gdbl = new gene_db_lib();
 	}
 
 
+	function set_gene_db_info(gdb_info)
+	{
+		//load the db info into the about page db info container
+		$('#dbinfo').html('<br><br><h1>Bid Maker</h1><table id="dt"></table>');
+		//$('#dbinfo').html(JSON.stringify(gdb_info));
+
+		var aa = []
+		for (var db_lib in gdb_info){
+			if (db_lib != '0db45d2a4141101bdfe48e3314cfbca3'){
+				var array = [];
+				array.push(gdb_info[db_lib]['trade_priority']);
+				array.push(gdb_info[db_lib]['gene_def_hash'].slice(0,6));
+				//array.push(gdb_info[db_lib]['g_active_quartile']);
+				array.push(gdb_info[db_lib]['trade_enabled']);
+				target = JSON.parse(gdb_info[db_lib]['g_trgt']);
+				
+				try{array.push(target['buy'].toFixed(3));}catch(err){array.push(0)};
+				try{array.push(target['target'].toFixed(3));}catch(err){array.push(0)};
+				ts = new Date(target['bid_maker_time_stamp'] * 1000);
+				ts = ts.toTimeString();
+				try{array.push(array.push(ts));}catch(err){array.push(0)};
+				
+				aa.push(array);
+			}
+		}
+
+		var dt = $('#dt').dataTable({
+			"bJQueryUI": true,
+			"bPagination": false,
+			"bLengthChange": false,
+			"bFilter": false,
+			"bInfo": false,
+			"iDisplayLength": 100,
+			"aaData": aa,
+			"aoColumns": [
+				{ "sTitle": "trade_priority"},
+				{ "sTitle": "gene_def_hash"},
+				//{ "sTitle": "active_quartile", "sClass": "center" },
+				{ "sTitle": "trade_enabled"},
+				{ "sTitle": "buy","sWidth": 40},
+				{ "sTitle": "target","sWidth": 40},
+				{ "sTitle": "as of","sWidth": 320}
+			]
+		}); 
+	}
+
 	function set_gene_db(gdb)
 	{
+		$('#pchart').show();
+		$('#dbstats').show();
+		$('#explorer').show();
+
 		gene_db = gdb;	
 		//gdbl.load(gene_db);
 
@@ -253,15 +319,16 @@ var gdbl = new gene_db_lib();
 		//}
 
 
-		$("#gene_db_reload_button").attr({value:'Reload'});
+		$("#gene_db_reload_button").attr({value:'Reload DB Library'});
 		$('#debug').html('<br>');
 	
-		$("#explorer").html("");
+		$("#explorer").html("Select a database below:<br>");
 		var db_index = 0
 		for (var db_lib in gene_db){
 			if (gene_db[db_lib]['gene_def'] != "UNDEFINED"){
 				console.log(db_lib);		
 				$('#explorer').append('<input id="load_'+db_lib+'" type="submit" value="'+db_lib+'" class= "ui-button-text">')
+				$('#load_'+db_lib).button();
 				$('#load_'+db_lib).click(function(){renderGeneDB(this.value);console.log(this);}); // Add a click handler
 
 			}
@@ -283,6 +350,7 @@ var gdbl = new gene_db_lib();
 		$("#debug").html("");
 		
 		gd = JSON.parse(gene_db[db_lib]['gene_def'])
+		$("#dbstats").append("<b>Database Summary</b> <br>");
 		$("#dbstats").append("Name: " +gd['name'] + "<br>");
 		$("#dbstats").append("Version: " +gd['version'] + "<br>");
 		$("#dbstats").append("Description: " +gd['description'] + "<br>");
@@ -291,6 +359,38 @@ var gdbl = new gene_db_lib();
 		$("#dbstats").append("Best of the best count: " +bob_count + "<br>");
 		hs_count = gene_db[db_lib]['gene_high_scores'][0].length + gene_db[db_lib]['gene_high_scores'][1].length + gene_db[db_lib]['gene_high_scores'][2].length + gene_db[db_lib]['gene_high_scores'][3].length
 		$("#dbstats").append("High score pop. count: " +hs_count + "<br>");
+		$("#dbstats").append("Gene Def Hash: " +db_lib + "<br><br>");
+
+
+		if (gene_db[db_lib]['trade_enabled'] == 1){
+			//$("#dbstats").append("Trade Enable: " +gene_db[db_lib]['trade_enabled'] + "<br>");
+			$('#dbstats').append('<input id="trade_enable_toggle_button" name="trade_enable_toggle_button:'+db_lib+'" type="submit" value="Disable Trading" class= "ui-button-text">')
+		}else{
+			$('#dbstats').append('<input id="trade_enable_toggle_button" name="trade_enable_toggle_button:'+db_lib+'" type="submit" value="Enable Trading" class= "ui-button-text">')
+		}
+
+		$('#trade_enable_toggle_button').click(function(){
+			if (gene_db[this.name.split(':')[1]]['trade_enabled'] == 1){
+				conn.emit('set_trade_enable',0,this.name.split(':')[1]);
+				gene_db[this.name.split(':')[1]]['trade_enabled'] = 0;
+				this.value = 'Enable Trading';
+			}else{
+				conn.emit('set_trade_enable',1,this.name.split(':')[1]);
+				gene_db[this.name.split(':')[1]]['trade_enabled'] = 1;
+				this.value = 'Disable Trading';
+			}
+		});
+
+		$("#dbstats").append("<br>Trade Priority: ");
+		$("#dbstats").append('<select name="trade_priority:'+db_lib+'" id="trade_priority_select"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option></select>');
+		$("#dbstats option:eq("+gene_db[db_lib]['trade_priority']+")").attr('selected','selected');
+		$("#trade_priority_select").change(function(){
+			//alert(this.selectedIndex);
+			//alert(this.name.split(':')[1]);
+			conn.emit('set_trade_priority',this.selectedIndex,this.name.split(':')[1]);
+			gene_db[this.name.split(':')[1]]['trade_priority'] = this.selectedIndex;
+		});
+
 
 		//get the data dimensions
 		dim_array = new Array();
@@ -330,20 +430,33 @@ var gdbl = new gene_db_lib();
 				c.render();
 			}
 		}
-		$('#pchart').accordion();
+		$('#pchart').accordion({ collapsible: true });
 	}
 
 
 	function updatePlot()
 	{
-		plot.setData([ {data: getDepth(ask_depth,plot_x_center,spread),bars: { show: true,barWidth: 0.001 }},{data: getDepth(bid_depth,plot_x_center,spread),bars: { show: true,barWidth: 0.001 }}]);
-		plot.setupGrid()
-		plot.draw();
+		tab_selected = $('#tabs').tabs('option', 'selected');
+
+
+			plot.setData([ {data: getDepth(ask_depth,plot_x_center,spread),bars: { show: true,barWidth: 0.001 }},{data: getDepth(bid_depth,plot_x_center,spread),bars: { show: true,barWidth: 0.001 }}]);
+			plot.setupGrid()
+		if (tab_selected == 1){plot.draw();};
+
+	}
+
+	function requestDBLibInfo()
+	{
+		tab_selected = $('#tabs').tabs('option', 'selected');
+		if (tab_selected == 0){conn.emit('request_gene_db_stripped',{});};
 	}
 
 
 	// periodic timers
-	setInterval(updatePlot, 10000); //10 second interval
+	setInterval(updatePlot, 1000); //2 second interval
+
+	// periodic timers
+	setInterval(requestDBLibInfo, 30000); //2 second interval
 
 
 	//UI events
@@ -364,6 +477,15 @@ var gdbl = new gene_db_lib();
 	$("#gene_db_reload_button").click(function() {
 		$("#gene_db_reload_button").attr({value:'Loading...'});
   		conn.emit('request_gene_db',{});
+		try{$('#pchart').accordion("destroy");}catch(err){};
+		$("#pchart").html("");
+		$("#dbstats").html("");
+		$("#debug").html("");
+		$("#explorer").html("");
+		$('#dbstats').hide();
+		$('#explorer').hide();
+		$('#pchart').hide();
+
 	});
 
 

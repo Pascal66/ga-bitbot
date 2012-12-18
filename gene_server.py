@@ -53,7 +53,7 @@ g_default_group_set = False
 g_undefined_gene_def_hash = '0db45d2a4141101bdfe48e3314cfbca3' #precalculated md5 hash of the UNDEFINED gene_def config.
 g_default_group_gene_def_hash = g_undefined_gene_def_hash
 
-g_gene_conf = {'gene_def_hash':g_undefined_gene_def_hash,'gene_def':'UNDEFINED','gene_high_scores':[[],[],[],[]],'gene_best':[[],[],[],[]],'g_trgt':json.dumps({'buy':0}),'g_active_quartile':0}
+g_gene_conf = {'gene_def_hash':g_undefined_gene_def_hash,'gene_def':'UNDEFINED','gene_high_scores':[[],[],[],[]],'gene_best':[[],[],[],[]],'g_trgt':json.dumps({'buy':0}),'g_active_quartile':0,'trade_enabled':0,'trade_priority':0}
 g_gene_library = {'0db45d2a4141101bdfe48e3314cfbca3':deepcopy(g_gene_conf)} #default library starts with the default UNDEFINED group.
 
 
@@ -66,6 +66,46 @@ g_pids = {}
 
 def echo(msg):
 	return msg
+
+
+def trade_enable(state,gdh):
+	"""
+	sets the trade_enable state
+	state = 0, disable trading
+	state = 1, enable trading
+	"""
+	global g_gene_library
+	try:
+		state = int(state)
+	except:
+		return "NOK : state",state
+	if not (state==1 or state==0):
+		return "NOK : val"
+	if not g_gene_library.has_key(gdh):
+		return "NOK : gdh",gdh
+	g_gene_library[gdh]['trade_enabled'] = state
+	return "OK"
+
+def trade_priority(priority,gdh):
+	"""
+	sets the trade priority
+	priority = 0, highest priority
+	.
+	.
+	priority = 9, lowest priority
+	"""
+	global g_gene_library
+	try:
+		priority = int(priority)
+	except:
+		return "NOK:priority",priority
+	if (priority < 0 or priority > 9):
+		return "NOK:val",priority
+	if not g_gene_library.has_key(gdh):
+		return "NOK:gdh",gdh
+	g_gene_library[gdh]['trade_priority'] = priority
+	return "OK"
+
 
 def put_target(target,pid=None):
 	global g_trgt
@@ -353,6 +393,16 @@ def get_db():
 	global g_gene_library
 	return json.dumps(g_gene_library)
 
+def get_db_stripped():
+	global g_gene_library
+	sdb = deepcopy(g_gene_library)
+	for key in sdb:
+		sdb[key].pop('gene_def')
+		sdb[key].pop('gene_high_scores')
+		sdb[key].pop('gene_best')
+	return json.dumps(sdb)
+
+
 def save_db():
 	global AUTO_BACKUP_AFTER_N_SAVES
 	global g_save_counter
@@ -438,6 +488,14 @@ def reload_db():
 
 	if reload_error == True:
 		return "NOK"
+
+	#upgrade old db format to include new records
+	for key in g_gene_library.keys():
+		if g_gene_library[key].has_key('trade_enabled') == False:
+			g_gene_library[key].update({'trade_enabled':0})
+		if g_gene_library[key].has_key('trade_priority') == False:
+			g_gene_library[key].update({'trade_priority':0})
+
 	return "OK"
 
 #set the service url
@@ -449,6 +507,9 @@ server = SimpleXMLRPCServer((__server__, __port__),requestHandler = RequestHandl
 
 #register the functions
 #client services
+server.register_function(trade_enable,'trade_enable')
+server.register_function(trade_priority,'trade_priority')
+
 server.register_function(get_target,'get_target')
 server.register_function(put_target,'put_target')
 server.register_function(get_active_quartile,'get_active_quartile')
@@ -481,6 +542,7 @@ server.register_function(shutdown,'shutdown')
 server.register_function(reload_db,'reload')
 server.register_function(save_db,'save')
 server.register_function(get_db,'get_db')
+server.register_function(get_db_stripped,'get_db_stripped')
 server.register_introspection_functions()
 
 if __name__ == "__main__":

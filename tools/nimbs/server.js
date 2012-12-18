@@ -124,6 +124,27 @@ gabb.on('connection', function (socket) {
 			});
 	});
 
+	socket.on('request_gene_db_stripped', function () {
+		rpcClient.methodCall('get_db_stripped', [], function (error, value) {
+				console.log('sending request_gene_db_stripped response');
+				socket.emit('message', {'channel':'gene_db_stripped','value':JSON.parse(value)});
+			});
+	});
+
+	socket.on('set_trade_enable', function (state,gene_def) {
+		rpcClient.methodCall('trade_enable', [state,gene_def], function (error, value) {
+				console.log('trade_enable response: ' + value);
+				//socket.emit('message', {'channel':'gene_db','value':JSON.parse(value)});
+			});
+	});
+
+	socket.on('set_trade_priority', function (priority,gene_def) {
+		rpcClient.methodCall('trade_priority', [priority,gene_def], function (error, value) {
+				console.log('trade_priority response: ' + value);
+				//socket.emit('message', {'channel':'gene_db','value':JSON.parse(value)});
+			});
+	});
+
 });
 
 

@@ -55,7 +55,7 @@ function pcf(){
 	this.viewLegendRenderTarget = "";
 	this.viewLegendEnable = false;
 	this.viewStatsEnable = false;
-	this.chartWidth = 900;
+	this.chartWidth = 400;
 	this.chartHeight = 250;
 	this.pchart;
 	this.firstRender = true;
@@ -85,6 +85,8 @@ pcf.prototype.render = function(){
 	this.viewFormDiv = this.viewFormRenderTarget + '_pcf_form';		
 	jQuery('<div/>',{id:this.viewFormDiv.replace('#','')}).appendTo(this.viewFormRenderTarget);
 
+
+	this.chartWidth = $(this.viewFormRenderTarget).width() * 0.90;
 
 	this.viewChartRenderTarget = this.viewFormDiv + '_pcf_chart';
 	jQuery('<div/>',{id: this.viewChartRenderTarget.replace('#',''), width: this.chartWidth, height: this.chartHeight}).appendTo(this.viewFormDiv);
