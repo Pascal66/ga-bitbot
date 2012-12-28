@@ -120,14 +120,28 @@ gabb.on('connection', function (socket) {
 	socket.on('request_gene_db', function () {
 		rpcClient.methodCall('get_db', [], function (error, value) {
 				//console.log('get pids response: ' + value);
-				socket.emit('message', {'channel':'gene_db','value':JSON.parse(value)});
+				//stream the databases one at a time
+				var dbl = JSON.parse(value);
+				for (var db in dbl){
+					console.log('get pids response: ' + db);
+					var dbp = {};
+					dbp[db] = dbl[db];
+					socket.emit('message', {'channel':'gene_db','value':dbp});
+				}
 			});
 	});
 
 	socket.on('request_gene_db_stripped', function () {
 		rpcClient.methodCall('get_db_stripped', [], function (error, value) {
-				console.log('sending request_gene_db_stripped response');
+				//console.log('sending request_gene_db_stripped response');
 				socket.emit('message', {'channel':'gene_db_stripped','value':JSON.parse(value)});
+			});
+	});
+
+	socket.on('request_gene_server_metrics', function () {
+		rpcClient.methodCall('get_gene_server_metrics', [], function (error, value) {
+				//console.log('sending get_gene_server_metrics response' + value);
+				socket.emit('message', {'channel':'gene_server_metrics','value':JSON.parse(value)});
 			});
 	});
 

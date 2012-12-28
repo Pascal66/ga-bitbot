@@ -28,11 +28,13 @@ config_path = "./config/"
 
 def load_config_from_file(config_filename):
 	"""
-	load_config_from_file(config_filename)
-	--------------------------------------
+	Load a json formated data structure from a local file
 
-	Loads a json data structure from a local file
-	Returns a dictionary 
+	Args:
+		config_file: A string containing the file name to a json formatted config file
+
+	Returns:
+		a dictionary of the loaded json configuration
 	"""
 	f = open(config_path + config_filename,'r')
 	config_dict = json.loads(f.read())
@@ -41,23 +43,25 @@ def load_config_from_file(config_filename):
 
 def load_config_into_object(config_dict,obj):
 	"""
-	load_config_into_object(config_dict,obj)
-	----------------------------------------
+	Load a dictionary into an object.
 
-	Loads a dictionary into a class object. supports two root keys, set and call
+	Supports two root keys: set and call
 
 	The set value contains key/value pairs which are loaded into the class objects variables
 
 		set:{"variable_name_1":value,"variable_name_2":value, ... }
 
-	The call child keys contain the class functions to be called 
-		- each function value is a list of argument lists which are applied to each function
+	The call child keys contain the class functions to be called while the value is a list of argument lists which are applied to each function
 
 		call:{"function_1":[[arg1,arg2, ... ], [ ... ] ],"function_2":[[arg1,arg2, ... ], [ ... ] ] } 
 
 		example resultant call:  function_1(arg1,arg2, ...)
 
-	Returns the updated class object
+	Args:
+		config_dict: A dictionary containing the configuration to be loaded
+		obj: The object to receive the configuration
+	Returns:
+		Updated class object
 	"""
 	if 'set' in config_dict:
 		for key in obj.__dict__:
@@ -77,6 +81,27 @@ def load_config_into_object(config_dict,obj):
 	return obj
 
 def load_config_file_into_object(config_file,obj):
+	"""
+	Load a json formated data structure from a local file into an object
+
+	Supports two root keys: set and call
+
+	The set value contains key/value pairs which are loaded into the class objects variables
+
+		set:{"variable_name_1":value,"variable_name_2":value, ... }
+
+	The call child keys contain the class functions to be called while the value is a list of argument lists which are applied to each function
+
+		call:{"function_1":[[arg1,arg2, ... ], [ ... ] ],"function_2":[[arg1,arg2, ... ], [ ... ] ] } 
+
+		example resultant call:  function_1(arg1,arg2, ...)
+
+	Args:
+		config_file: A string containing the file name to a json formatted config file
+		obj: The object to receive the configuration
+	Returns:
+		Updated class object
+	"""
 	return load_config_into_object(load_config_from_file(config_file),obj)
 
 

@@ -429,7 +429,7 @@ class bookie:
 		#print "update: checking positions"
 		current_price = self.get_price()
 		account_value = float(self.usds) + float(self.btcs) * current_price
-		print "\tupdate: current price: %.3f  account market value: %.4f @ %s"%(current_price, account_value, ctime())
+		print "update: current price: %.3f  account market value: %.4f @ %s"%(current_price, account_value, ctime())
 
 		self.get_info() #get_info updates the commision rate
 		#first synch the local records...
@@ -581,24 +581,42 @@ if __name__ == "__main__":
 	print "main: entering main loop"
 	while 1:
 
+		print "_"*80
+		print "main: Availble Funds (USDS,BTCS) :" + str(b.update())
+
 		#get info from the gene_server
 		t = {}
 		try:
 
 			#register as a default client (this will allow remote dynamic configuration of the report generation)
 			pid = "BCBOOKIE"
-			gdh = json.loads(server.get_default_gene_def_hash())
-			print "using gene_def_hash",gdh
-			server.pid_register_client(pid,gdh)			
-
+			#gdh = json.loads(server.get_default_gene_def_hash())
+			#print "using gene_def_hash",gdh
+			#server.pid_register_client(pid,gdh)			
+			
 			#get the current quartile
-			b.active_quartile = server.get_active_quartile(pid)
-			t = json.loads(server.get_target(pid))
+			#b.active_quartile = server.get_active_quartile(pid)
+			#t = json.loads(server.get_target(pid))
+			print "scanning for active bids by priority"
+			sdbl = json.loads(server.get_db_stripped())
+			target_list = []
+			for key in sdbl.keys():
+				if 1 == sdbl[key]['trade_enabled']:
+					target_list.append(sdbl[key])
+			target_list = sorted(target_list, key=itemgetter('trade_priority'),reverse = False)
+
+			for item in target_list:
+				t = json.loads(item['g_trgt'])
+				try:
+					target_discount = ((b.btc_price - t['buy'])/b.btc_price)
+				except:
+					target_discount = 1.0
+				print item['gene_def_hash'],'priority:',item['trade_priority'],'enabled:',item['trade_enabled'],"target:","$"+str(t['buy']),"discount:",target_discount * 100
+				if target_discount <= 0.001 or b.btc_price < t['buy']:
+					print "active bid received"
+					break
 		except:
 			print "error: gene_server connection issue"
-
-		print "_"*80
-		print "main: Availble Funds (USDS,BTCS) :" + str(b.update())
 
 		bid_counter += 1
 		if bid_counter == bid_counter_trip:
@@ -618,6 +636,9 @@ if __name__ == "__main__":
 					else:
 						print "main: warning - ignoring invalid target order:"
 						print str(t)
+			else:
+				print "main: warning - ignoring invalid target order:"
+				print str(t)
 
 			if monitor_mode == False and target_order_validated == True: 
 				commit = ((t['target'] - t['buy']) * commit_pct_to_target) + t['buy'] #commit sell order at n% to target
@@ -637,9 +658,10 @@ if __name__ == "__main__":
 							b.buy(order_qty * u_bid,buy_price,commit,t['target'],stop_price,buy_order_wait,t['stop_age'])
 				else:
 					print "main: No GA order available."
+			else:
+				print "main: monitor mode or target order not validated."
 		#update the report		
 		b.report()
-		print "_"*80
 		print "sleeping..."
 		print "_"*80
 		print "\n\n"  

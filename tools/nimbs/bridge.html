@@ -40,6 +40,9 @@
 	//fire off an initial db info request
 	requestDBLibInfo();
 
+	//load the about page
+	$('#about').load('about.html');
+
   });
 
 var gene_db_view_model = "None";
@@ -53,28 +56,30 @@ var gdbl = new gene_db_lib();
 
 <div id="tabs">
     <ul>
-        <li><a href="#tab-1"><span>Status</span></a></li>
+        <li><a href="#tab-1"><span>Targets</span></a></li>
         <li><a href="#tab-3"><span>Market Depth</span></a></li>
-        <li><a href="#tab-4"><span>Explorer</span></a></li>
+        <li><a href="#tab-4"><span>DB Explorer</span></a></li>
         <li><a href="#tab-5"><span>Calc</span></a></li>
         <li><a href="#tab-6"><span>Feed</span></a></li>
-        <li><a href="#tab-7"><span>MtGox Feed</span></a></li>
-        <li><a href="#tab-8"><span>PIDS</span></a></li>
+        <li><a href="#tab-7"><span>Server</span></a></li>
+        <li><a href="#tab-8"><span>Clients</span></a></li>
         <li><a href="#tab-9"><span>Debug</span></a></li>
+        <li><a href="#tab-10"><span>About</span></a></li>
     </ul>
     <div id="tab-1">
-	<div id="notifications">notifications go here</div>
 	<div id="dbinfo">dbinfo goes here</div>
     </div>
     <div id="tab-3">
 	<div id='gox' style="display:block;">
 		<div id="gox_group">
-			<div id="depth_plot_l" style="width:50%;height:20%;display:inline-block;padding: 3px;">
+			<h2>MtGox Live Feed</h2>
+			<div id="depth_plot_l" style="width:50%;display:inline-block;padding: 3px;">
 				<div id="trades" style="width:100%;"></div>
 				<div id="ticker" style="width:100%;"></div>
 				<div id="depth" style="width:100%;"></div>
 			</div>
 		</div>
+		<h2>MtGox Price Spread</h2>
 		<div id="depth_plot" style="width:100%;height:40%;display:block;"></div>
 		<br><p style="color: #355535">Depth plot is zoomed on both axis to show detail.</p>
 	</div>
@@ -109,9 +114,7 @@ var gdbl = new gene_db_lib();
 	</div>
     </div>
     <div id="tab-7">
-	<div id="_trades"></div>
-	<div id="_ticker"></div>
-	<div id="_depth"></div>
+	<div id="gene_server_metrics">gene_server_metrics</div>
     </div>
     <div id="tab-8">
 	<div id="pids"></div>
@@ -119,10 +122,13 @@ var gdbl = new gene_db_lib();
     <div id="tab-9">
 	<span id="debug">debug area</span>
     </div>
+    <div id="tab-10">
+	<span id="about">about area</span>
+    </div>
 
 </div>
 
-
+<div id="notifications"><label class="ui-error-text">disconnected</label></div>
 </body>
 <script>
 	var ch_depth = '24e67e0d-1cad-4cc0-9e7a-f8523ef460fe';
@@ -141,8 +147,8 @@ var gdbl = new gene_db_lib();
 
 	// setup plot
 	var options = {
-		series: { shadowSize: 0 }, // drawing is faster without shadows
-		yaxis: { min: 0, max: 200 },
+		series: { shadowSize: 0 },
+		yaxis: { min: 0, max: 100 },
 		xaxis: { show: true }
 	};
 	
@@ -184,7 +190,7 @@ var gdbl = new gene_db_lib();
 	}
 	function onDisconnect(msg)
 	{
-		$('#notifications').html('<label class="ui-input-label-text">disconnected</label><br>');
+		$('#notifications').html('<label class="ui-error-text">disconnected</label><br>');
 	}
 	function onMessage(msg)
 	{
@@ -211,19 +217,53 @@ var gdbl = new gene_db_lib();
 			//gene_db = msg.value;
 			set_gene_db_info(msg.value);
 		}
+		if (msg.channel == 'gene_server_metrics')
+		{			
+			//gene_db = msg.value;
+			set_gene_server_metrics(msg.value);
+		}
 		if (msg.channel == 'pids')
 		{
-			//console.log(msg);
-			$('#pids').html('');
+			$('#pids').html('<a class="help" href="http://google.com"></a><h2>Client Connections</h2><br><table id="clients"></table>');
+			var aa = []
 			for (key in msg.value){
 				//console.log(key);
 				if(msg.value[key].hasOwnProperty('msg_buffer'))
 				{
-					$('#pids').append(key + ' :: ');
-					//console.log(msg.value[key].msg_buffer);
-					$('#pids').append(msg.value[key].msg_buffer.split('\n').reverse()[1] + '<BR>');
+					var array = [];
+					try{
+						last_msg = JSON.parse(msg.value[key]['msg_buffer'][0]);
+						if (last_msg != undefined){
+							if (last_msg['channel']=='gts_metric'){
+								array.push(key);
+								array.push(last_msg['gps'].toFixed(3));
+								array.push(last_msg['kss'].toFixed(0));
+								array.push(last_msg['pool']);
+								array.push(last_msg['total']);
+								aa.push(array);
+							}
+						}
+					}catch(err){};
 				}
+
 			}
+
+			var cl = $('#clients').dataTable({
+				"bJQueryUI": true,
+				"bPagination": false,
+				"bLengthChange": false,
+				"bFilter": false,
+				"bInfo": false,
+				"iDisplayLength": 100,
+				"aaData": aa,
+				"aoColumns": [
+					{ "sTitle": "PID","sWidth": 320},
+					{ "sTitle": "Genes/Sec"},
+					{ "sTitle": "KSamples/Sec"},
+					{ "sTitle": "Pool Size", "sClass": "center"},
+					{ "sTitle": "Total Processed", "sClass": "center"}
+				]
+			}); 
 		}
 
 		if (msg.channel == ch_depth)
@@ -256,23 +296,59 @@ var gdbl = new gene_db_lib();
 
 	}
 
+	function set_gene_server_metrics(gene_server_metrics)
+	{
+		$('#gene_server_metrics').html('<a class="help" href="http://google.com"></a><h2>Gene Server Performance</h2><br><table id="gsp"></table>');
+
+		var aa = []
+		for (var funct_name in gene_server_metrics){
+			var array = [];
+			array.push(funct_name);
+			array.push(((gene_server_metrics[funct_name]['total_time'] / gene_server_metrics[funct_name]['calls']) * 1000).toFixed(5));
+			array.push(gene_server_metrics[funct_name]['total_time'].toFixed(3));
+			array.push(gene_server_metrics[funct_name]['calls']);
+			aa.push(array);
+		}
+
+		var dt = $('#gsp').dataTable({
+			"bJQueryUI": true,
+			"bPagination": false,
+			"bLengthChange": false,
+			"bFilter": false,
+			"bInfo": false,
+			"iDisplayLength": 100,
+			"aaData": aa,
+			"aoColumns": [
+				{ "sTitle": "Function","sWidth": 320},
+				{ "sTitle": "Avg Time (ms)"},
+				{ "sTitle": "Total Time (s)"},
+				//{ "sTitle": "active_quartile", "sClass": "center" },
+				{ "sTitle": "Calls", "sClass": "center"}
+			]
+		}); 
+
+
+	}
+		
 
 	function set_gene_db_info(gdb_info)
 	{
 		//load the db info into the about page db info container
-		$('#dbinfo').html('<br><br><h1>Bid Maker</h1><table id="dt"></table>');
+		$('#dbinfo').html('<a class="help" href="http://google.com"></a><h2>Bid Maker</h2><br><table id="dt"></table>');
 		//$('#dbinfo').html(JSON.stringify(gdb_info));
 
 		var aa = []
 		for (var db_lib in gdb_info){
 			if (db_lib != '0db45d2a4141101bdfe48e3314cfbca3'){
 				var array = [];
+				
+				target = JSON.parse(gdb_info[db_lib]['g_trgt']);
 				array.push(gdb_info[db_lib]['trade_priority']);
 				array.push(gdb_info[db_lib]['gene_def_hash'].slice(0,6));
-				//array.push(gdb_info[db_lib]['g_active_quartile']);
+				try{array.push('<a href="/gene_link/'+gdb_info[db_lib]['gene_def_hash']+'/'+target['gene_id']+'">'+target['gene_id'].slice(0,6)+'</a>');}catch(err){array.push("NA")};
 				array.push(gdb_info[db_lib]['trade_enabled']);
-				target = JSON.parse(gdb_info[db_lib]['g_trgt']);
-				
+				array.push(gdb_info[db_lib]['g_active_quartile']);
+				try{array.push(target['score'].toFixed(0));}catch(err){array.push(0)};
 				try{array.push(target['buy'].toFixed(3));}catch(err){array.push(0)};
 				try{array.push(target['target'].toFixed(3));}catch(err){array.push(0)};
 				ts = new Date(target['bid_maker_time_stamp'] * 1000);
@@ -292,13 +368,16 @@ var gdbl = new gene_db_lib();
 			"iDisplayLength": 100,
 			"aaData": aa,
 			"aoColumns": [
-				{ "sTitle": "trade_priority"},
-				{ "sTitle": "gene_def_hash"},
+				{ "sTitle": "Trade Priority"},
+				{ "sTitle": "Gene Def Hash"},
+				{ "sTitle": "Gene Link"},
 				//{ "sTitle": "active_quartile", "sClass": "center" },
-				{ "sTitle": "trade_enabled"},
-				{ "sTitle": "buy","sWidth": 40},
-				{ "sTitle": "target","sWidth": 40},
-				{ "sTitle": "as of","sWidth": 320}
+				{ "sTitle": "Trade Enabled"},
+				{ "sTitle": "Active Quartile"},
+				{ "sTitle": "Score"},
+				{ "sTitle": "Buy","sWidth": 40},
+				{ "sTitle": "Target","sWidth": 40},
+				{ "sTitle": "As of","sWidth": 320}
 			]
 		}); 
 	}
@@ -309,7 +388,11 @@ var gdbl = new gene_db_lib();
 		$('#dbstats').show();
 		$('#explorer').show();
 
-		gene_db = gdb;	
+		//gene_db = gdb;
+		$.extend(gene_db, gdb);
+
+
+	
 		//gdbl.load(gene_db);
 
 		//if (gene_db_view_model == "None"){gene_db_view_model = ko.mapping.fromJS({'db_lib':gene_db,'testing':'asdf'})
@@ -333,6 +416,7 @@ var gdbl = new gene_db_lib();
 
 			}
 		};
+		$("#explorer").addClass('ui-widget-header',2000);
 	}
 
 
@@ -368,6 +452,7 @@ var gdbl = new gene_db_lib();
 		}else{
 			$('#dbstats').append('<input id="trade_enable_toggle_button" name="trade_enable_toggle_button:'+db_lib+'" type="submit" value="Enable Trading" class= "ui-button-text">')
 		}
+		$('#trade_enable_toggle_button').button();
 
 		$('#trade_enable_toggle_button').click(function(){
 			if (gene_db[this.name.split(':')[1]]['trade_enabled'] == 1){
@@ -451,12 +536,16 @@ var gdbl = new gene_db_lib();
 		if (tab_selected == 0){conn.emit('request_gene_db_stripped',{});};
 	}
 
+	function requestGeneServerMetrics()
+	{
+		tab_selected = $('#tabs').tabs('option', 'selected');
+		if (tab_selected == 5){conn.emit('request_gene_server_metrics',{});};
+	}
 
 	// periodic timers
-	setInterval(updatePlot, 1000); //2 second interval
-
-	// periodic timers
-	setInterval(requestDBLibInfo, 30000); //2 second interval
+	setInterval(updatePlot, 500); //1/2 second interval
+	setInterval(requestDBLibInfo, 30000);
+	setInterval(requestGeneServerMetrics, 2000);
 
 
 	//UI events

@@ -1,7 +1,7 @@
 {
-	"name":"no profit",
+	"name":"short window low markup no commision",
 	"version":"0.6",
-	"description":"generate trade volume",
+	"description":"0 - 1.27% markup - for testing only - no commision set - atr 15",
 
 	"fitness_script":"bct_alt",
 	"fitness_config":
@@ -11,7 +11,9 @@
 			"input_file_name": "./datafeed/bcfeed_mtgoxUSD_1min.csv",
 			"nlsf": 7.0,
 			"stbf": 1.025,
-			"max_length" : 10000,
+			"commision": 0.00,
+			"atr_depth": 15,
+			"max_length" : 15000,
 			"enable_flash_crash_protection" : 1,
 			"flash_crash_protection_delay" : 240
 		}
@@ -45,13 +47,12 @@
 	{
 		"add_numvar":
 		[
-			["shares",1,0,1.0],
 			["wll",12,0,2],
 			["wls",6,0,1],
 			["buy_wait",4,0,1],
 			["buy_wait_after_stop_loss",8,0,1],
-			["markup",2,4,0.013],
-			["stop_loss",8,4,0.013],
+			["markup",7,4,0.00],
+			["stop_loss",8,4,0.02],
 			["stop_age",8,0,1000,2.0],
 			["macd_buy_trip",10,2,2.0,-2.0],
 			["rsi_enable",1,0,1],

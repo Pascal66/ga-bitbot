@@ -42,6 +42,9 @@ from SimpleXMLRPCServer import SimpleXMLRPCRequestHandler
 from operator import itemgetter, attrgetter
 from copy import deepcopy
 
+import paths
+import call_metrics
+
 quit = 0
 MAX_PID_MESSAGE_BUFFER_SIZE = 255
 AUTO_BACKUP_AFTER_N_SAVES = 60
@@ -67,7 +70,7 @@ g_pids = {}
 def echo(msg):
 	return msg
 
-
+@call_metrics.call_metrics
 def trade_enable(state,gdh):
 	"""
 	sets the trade_enable state
@@ -86,6 +89,7 @@ def trade_enable(state,gdh):
 	g_gene_library[gdh]['trade_enabled'] = state
 	return "OK"
 
+@call_metrics.call_metrics
 def trade_priority(priority,gdh):
 	"""
 	sets the trade priority
@@ -106,7 +110,7 @@ def trade_priority(priority,gdh):
 	g_gene_library[gdh]['trade_priority'] = priority
 	return "OK"
 
-
+@call_metrics.call_metrics
 def put_target(target,pid=None):
 	global g_trgt
 	global g_gene_library
@@ -114,12 +118,14 @@ def put_target(target,pid=None):
 	g_gene_library[gdh]['g_trgt'] = target
 	return "OK"
 
+@call_metrics.call_metrics
 def get_target(pid=None):
 	global g_trgt
 	global g_gene_library
 	gdh = get_pid_gene_def_hash(pid)
 	return g_gene_library[gdh]['g_trgt']
 
+@call_metrics.call_metrics
 def put_active_quartile(quartile,pid=None):
 	global g_active_quartile
 	global g_gene_library
@@ -130,13 +136,15 @@ def put_active_quartile(quartile,pid=None):
 		g_active_quartile = quartile
 	return "OK"
 
+@call_metrics.call_metrics
 def get_active_quartile(pid=None):
 	global g_active_quartile
 	global g_gene_library
 	gdh = get_pid_gene_def_hash(pid)
 	#return g_gene_library[gdh]['g_active_quartile']
 	return g_active_quartile
- 
+
+@call_metrics.call_metrics 
 def get_gene(n_sec,quartile,pid = None):
 	global g_d
 	global g_bobs
@@ -170,6 +178,7 @@ def get_gene(n_sec,quartile,pid = None):
 		
 	return json.dumps(r)
 
+@call_metrics.call_metrics
 def get_all_genes(quartile,pid = None):
 	global g_d
 	global g_gene_library
@@ -177,6 +186,7 @@ def get_all_genes(quartile,pid = None):
 	return json.dumps(sorted(g_gene_library[gdh]['gene_high_scores'][quartile - 1], key=itemgetter('score')))
 	#return json.dumps(sorted(g_d[quartile - 1], key=itemgetter('score')))
 
+@call_metrics.call_metrics
 def get_bobs(quartile,pid = None):
 	global g_bobs
 	global g_gene_library
@@ -184,6 +194,7 @@ def get_bobs(quartile,pid = None):
 	return json.dumps(sorted(g_gene_library[gdh]['gene_best'][quartile - 1], key=itemgetter('score')))
 	#return json.dumps(sorted(g_bobs[quartile - 1], key=itemgetter('score')))
 
+@call_metrics.call_metrics
 def put_gene(d,quartile,pid = None):
 	global g_d
 	global g_bobs
@@ -222,6 +233,7 @@ def put_gene(d,quartile,pid = None):
 
 	return "OK"
 
+@call_metrics.call_metrics
 def put_bob(d,quartile,pid = None):
 	global g_bobs
 	global g_gene_library
@@ -252,6 +264,7 @@ def put_bob(d,quartile,pid = None):
 	return "OK"
 
 #remote process services 
+@call_metrics.call_metrics
 def pid_register_gene_def(pid,gene_def):
 	global g_pids
 	global g_gene_library
@@ -270,6 +283,7 @@ def pid_register_gene_def(pid,gene_def):
 	pid_register_client(pid,conf_hash)
 	return conf_hash
 
+@call_metrics.call_metrics
 def pid_register_client(pid,gene_def_hash):
 	global g_pids
 	global g_gene_library
@@ -287,6 +301,7 @@ def pid_register_client(pid,gene_def_hash):
 		return "OK"
 	return "NOK:HASH NOT FOUND:"+gene_def_hash
 
+@call_metrics.call_metrics
 def pid_alive(pid):
 	global g_pids
 	global g_undefined_gene_def_hash
@@ -296,13 +311,14 @@ def pid_alive(pid):
 	if pid in g_pids.keys(): #existing pid
 		g_pids[pid]['watchdog_reset'] = time.time()
 	else: #new pid
-		g_pids.update({pid:{'watchdog_reset':time.time(),'msg_buffer':'','gene_def_hash':None}})
+		g_pids.update({pid:{'watchdog_reset':time.time(),'msg_buffer':[],'gene_def_hash':None}})
 		pid_register_gene_def(pid,"UNDEFINED") #g_undefined_gene_def_hash
 		if g_default_group_set == False:
 			g_default_group_set = True
 			g_default_group_gene_def_hash = g_undefined_gene_def_hash
 	return "OK"
 
+@call_metrics.call_metrics
 def pid_check(pid,time_out):
 	global g_pids
 	#check for PID watchdog timeout (seconds)
@@ -315,6 +331,7 @@ def pid_check(pid,time_out):
 	else:
 		return "NOK"
 
+@call_metrics.call_metrics
 def pid_remove(pid):
 	global g_pids
 	try:
@@ -323,18 +340,20 @@ def pid_remove(pid):
 		pass
 	return "OK"
 
+@call_metrics.call_metrics
 def pid_msg(pid,msg):
 	global g_pids
 	#append a message to the PID buffer
 	if pid in g_pids.keys(): #existing pid
-		g_pids[pid]['msg_buffer'] += msg + '\n'
+		g_pids[pid]['msg_buffer'].insert(0,msg)
 		#limit the message buffer size
 		if len(g_pids[pid]['msg_buffer']) > MAX_PID_MESSAGE_BUFFER_SIZE:
-			g_pids[pid]['msg_buffer'] = g_pids[pid]['msg_buffer'][-1 * MAX_PID_MESSAGE_BUFFER_SIZE:]
+			g_pids[pid]['msg_buffer'] = g_pids[pid]['msg_buffer'][:-1]
 		return "OK"
 	else:
 		return "NOK"
 
+@call_metrics.call_metrics
 def pid_list(ping_seconds=9999999):
 	global g_pids
 	pids = []
@@ -343,6 +362,7 @@ def pid_list(ping_seconds=9999999):
 			pids.append(pid)
 	return json.dumps(pids)
 
+@call_metrics.call_metrics
 def get_pids():
 	global g_pids
 	js_pids = json.dumps(g_pids)
@@ -351,6 +371,7 @@ def get_pids():
 	#	g_pids[pid]['msg_buffer'] = ''
 	return js_pids
 
+@call_metrics.call_metrics
 def get_pid_gene_def_hash(pid):
 	global g_pids
 	global g_undefined_gene_def_hash
@@ -361,20 +382,24 @@ def get_pid_gene_def_hash(pid):
 	else:
 		return "NOK:PID_NOT_FOUND"
 
+@call_metrics.call_metrics
 def get_default_gene_def_hash():
 	global g_default_group_gene_def_hash
 	return json.dumps(g_default_group_gene_def_hash)
 
+@call_metrics.call_metrics
 def get_gene_def_hash_list():
 	global g_gene_library
 	return json.dumps(g_gene_library.keys())
 
+@call_metrics.call_metrics
 def get_gene_def(gene_def_hash):
 	global g_gene_library
 	if gene_def_hash in g_gene_library.keys():
 		return g_gene_library[gene_def_hash]['gene_def']
 	return json.dumps('NOK:NOT_FOUND')
 
+@call_metrics.call_metrics
 def set_default_gene_def_hash(gd_hash):
 	global g_default_group_gene_def_hash
 	if get_gene_def(gd_hash).find('NOK:') < 0:
@@ -389,20 +414,31 @@ def shutdown():
 	save_db()
 	return 1
 
+@call_metrics.call_metrics
 def get_db():
 	global g_gene_library
 	return json.dumps(g_gene_library)
 
+@call_metrics.call_metrics
 def get_db_stripped():
 	global g_gene_library
-	sdb = deepcopy(g_gene_library)
-	for key in sdb:
-		sdb[key].pop('gene_def')
-		sdb[key].pop('gene_high_scores')
-		sdb[key].pop('gene_best')
-	return json.dumps(sdb)
+	#sdb = deepcopy(g_gene_library)
+	#for key in sdb:
+	#	sdb[key].pop('gene_def')
+	#	sdb[key].pop('gene_high_scores')
+	#	sdb[key].pop('gene_best')
+	#return json.dumps(sdb)
+	strip_list = ['gene_def','gene_high_scores','gene_best']
+	sdbl = {}
+	for db_key in g_gene_library:
+		sdb = {}
+		for item_key in g_gene_library[db_key]:
+			if not item_key in strip_list:
+				sdb.update({item_key:g_gene_library[db_key][item_key]})
+		sdbl.update({db_key:sdb})
+	return json.dumps(sdbl)
 
-
+@call_metrics.call_metrics
 def save_db():
 	global AUTO_BACKUP_AFTER_N_SAVES
 	global g_save_counter
@@ -423,6 +459,7 @@ def save_db():
 	f.write(json.dumps(g_gene_library))
 	return 'OK'
 
+@call_metrics.call_metrics
 def reload_db():
 	global g_gene_library
 	import os
@@ -498,6 +535,10 @@ def reload_db():
 
 	return "OK"
 
+
+def get_gene_server_metrics():
+	return json.dumps(call_metrics.get_metrics())
+
 #set the service url
 class RequestHandler(SimpleXMLRPCRequestHandler):
 	rpc_paths = ('/gene','/RPC2')
@@ -543,6 +584,8 @@ server.register_function(reload_db,'reload')
 server.register_function(save_db,'save')
 server.register_function(get_db,'get_db')
 server.register_function(get_db_stripped,'get_db_stripped')
+server.register_function(get_gene_server_metrics,'get_gene_server_metrics')
+
 server.register_introspection_functions()
 
 if __name__ == "__main__":

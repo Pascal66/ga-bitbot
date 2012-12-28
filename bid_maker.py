@@ -134,7 +134,7 @@ while 1:
 			#if the quartile is active set the buy to 0 to prevent old targets from remaining active
 			#this is for fault protection as it should never normaly happen:
 			if quartile == server.get_active_quartile():
-				p = {'buy':-1.00,'bid_maker_time_stamp':time.time()}
+				p = {'buy':-1.00,'bid_maker_time_stamp':time.time(),'gene_id':ag['id'],'score':0}
 				server.put_target(json.dumps(p),pid)
 		else:
 	
@@ -157,17 +157,14 @@ while 1:
 			else:
 				if len(te.positions) == 0:
 					print "bid_maker: no positions, order cleared"
-					p = {'buy':0.00,'bid_maker_time_stamp':time.time()}
+					p = {'buy':-1.00,'bid_maker_time_stamp':time.time(),'gene_id':ag['id'],'score':0}
 					server.put_target(json.dumps(p),pid)
 
 				# Calc the next buy trigger point
-				elif len(te.positions) > 0:
+				else: 	#if len(te.positions) > 0:
 					#get the target trigger price
 					target = te.get_target()
 					print "bid_maker: inverse MACD result (target): ",target
-
-					#if target > te.input_log[-1][1]:
-					#	target = te.input_log[-1][1]
 
 					if target > te.history[1]:
 						target = te.history[1]
@@ -180,7 +177,6 @@ while 1:
 						print "bid_maker: last buy order was", te.period - te.positions[-1]['buy_period'],"periods ago."
 						#if not try to calculate the trigger point to get the buy orders in early...
 						#print "Trying to trigger with: ",target
-						print "bid_maker: score: ",te.score()
 						st = time.time()
 						te.input(st,target)
 						p = te.positions[-1].copy()
@@ -188,9 +184,11 @@ while 1:
 							#print "Order not triggered @",target
 							p['buy'] = 0.00
 							p['target'] = 0.00
-
-					#time stamp the bid
-					p.update({'bid_maker_time_stamp':time.time()})
+					
+					score = te.score()
+					print "bid_maker: score: ",score
+					#time stamp the bid and capture the gene id
+					p.update({'bid_maker_time_stamp':time.time(),'gene_id':ag['id'],'score':score})
 
 					#print "Evaluating target price"
 					if ((target >= p['buy']) or (abs(target - p['buy']) < 0.01)) and p['buy'] != 0: #submit the order at or below target

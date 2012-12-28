@@ -47,7 +47,7 @@ function pcf(){
 	this.viewColor = "#400800";
 	this.viewMode = "queue";
 	this.viewComposite = "lighter";
-	this.viewRate = 6;
+	this.viewRate = 36;
 	this.viewFormDiv = "";
 	this.viewFormRenderTarget = "";
 	this.viewStatsRenderTarget = "";
@@ -106,6 +106,7 @@ pcf.prototype.render = function(){
 		.reorderable();
 	if (this.viewStatsEnable == true){
 		$(this.viewStatsRenderTarget).html('STATS');
+		//pchart.on('brush', listener)
 	}
 	if (this.viewLegendEnable == true){
 		this.viewLegendRenderTarget = this.viewFormDiv + '_pcf_legend';

@@ -77,6 +77,15 @@ class genepool:
 	self.id_index = 10000
 
     def step_prune(self):
+	"""
+	Steps down the pruning threshold by step_prune_threshold_rate. 
+	Automaticaly cycles through the range max_prune_threshold to min_prune_threshold
+
+	The prune_threshold is the top precentage of genes to be selected for populating the next generation
+
+	Args: none
+	Returns: none
+	"""
 	if self.prune_threshold > self.min_prune_threshold:
 		self.prune_threshold -= self.step_prune_threshold_rate
 		if self.prune_threshold <= 0:
@@ -85,6 +94,15 @@ class genepool:
 		self.prune_threshold = self.max_prune_threshold
 
     def step_mutate(self):
+	"""
+	Steps down mutate by step_mutate_rate. 
+	Automaticaly cycles through the range max_mutate to min_mutate
+
+	The muate class variable is the precentage of probability for gene mutations
+
+	Args: none
+	Returns: none
+	"""
 	if self.mutate > self.min_mutate:
 		self.mutate -= self.step_mutate_rate
 	else:
@@ -107,35 +125,70 @@ class genepool:
 	    f.close()
 	
     def reset_scores(self):
+	"""
+	Resets all scores in the gene pool
+
+	Args: none
+	Returns: none
+	"""
 	#Reset the scores in the gene pool
 	for i in range(len(self.pool)):
 	    self.pool[i]['score'] = None
 	    self.pool[i]['time'] = None
 		
-    def mutate_gene(self,c):
+    def mutate_gene(self,gene):
+	"""
+	Mutates a gene
+
+	Args:
+		gene: A string representation of a binary gene
+		
+	Returns: A string representation of the mutated binary gene
+	"""
 	self.step_mutate()
 	
 	m = ""
-	for bit in c:
+	for bit in gene:
 	    if random.random() > (1 - self.mutate):
 		bit = str(int(bool(int(bit)) ^ bool(1))) #xor
 	    m += bit
 		
 	return m
 	    
-    def bit_sweep(self,g):
+    def bit_sweep(self,gene):
+	"""
+	Bit sweep hill climb
+
+
+	Args:
+		gene: A string representation of a binary gene
+		
+	Returns: A list containing the bit sweeped genes
+	"""
 	bsl = []
-	for j in xrange(len(g)):
+	for j in xrange(len(gene)):
 		ng = ""
-		for k in xrange(len(g)):
+		for k in xrange(len(gene)):
 			if j == k:
-				ng += str(int(bool(int(g[k])) ^ bool(1))) #xor
+				ng += str(int(bool(int(gene[k])) ^ bool(1))) #xor
 			else:
-				ng += g[k]
+				ng += gene[k]
 		bsl.append(ng)
 	return bsl
 
     def niche_filter(self,pool):
+	"""
+	Filters out similar genes to the highest scoring gene
+
+	Object Config:
+		self.niche_trigger: filter when n bits or less don't match
+
+	Args:
+		pool: A gene population list
+		
+	Returns: 
+		A filtered list
+	"""
 	#filter out similar genes to the winner
 	#to maintain population diversity
 	if len(pool) < 2:	#only run the filter if there are genes available
@@ -159,17 +212,28 @@ class genepool:
 	return ret_pool
 
 
-    def merge_multi(self,alist):
+    def merge_multi(self,gene_list):
+	"""
+	Merge multiple genes by majority vote
+
+	Requires at least three genes
+
+	Args:
+		gene_list: A gene list to merge
+		
+	Returns: 
+		A merged gene
+	"""
 	#adds support for arb number of multiple parents
 	#merge by majority vote 
 	# - need at least three to merge (duh!)
 	# - and should be an odd number (no tied votes)
-	if len(alist) < 3:
+	if len(gene_list) < 3:
 		print "genetic: need at least three genes to merge"
-	n = len(alist[0])
+	n = len(gene_list[0])
 	half_n = n/2.0
 	sums = map(zero,range(n))
-	for item in alist:
+	for item in gene_list:
 		for i in range(len(item)):
 			if item[i] == '1':
 				sums[i] += 1
@@ -183,6 +247,18 @@ class genepool:
 	return g
 
     def mate(self,a,b):
+	"""
+	Create offspring gene
+
+	- Some will be mated, some will be mated and mutated and some will be mutated but not mated. @ 33%/33%/33%
+
+	Args:
+		a: parent gene a
+		b: parent gene b
+		
+	Returns: 
+		offspring gene
+	"""
 	# To create diveristy in the population..
 	# Some will be mated, some will be mated and mutated and some will be
 	# mutated but not mated. @ 33%/33%/33%
@@ -219,6 +295,21 @@ class genepool:
 	return c
     
     def next_gen(self):
+	"""
+	Create the next generation from the current population
+
+	- test for local optima
+	- remove survivor twins
+	- apply the threshold
+	- apply the niche filter (if enabled)
+	- filter out the kill_score genes
+	- generate offspring
+	- bit sweep (if triggered)
+	- if max iterations have been reached repopulate the gene pool
+
+	Args: none		
+	Returns: none
+	"""
 	#populate the pool with the next generation
 	self.iteration += 1
 	self.next_index = 0
@@ -379,6 +470,13 @@ class genepool:
 	print "genetic:", "-" * 72
 	
     def get_next(self):
+	"""
+	Returns the next available gene to be scored. 
+	If all genes have been scored then next_gen is called
+
+	Args: none		
+	Returns: a gene
+	"""
 	#get the next available unscored gene
 	#if none are available then create the
 	#next generation
@@ -403,12 +501,26 @@ class genepool:
 	return self.get_next()
     
     def get_by_id(self,id):
+	"""
+	Returns the gene with the given id.
+
+	Args: id: gene identification		
+	Returns: a gene
+	"""
 	for g in self.pool:
 	    if g['id'] == id:
 		return g
 	return None
 	
     def set_score(self,id,score):
+	"""
+	Sets the gene score for the given id
+
+	Args: 
+		id: gene identification
+		score: float
+	Returns: none
+	"""
 	#set the score for a gene
 	for g in self.pool:
 	    if g['id'] == id:
@@ -417,6 +529,14 @@ class genepool:
 	return
     
     def set_message(self,id,msg):
+	"""
+	Sets a message to a gene with the given id
+
+	Args: 
+		id: gene identification
+		msg: string message
+	Returns: none
+	"""
 	#set the message for a gene (basicaly tag a note on the gene)
 	for g in self.pool:
 	    if g['id'] == id:
@@ -424,10 +544,29 @@ class genepool:
 	return
     
     def add_numvar(self,name,bits,decimal_places,offset=0,mult=1):
+	"""
+	Adds a numerical variable to the gene definition.
+
+	Used to define the contents of the gene and provide the translation configuration
+
+	Args:
+		name: name of the variable
+		bits: int: number of bits
+		decimal_places: int: shifts decimal point n places to the left
+		offset: int/float offset
+		multi: float multiplier
+	Returns: none
+	"""
 	#add a variable to the gene
 	self.contains.append([name,bits,decimal_places,offset,mult])   
 
     def rbit(self):
+	"""
+	Generates a random bit
+
+	Args: none
+	Returns: "1" or "0" (string)
+	"""
 	#generate a random bit
 	if random.random() > 0.5:
 	    return "1"
@@ -435,12 +574,24 @@ class genepool:
 	    return "0"
 	
     def calc_genelen(self):
+	"""
+	calculate the gene length
+
+	Args: none
+	Returns: int gene length
+	"""
 	#calculate the gene length (bits)
 	self.genelen = 0
 	for item in self.contains:
 	    self.genelen += item[1]
 	
     def decode(self):
+	"""
+	decodes the gene pool
+
+	Args: none
+	Returns: none
+	"""
 	#decode the gene pool into key:value dictionarys
 	for g in self.pool:
 	    offset = 0
@@ -456,22 +607,34 @@ class genepool:
 		    n = ((n * 1.0) / pow(10,v[2])) 
 		g[name] = (n + var_offset) * var_mult
 		
-    def decode_gene_dict(self,g_d):
+    def decode_gene_dict(self,gene):
+	"""
+	decodes a gene
+
+	Args: none
+	Returns: none
+	"""
 	offset = 0
 	for v in self.contains:
 		name = v[0]
 		var_len = v[1]
 		var_offset = v[3]
 		var_mult = v[4]
-		var = g_d['gene'][offset:offset+var_len]
+		var = gene['gene'][offset:offset+var_len]
 		offset += var_len
 		n = int(var,2)
 		if v[2] > 0:
 		    n = ((n * 1.0) / pow(10,v[2]))
-		g_d[name] = (n + var_offset) * var_mult
-	return g_d
+		gene[name] = (n + var_offset) * var_mult
+	return gene
 
     def create_id(self):
+	"""
+	generates a random id
+
+	Args: none
+	Returns: string id
+	"""
 	self.id_index += 1
 	if self.id_index > 99999:
 		self.id_index = 9999
@@ -480,6 +643,12 @@ class genepool:
 	return self.md.hexdigest()[0:16] +'-'+self.id
 	
     def create_gene(self):
+	"""
+	generates a random gene
+
+	Args: none
+	Returns: a gene dictionary 
+	"""
 	gene = ""
 	for j in range(self.genelen):
 	    gene += self.rbit()
@@ -488,14 +657,26 @@ class genepool:
 	    gdict.update({v[0]:0})
 	return gdict
 
-    def insert_genedict(self,g_d):
-	g_d['score'] = None
-	self.pool.append(g_d)
+    def insert_genedict(self,gene_dict):
+	"""
+	inserts a gene dictionary into the gene pool
+
+	Args: gene_dict: gene dictionary
+	Returns: none
+	"""
+	gene_dict['score'] = None
+	self.pool.append(gene_dict)
 	return
 
-    def insert_genedict_list(self,g_dl):
+    def insert_genedict_list(self,gene_dict_list):
+	"""
+	inserts a list of gene dictionaries into the gene pool
+
+	Args: gene_dict_list: gene dictionary list
+	Returns: none
+	"""
 	#print "inserting gene dicts..."
-	for g_d in g_dl:
+	for g_d in gene_dict_list:
 		#print g_d['id'],g_d['score']
 		g_d['score'] = None
 		self.pool.append(g_d)
@@ -505,6 +686,12 @@ class genepool:
 
 
     def insert_genestr(self,gene):
+	"""
+	inserts a gene string into the gene pool
+
+	Args: gene: a gene string
+	Returns: none
+	"""
 	g_d = self.create_gene()
 	g_d['gene'] = gene
 	g_d = self.decode_gene_dict(g_d)
@@ -512,11 +699,23 @@ class genepool:
 	return g_d
 
     def insert_genestr_list(self,gene_list):
+	"""
+	inserts a gene string into the gene pool
+
+	Args: gene_list: a list of gene strings
+	Returns: none
+	"""
 	for gene in gene_list:
 		self.insert_genestr(gene)
 	return
 
     def seed(self):
+	"""
+	seeds the gene pool with random genes
+
+	Args: none
+	Returns: none
+	"""
 	self.pool = []
 	self.iteration = 0
 	self.next_index = 0

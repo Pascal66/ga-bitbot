@@ -326,10 +326,12 @@ if __name__ == "__main__":
 					cycle_time = min_cycle_time
 				if g.pool_size > 10000:
 					g.pool_size = 10000
-			performance_metrics = "gts: ","%.2f"%gps,"G/S; ","%.2f"%((gps*te.input_data_length)/1000.0),"KS/S;","  Pool Size: ",g.pool_size,"  Total Processed: ",total_count
+			kss = (gps*te.input_data_length)/1000.0
+			performance_metrics = "gts: ","%.2f"%gps,"G/S; ","%.2f"%kss,"KS/S;","  Pool Size: ",g.pool_size,"  Total Processed: ",total_count
 			performance_metrics = " ".join(map(str,performance_metrics))
 			print performance_metrics
-			server.pid_msg(pid,performance_metrics)
+			pmd = {'channel':'gts_metric','gps':gps,'kss':kss,'pool':g.pool_size,'total':total_count}
+			server.pid_msg(pid,json.dumps(pmd))
 			
 		if g.local_optima_reached:	
 			test_count = 0
@@ -435,26 +437,35 @@ if __name__ == "__main__":
 			g.set_score(ag['id'],g.kill_score)
 		else:
 			#return the score to the gene pool
-			score = te.score()
-			if verbose:
-				print "gts: ",ag['gene'],"\t".join(["%.5f"%max_score,"%.5f"%score,"%.3f"%g.prune_threshold])
-			g.set_score(ag['id'],score)
-			g.set_message(ag['id'],"Balance: " + str(te.balance) +"; Wins: " + str(te.wins)+ "; Loss:" + str(te.loss) +  "; Positions: " + str(len(te.positions)))
+			try:
+				score = te.score()
+			except Exception, err:
+				#kill off any genes that crash the trade engine (div by 0 errors for instance)
+				print "gts: ***** GENE SCORE FAULT *****"
+				print Exception,err
+				print traceback.format_exc()
+				print "gts: ***** END GENE SCORE FAULT *****"
+				g.set_score(ag['id'],g.kill_score)
+			else:
+				if verbose:
+					print "gts: ",ag['gene'],"\t".join(["%.5f"%max_score,"%.5f"%score,"%.3f"%g.prune_threshold])
+				g.set_score(ag['id'],score)
+				g.set_message(ag['id'],"Balance: " + str(te.balance) +"; Wins: " + str(te.wins)+ "; Loss:" + str(te.loss) +  "; Positions: " + str(len(te.positions)))
 
 
-			if score > 1000 and profile == True:
-				gts_exit("gts: profiling complete")
+				if score > 1000 and profile == True:
+					gts_exit("gts: profiling complete")
 
-			#if a new high score is found submit the gene to the server
-			if score > max_score and update_all_scores == False:
-				print "gts: submit high score for quartile:%s id:%s to server (%.5f)"%(str(quartile),str(ag['id']),score)
-				max_score = score
-				max_score_id = ag['id']
-				max_gene = ag.copy() #g.get_by_id(max_score_id)
-				if max_gene != None:
-					server.put(json.dumps(max_gene),quartile,pid)
-				else:
-					print "gts: MAX_GENE is None!!"
+				#if a new high score is found submit the gene to the server
+				if score > max_score and update_all_scores == False:
+					print "gts: submit high score for quartile:%s id:%s to server (%.5f)"%(str(quartile),str(ag['id']),score)
+					max_score = score
+					max_score_id = ag['id']
+					max_gene = ag.copy() #g.get_by_id(max_score_id)
+					if max_gene != None:
+						server.put(json.dumps(max_gene),quartile,pid)
+					else:
+						print "gts: MAX_GENE is None!!"
 		if update_all_scores == True:
 			print "gts: updating score for quartile:%s id:%s to server (%.5f)"%(str(quartile),str(ag['id']),score)
 			agene = g.get_by_id(ag['id'])

@@ -242,7 +242,7 @@ while 1:
 					print "creating charts..."
 					te.chart("./report/chart.templ","./report/chart_test_%s.html"%str(quartile),basic_chart=chart_type)
 					te.chart("./report/chart.templ","./report/chart_test_zoom_%s.html"%str(quartile),chart_zoom_periods,basic_chart=chart_type)
-					te.chart("./report/chart.templ","./report/chart_test_now_%s.html"%str(quartile),chart_now_periods,basic_chart=chart_type)
+#					te.chart("./report/chart.templ","./report/chart_test_now_%s.html"%str(quartile),chart_now_periods,basic_chart=chart_type)
 					#print "Evaluating target price"
 					if current_quartile == quartile:
 						if ((target >= p['buy']) or (abs(target - p['buy']) < 0.01)) and p['buy'] != 0: #submit the order at or below target
