@@ -57,6 +57,8 @@ var options = {
 
 //give a bad address for the depth init - needed for debug 
 //because multiple requests from server restarts will get the IP temporarialy blocked
+
+/*
 console.log('Requesting depth initialization...');
 https.get({ host: 'mtgox000.com', path: '/api/1/BTCUSD/fulldepth' }, function(res) {
 	console.log("statusCode: ", res.statusCode);
@@ -92,6 +94,7 @@ https.get({ host: 'mtgox000.com', path: '/api/1/BTCUSD/fulldepth' }, function(re
 //}
 console.log('Depth initialization complete');
 
+*/
 
 //
 // create socket.io server
