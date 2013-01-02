@@ -72,11 +72,26 @@ var gdbl = new gene_db_lib();
     <div id="tab-3">
 	<div id='gox' style="display:block;">
 		<div id="gox_group">
-			<h2>MtGox Live Feed</h2>
-			<div id="depth_plot_l" style="width:50%;display:inline-block;padding: 3px;">
+			<div id="depth_plot_l" style="width:350;display:inline-block;vertical-align: top;padding: 3px;">
+				<h3>MtGox Live Feed</h3><br>
 				<div id="trades" style="width:100%;"></div>
 				<div id="ticker" style="width:100%;"></div>
 				<div id="depth" style="width:100%;"></div>
+			</div>
+			<div id="depth_plot_r" style="width:300;display:inline-block;vertical-align: top;padding: 3px;">
+				<h3>1min Weighted Sales</h3>
+				<table id="1min_table" style="font-size: 14px;">
+					<thead>
+						<tr class='ui-state-default'>
+						<th>Time</th>
+						<th>Price</th>
+						<th>Volume</th>
+						</tr>
+					</thead>
+					<tbody>
+					<tr></tr>
+					</tbody>
+				</table>			
 			</div>
 		</div>
 		<h2>MtGox Price Spread</h2>
@@ -139,7 +154,7 @@ var gdbl = new gene_db_lib();
 	var gene_db = {};
 	var gene_db_data_array = new Array();
 	var pc;	//parrallel coord chart object
-	var spread = 0.025;
+	var spread = 0.01625;
 	var plot_x_center = 2.0;
 	var conn = io.connect(window.location.hostname + ':8088/ga_bitbot');
 
@@ -148,8 +163,9 @@ var gdbl = new gene_db_lib();
 	// setup plot
 	var options = {
 		series: { shadowSize: 0 },
-		yaxis: { min: 0, max: 100 },
-		xaxis: { show: true }
+		yaxis: { min: 0, max: 100, color: "#c2d98f" },
+		xaxis: { show: true, color: "#c2d98f" },
+		grid : { backgroundColor: "#242423"} 
 	};
 	
 	var plot = $.plot($("#depth_plot"), [ [0,0] ], options);
@@ -205,7 +221,12 @@ var gdbl = new gene_db_lib();
 		}
 		if (msg.channel == '1min')
 		{
-			//$('#debug').append(JSON.stringify(msg) + '<BR>');
+			//$('#depth_plot_r').append(JSON.stringify(msg) + '<BR>');
+			t = new Date(msg.time).toTimeString().replace(/.*(\d{2}:\d{2}:\d{2}).*/, "$1");
+			$('#1min_table > tbody > tr:first').before('<tr><td>'+ t +'</td><td>'+msg.price.toFixed(4)+'</td><td>'+msg.volume.toFixed(4)+'</td></tr>');
+			if ($("#1min_table tr").length > 6){
+				$('#1min_table tr:last').remove();
+			}
 		}
 		if (msg.channel == 'gene_db')
 		{			
@@ -285,6 +306,7 @@ var gdbl = new gene_db_lib();
 			//plot_x_center = msg.trade.price;
 			$('#trades').html($(document.createElement("label")).html('Trade').addClass('ui-input-label-text'));
 			$('#trades').append(' price: ' + msg.trade.price + '  amount: ' + msg.trade.amount + '<br><br>');
+			//$('#depth_plot_r').append(JSON.stringify(msg) + '<BR>');
 		}
 
 		if (msg.channel == ch_ticker)
@@ -298,7 +320,10 @@ var gdbl = new gene_db_lib();
 
 	function set_gene_server_metrics(gene_server_metrics)
 	{
-		$('#gene_server_metrics').html('<a class="help" href="http://google.com"></a><h2>Gene Server Performance</h2><br><table id="gsp"></table>');
+		var latency = gene_server_metrics.server_latency;
+		delete gene_server_metrics.server_latency;
+
+		$('#gene_server_metrics').html('<a class="help" href="http://google.com"></a><h2>Gene Server Performance</h2>&nbsp&nbsp&nbspServer latency: '+latency.toFixed(0)+' msec<br><table id="gsp"></table>');
 
 		var aa = []
 		for (var funct_name in gene_server_metrics){

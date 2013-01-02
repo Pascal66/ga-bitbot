@@ -254,7 +254,7 @@ while 1:
 	if run_server:
 		count += 1
 		#periodicaly tell the server to save the gene db
-		if count == 10:
+		if count == 50:
 			count = 0
 			server.save()
 		if run_client == 0:

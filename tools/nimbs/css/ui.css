@@ -16,11 +16,19 @@ fieldset	{ border: 5px solid color: #c77000;
 label		{ text-align: left; font-size: 12px;}
 
 input		{  font-size: 12px;
-			color: #3a3a3a; font-family: Georgia, serif;
+			color: #CEC169; font-family: Georgia, serif;
 			border: 3px solid #999;
 			-moz-border-radius: 5px; padding: 5px; color: black; font-weight: bold;
-			-webkit-border-radius: 5px;
+			-webkit-border-radius: 5px; background-color: #333733;
 		}
+
+input,select,textarea	{ color: #CEC169; }
+
+table,tr,td		{border: 5px solid color: #FFFFFF; background-color: #242423;}
+td			{padding-left:10px; padding-right:10px;}
+tr:nth-child(even) td 	{background-color:#242423;}
+tr:nth-child(odd) td 	{background-color:#2C2E2A;}
+
 
 .ui-input-label-text	{ background: url(../img/label.png) repeat-x top center; border: 2px solid #555555;
 			-moz-border-radius: 5px; padding: 5px; color: black; font-weight: bold;
@@ -57,7 +65,7 @@ input		{  font-size: 12px;
 
 #mtgox_feed     {-moz-border-radius: 5px; padding: 5px; -webkit-border-radius: 5px;font-size: 16px;}
 
-#pids     	{-moz-border-radius: 5px; padding: 5px; -webkit-border-radius: 5px;font-size: 14px;font-family: Courier New, monospace;}
+#pids     	{-moz-border-radius: 5px; padding: 5px; -webkit-border-radius: 5px;font-size: 14px;}
 
 #gene_def_calc	{}
 #trades	{padding: 0px; font-weight: bold; -webkit-border-radius: 5px; font-size: 1em; display: block;}

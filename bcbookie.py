@@ -612,7 +612,7 @@ if __name__ == "__main__":
 				except:
 					target_discount = 1.0
 				print item['gene_def_hash'],'priority:',item['trade_priority'],'enabled:',item['trade_enabled'],"target:","$"+str(t['buy']),"discount:",target_discount * 100
-				if target_discount <= 0.001 or b.btc_price < t['buy']:
+				if target_discount <= 0.05 or b.btc_price < t['buy']:
 					print "active bid received"
 					break
 		except:

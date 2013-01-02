@@ -104,6 +104,23 @@ var io = require('socket.io').listen(server);
 io.set('log level', 1);
 server.listen(8088);
 var gabb = io.of('/ga_bitbot');
+var rpc_start_call = 0;
+
+//performance metrics - gene_server latency
+function startRPC(){
+	var d = new Date();
+	rpc_start_call = d.getSeconds();
+	rpc_start_call += (d.getMilliseconds()) / 1000;
+}
+
+function endRPC(){
+	var d = new Date();
+	var rpc_end_call = d.getSeconds();
+	rpc_end_call += (d.getMilliseconds()) / 1000;
+	//return latency in milliseconds
+	return (rpc_end_call - rpc_start_call) * 1000;
+}
+
 
 gabb.on('connection', function (socket) {
 
@@ -135,17 +152,29 @@ gabb.on('connection', function (socket) {
 	});
 
 	socket.on('request_gene_db_stripped', function () {
-		rpcClient.methodCall('get_db_stripped', [], function (error, value) {
-				//console.log('sending request_gene_db_stripped response');
-				socket.emit('message', {'channel':'gene_db_stripped','value':JSON.parse(value)});
-			});
+		try{
+			rpcClient.methodCall('get_db_stripped', [], function (error, value) {
+					//console.log('sending request_gene_db_stripped response');
+					try{socket.emit('message', {'channel':'gene_db_stripped','value':JSON.parse(value)});}catch(err){console.log('get_db_stripped emit error');};
+				});
+		}catch(err){
+			console.log('get_db_stripped error');
+		};
 	});
 
 	socket.on('request_gene_server_metrics', function () {
-		rpcClient.methodCall('get_gene_server_metrics', [], function (error, value) {
-				//console.log('sending get_gene_server_metrics response' + value);
-				socket.emit('message', {'channel':'gene_server_metrics','value':JSON.parse(value)});
+		try{
+			startRPC();
+			rpcClient.methodCall('get_gene_server_metrics', [], function (error, value) {
+					value = JSON.parse(value);
+					value.server_latency = endRPC();
+					//console.log('gene server response time: ' + value.latency);
+					//console.log('sending get_gene_server_metrics response' + value);
+					socket.emit('message', {'channel':'gene_server_metrics','value':value});
 			});
+		}catch(err){
+			console.log('get_gene_server_metrics error');
+		};
 	});
 
 	socket.on('set_trade_enable', function (state,gene_def) {
@@ -262,7 +291,7 @@ function log_one_min_trade()
 	console.log('--1min volume--' + volume);
 	if (volume > 0)
 	{
-		gabb.emit('message', {'channel':'1min','price':weighted,'volume':volume});
+		gabb.emit('message', {'channel':'1min','price':weighted,'volume':volume,'time':(new Date).getTime()});
 	}
 }
 
