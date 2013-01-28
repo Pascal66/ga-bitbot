@@ -22,7 +22,7 @@ input		{  font-size: 12px;
 			-webkit-border-radius: 5px; background-color: #333733;
 		}
 
-input,select,textarea	{ color: #CEC169; }
+input,select,textarea,option	{ color: #CEC169;background-color: #333733; }
 
 table,tr,td		{border: 5px solid color: #FFFFFF; background-color: #242423;}
 td			{padding-left:10px; padding-right:10px;}
@@ -71,3 +71,5 @@ tr:nth-child(odd) td 	{background-color:#2C2E2A;}
 #trades	{padding: 0px; font-weight: bold; -webkit-border-radius: 5px; font-size: 1em; display: block;}
 #ticker	{padding: 0px; font-weight: bold; -webkit-border-radius: 5px; font-size: 1em; display: block;}
 #depth	{padding: 0px; font-weight: bold; -webkit-border-radius: 5px; font-size: 1em; display: block;}
+
+#about-help 	{border: 5px solid color: #FFFFFF; background-color: #141413;}

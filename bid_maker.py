@@ -196,7 +196,7 @@ while 1:
 						p['buy'] = float(price_format%(p['buy'] - 0.01))
 						p['target'] = float(price_format%p['target'])
 						p.update({'stop_age':(60 * te.stop_age)})
-						if float(te.wins / float(te.wins + te.loss)) > win_loss_gate_pct:
+						if float(te.wins / float(te.wins + te.loss + 0.000001)) > win_loss_gate_pct:
 							#only submit an order if the win/loss ratio is greater than x%
 							print "bid_maker: sending target buy order to server @ $" + str(p['buy'])
 							server.put_target(json.dumps(p),pid)
@@ -211,7 +211,7 @@ while 1:
 						#print "\tQuartile     :",quartile
 						print "\tBuy	    :$", p['buy']
 						print "\tTarget	    :$",p['target']
-						print "\tWin Ratio    :","%.3f"%((te.wins / float(te.wins + te.loss)) * 100),"%"
+						print "\tWin Ratio    :","%.3f"%((te.wins / float(te.wins + te.loss + 0.000001)) * 100),"%"
 						print "-" * 40
 					else:
 						print "-" * 40

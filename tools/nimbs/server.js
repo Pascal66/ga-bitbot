@@ -241,9 +241,11 @@ function onMessage(msg)
 			if (msg.depth.type_str == 'bid')
 			{
 				bid_depth[msg.depth.price] = parseFloat(msg.depth.total_volume_int) / 100000000.0;
+				ask_depth[msg.depth.price] = 0.0;
 			}
 			if (msg.depth.type_str == 'ask')
 			{
+				bid_depth[msg.depth.price] = 0.0;
 				ask_depth[msg.depth.price] = parseFloat(msg.depth.total_volume_int) / 100000000.0;
 			}
 		}

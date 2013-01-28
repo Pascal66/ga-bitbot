@@ -9,9 +9,9 @@
 
 		"GTS_SECTION" : 1,
 		"load_throttle" : 1,
-		"load_throttle_sleep_interval" : 0.05,
+		"load_throttle_sleep_interval" : 0.09,
 		"calibrate" : 1,
-		"cycle_time" : 60,
+		"cycle_time" : 120,
 		"min_cycle_time" : 30,
 		"cycle_time_step" : 2,
 		"pid_update_rate" : 25,
