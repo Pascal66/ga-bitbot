@@ -234,6 +234,12 @@ def put_gene(d,quartile,pid = None):
 	return "OK"
 
 @call_metrics.call_metrics
+def put_gene_buffered(d_buffer,quartile,pid = None):
+	for d in d_buffer:
+		put_gene(d,quartile,pid)
+	return "OK"
+
+@call_metrics.call_metrics
 def put_bob(d,quartile,pid = None):
 	global g_bobs
 	global g_gene_library
@@ -558,6 +564,7 @@ server.register_function(put_active_quartile,'put_active_quartile')
 server.register_function(get_gene,'get')
 server.register_function(get_all_genes,'get_all')
 server.register_function(put_gene,'put')
+
 server.register_function(put_bob,'put_bob')
 server.register_function(get_bobs,'get_bobs')
 server.register_function(get_gene_def_hash_list,'get_gene_def_hash_list')
@@ -585,6 +592,9 @@ server.register_function(save_db,'save')
 server.register_function(get_db,'get_db')
 server.register_function(get_db_stripped,'get_db_stripped')
 server.register_function(get_gene_server_metrics,'get_gene_server_metrics')
+
+server.register_multicall_functions()
+server.register_function(put_gene,'mc_put')
 
 server.register_introspection_functions()
 

@@ -46,6 +46,7 @@ if __name__ == "__main__":
 
 	#make sure the port number matches the server.
 	server = xmlrpclib.Server('http://' + __server__ + ":" + __port__)  
+	multicall = xmlrpclib.MultiCall(server)
 
 	print "gts: connected to gene_server ",__server__,":",__port__
 
@@ -289,6 +290,7 @@ if __name__ == "__main__":
 	max_score = -100000
 	max_score_id = -1
 	max_gene = None
+	multicall_count = 0
 	start_time = time.time()
 	print "gts: running the test sequencer"
 	while 1:
@@ -346,6 +348,9 @@ if __name__ == "__main__":
 				if quartile > 4:
 					quartile = 1
 					if run_once:
+						print "gts: flushing xmlrpc multicall buffer."
+						multicall()	#send any batched calls to the server
+						print "gts: run once done."
 						gts_exit("gts: run once done.",pid)
 			
 			elif max_gene != None:
@@ -377,6 +382,8 @@ if __name__ == "__main__":
 			max_score = -100000 #reset the high score
 
 			if quartile_cycle == False and run_once:
+				print "gts: flushing xmlrpc multicall buffer."
+				multicall()	#send any batched calls to the server
 				print "gts: run once done."
 				gts_exit("gts: run once done.",pid)
 
@@ -467,10 +474,15 @@ if __name__ == "__main__":
 					else:
 						print "gts: MAX_GENE is None!!"
 		if update_all_scores == True:
-			print "gts: updating score for quartile:%s id:%s to server (%.5f)"%(str(quartile),str(ag['id']),score)
+			print "gts: updating score for quartile:%s id:%s to server, multicall deffered (%.5f)"%(str(quartile),str(ag['id']),score)
 			agene = g.get_by_id(ag['id'])
 			if agene != None:
-				server.put(json.dumps(agene),quartile,pid)
+				multicall_count += 1
+				multicall.mc_put(json.dumps(agene),quartile,pid)
+				if multicall_count > 40:
+					multicall_count = 0
+					print "gts: flushing xmlrpc multicall buffer."
+					multicall()
 			else:
 				print "gts: updating gene error: gene is missing!!"
 
