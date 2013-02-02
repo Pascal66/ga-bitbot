@@ -187,13 +187,13 @@ xlclient_monitored_launch = ['pypy gts.py all n run_once pid ',\
 
 
 
-if mode = 'all':
+if mode == 'all':
 	monitored_launch = all_monitored_launch
-if mode = 'server':
+if mode == 'server':
 	monitored_launch = server_monitored_launch
-if mode = 'client':
+if mode == 'client':
 	monitored_launch = client_monitored_launch
-if mode = 'xlclient':
+if mode == 'xlclient':
 	monitored_launch = xlclient_monitored_launch
 
 
