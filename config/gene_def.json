@@ -1,6 +1,6 @@
 {
 	"name":"med window low markup",
-	"version":"0.6",
+	"version":"0.7",
 	"description":"1.5 - 2.77% markup",
 
 	"fitness_script":"bct_alt",
@@ -40,7 +40,7 @@
 		"pool_max_survivor_ratio" : 0.3,
 		"kill_score" : -10000,
 		"max_iteration" : 60000,
-		"local_optima_trigger" : 8
+		"local_optima_trigger" : 4
 	},
 
 	"call" :

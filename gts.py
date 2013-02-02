@@ -300,7 +300,7 @@ if __name__ == "__main__":
 		if load_throttle == 1:
 			time.sleep(load_throttle_sleep_interval)
 
-		if loop_count%pid_update_rate == 0:
+		if total_count%pid_update_rate == 0:
 			#periodicaly reset the watchdog monitor
 			print "gts: resetting watchdog timer"
 			server.pid_alive(pid)

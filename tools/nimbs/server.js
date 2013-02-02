@@ -22,6 +22,8 @@
 //  You should have received a copy of the GNU General Public License
 //  along with ga-bitbot.  If not, see <http://www.gnu.org/licenses/>.
 //
+var _redis = require("redis");
+var redis = _redis.createClient();
 
 var express = require('express');
 var app = express();
@@ -97,8 +99,46 @@ console.log('Depth initialization complete');
 */
 
 //
+// create app routes
+//
+
+app.get('/', function (req, res) {
+	res.sendfile(__dirname + '/bridge.html');
+});
+
+app.get('/img/*', function (req, res) {
+	res.sendfile(__dirname +'/img/'+req.params);
+});
+
+app.get('/gene_link/:hid/:gid/*', function (req, res) {
+	console.log(req.params);
+	res.sendfile(__dirname +'/'+req.params);
+});
+
+app.get('/gene_link/:hid/:gid', function (req, res) {
+	console.log(req.params);
+	redis.get(req.params.hid + '/' + req.params.gid+'.html', function (err, reply) {
+		if (reply == null)
+		{	//file request
+			console.log(__dirname +'/'+req.params.gid);
+			res.sendfile(__dirname +'/'+req.params.gid);
+		}
+		res.send(JSON.parse(reply));
+	});
+
+	//redis.keys('*', function (err, reply) {
+	//	console.log(err)
+	//	console.log(reply)
+	//});
+});
+
+
+
+//
 // create socket.io server
 //
+
+
 var server = http.createServer(app);
 var io = require('socket.io').listen(server);
 io.set('log level', 1);
@@ -268,13 +308,6 @@ function onMessage(msg)
 
 }
 
-//
-// create app route
-//
-
-app.get('/', function (req, res) {
-	res.sendfile(__dirname + '/bridge.html');
-});
 
 
 // send and archive the 1 min volume weighted trade data

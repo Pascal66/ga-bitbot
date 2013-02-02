@@ -79,6 +79,7 @@ else:
 		print "bid_maker: configuration loaded."
 
 
+
 while 1:
 	start_time = time.time()
 
@@ -112,7 +113,8 @@ while 1:
 			ff = __import__('bct')
 		ff = reload(ff)	#make sure we're not using a cached version of the module
 		te = ff.trade_engine()
-		te.cache.disable()	#dont use cached data for reporting
+		#te.cache.disable()	#dont use cached data for reporting
+		te.cache_input = False  #dont use cached data for reporting
 
 		#apply global configs
 		te.max_length = max_length
@@ -189,6 +191,8 @@ while 1:
 					print "bid_maker: score: ",score
 					#time stamp the bid and capture the gene id
 					p.update({'bid_maker_time_stamp':time.time(),'gene_id':ag['id'],'score':score})
+
+					te.chart("./report/chart.templ",gdh + '/' + ag['id'] + '.html',write_cache_only=True)
 
 					#print "Evaluating target price"
 					if ((target >= p['buy']) or (abs(target - p['buy']) < 0.01)) and p['buy'] != 0: #submit the order at or below target
