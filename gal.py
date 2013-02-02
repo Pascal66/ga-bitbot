@@ -54,20 +54,30 @@ print "-"*80
 
 run_client = 1
 run_server = 1
+mode = ""
 if len(sys.argv) >= 2:
 	if sys.argv[1] == 'all':
+		mode = 'all'
 		run_client = 1
 		run_server = 1
 		print "gal: launching all components"
 	if sys.argv[1] == 'client':
+		mode = 'client'
 		run_client = 1
 		run_server = 0
 		print "gal: launching client components only"
+	if sys.argv[1] == 'xlclient':
+		mode = 'xlclient'
+		run_client = 1
+		run_server = 0
+		print "gal: launching xlclient components only"
 	if sys.argv[1] == 'server':
+		mode = 'server'
 		run_client = 0
 		run_server = 1
 		print "gal: launching server components only"
 else:
+	mode = 'all'
 	print "gal: launching all components"
 	sleep(3)
 
@@ -125,15 +135,68 @@ if GTS_STDERR_FILE == "/dev/null":
 else:
 	GTS_STDERR_FILE = open(GTS_STDERR_FILE,'a')
 
+#configure gts clients based on the mode of operation (all,server or client)
+#
+# all - balanced
+# server - focused on updating scores
+# client - focused on finding new genes
+#
+# At least one gts instance in each mode should not run with the get_config option 
+# to make sure any new gene_def.json configs get loaded into the db.
+#
 
-#at least one client should not run with the get_config option to make sure new gene_def.json config files get loaded into the db.
-monitored_launch = ['pypy gts.py all n run_once pid ',\
+all_monitored_launch = ['pypy gts.py all n run_once pid ',\
+'pypy gts.py 3 n run_once get_config pid ',\
+'pypy gts.py 3 y run_once get_config pid ',\
+'pypy gts.py 4 n run_once get_config pid ',\
+'pypy gts.py 4 y run_once get_config pid ',\
+'pypy gts.py all y run_once get_config score_only pid ',\
+'pypy gts.py all y run_once get_config pid ']
+
+
+server_monitored_launch = ['pypy gts.py all y run_once pid ',\
+'pypy gts.py 1 y run_once get_config score_only pid ',\
+'pypy gts.py 2 y run_once get_config score_only pid ',\
+'pypy gts.py 3 y run_once get_config score_only pid ',\
+'pypy gts.py 3 y run_once get_config score_only pid ',\
+'pypy gts.py 4 y run_once get_config score_only pid ',\
+'pypy gts.py 4 y run_once get_config score_only pid ']
+
+
+client_monitored_launch = ['pypy gts.py all n run_once pid ',\
+'pypy gts.py 1 n run_once get_config pid ',\
+'pypy gts.py 2 n run_once get_config pid ',\
+'pypy gts.py 3 n run_once get_config pid ',\
+'pypy gts.py 3 y run_once get_config pid ',\
+'pypy gts.py 4 n run_once get_config pid ',\
+'pypy gts.py 4 y run_once get_config pid ',\
+'pypy gts.py all y run_once get_config pid ']
+
+xlclient_monitored_launch = ['pypy gts.py all n run_once pid ',\
+'pypy gts.py 1 n run_once get_config pid ',\
+'pypy gts.py 2 n run_once get_config pid ',\
 'pypy gts.py 3 n run_once get_config pid ',\
 'pypy gts.py 3 n run_once get_config pid ',\
 'pypy gts.py 4 n run_once get_config pid ',\
-'pypy gts.py 4 n run_once get_default_config pid ',\
-'pypy gts.py all y run_once get_config score_only pid ',\
+'pypy gts.py 4 n run_once get_config pid ',\
+'pypy gts.py 3 y run_once get_config pid ',\
+'pypy gts.py 3 y run_once get_config pid ',\
+'pypy gts.py 4 y run_once get_config pid ',\
+'pypy gts.py 4 y run_once get_config pid ',\
 'pypy gts.py all y run_once get_config pid ']
+
+
+
+if mode = 'all':
+	monitored_launch = all_monitored_launch
+if mode = 'server':
+	monitored_launch = server_monitored_launch
+if mode = 'client':
+	monitored_launch = client_monitored_launch
+if mode = 'xlclient':
+	monitored_launch = xlclient_monitored_launch
+
+
 
 unmonitored_launch = ['pypy wc_server.py','pypy report_gen.py']
 
