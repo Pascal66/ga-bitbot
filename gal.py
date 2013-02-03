@@ -263,45 +263,35 @@ server = xmlrpclib.Server('http://' + __server__ + ":" + __port__)
 print "gal: connected to gene server ",__server__,":",__port__
 
 
-if run_server:
-	pass
-	####  always use the available database
-	#a = ""
-	#while not(a == 'y' or a == 'n'):
-	#	print "Load archived gene database? (y/n)"
-	#	a = raw_input()
+if mode == 'all' or mode == 'server':
+	print "gal: gene server db restore: ",server.reload()
 
-	#if a == 'y':
-	#	print "Loading the gene database..."
-	#	print server.reload()
 
-print "gal: gene server db restore: ",server.reload()
+print "gal: Launching GA Clients..."
 
-if run_client:
-	print "gal: Launching GA Clients..."
+#collect system process PIDS for monitoring. 
+#(not the same as system OS PIDs -- They are more like GUIDs as this is a multiclient distributed system) 
+epl = json.loads(server.pid_list()) #get the existing pid list
 
-	#collect system process PIDS for monitoring. 
-	#(not the same as system OS PIDs -- They are more like GUIDs as this is a multiclient distributed system) 
-	epl = json.loads(server.pid_list()) #get the existing pid list
+#start the monitored processes
+for cmd_line in monitored_launch:
+	new_pid = make_pid()
+	p = Popen(shlex.split(cmd_line + new_pid),stdin=fnull, stdout=fnull, stderr=GTS_STDERR_FILE)
+	retry = MONITORED_PROCESS_LAUNCH_TIMEOUT
+	while retry > 0:
+		sleep(1)
+		cpl = json.loads(server.pid_list())	#get the current pid list
+		npl = list(set(epl) ^ set(cpl)) 	#find the new pid(s)
+		epl = cpl				#update the existing pid list
+		if new_pid in npl:
+			monitor.update({new_pid:{'cmd':cmd_line,'process':p}})	#store the pid/cmd_line/process
+			print "gal: Monitored Process Launched (PID:",new_pid,"CMD:",cmd_line,")"
+			break
+		else:
+			retry -= 1
+	if retry == 0:
+		print "gal: ERROR: Monitored Process Failed to Launch","(CMD:",cmd_line,")"
 
-	#start the monitored processes
-	for cmd_line in monitored_launch:
-		new_pid = make_pid()
-		p = Popen(shlex.split(cmd_line + new_pid),stdin=fnull, stdout=fnull, stderr=GTS_STDERR_FILE)
-		retry = MONITORED_PROCESS_LAUNCH_TIMEOUT
-		while retry > 0:
-			sleep(1)
-			cpl = json.loads(server.pid_list())	#get the current pid list
-			npl = list(set(epl) ^ set(cpl)) 	#find the new pid(s)
-			epl = cpl				#update the existing pid list
-			if new_pid in npl:
-				monitor.update({new_pid:{'cmd':cmd_line,'process':p}})	#store the pid/cmd_line/process
-				print "gal: Monitored Process Launched (PID:",new_pid,"CMD:",cmd_line,")"
-				break
-			else:
-				retry -= 1
-		if retry == 0:
-			print "gal: ERROR: Monitored Process Failed to Launch","(CMD:",cmd_line,")"
 if run_server:
 	#start unmonitored processes
 	for cmd_line in unmonitored_launch:
@@ -323,39 +313,38 @@ while 1:
 		if run_client == 0:
 			sleep(30) 
 
-	if run_client:
-		#process monitor loop
-		for pid in monitor.keys():
-			sleep(5) #check one pid every n seconds.
-			if server.pid_check(pid,WATCHDOG_TIMEOUT) == "NOK":
-				#watchdog timed out
-				print "gal: WATCHDOG: PID",pid,"EXPIRED"
-				#remove the expired PID
-				server.pid_remove(pid)
-				epl = json.loads(server.pid_list()) 	#get the current pid list
-				cmd_line = monitor[pid]['cmd']
-				#terminate the process
-				terminate_process(monitor[pid]['process'])
-				monitor.pop(pid)
-				#launch new process
-				launching = 1
-				while launching == 1:
-					new_pid = make_pid()
-					p = Popen(shlex.split(cmd_line + new_pid),stdin=fnull, stdout=fnull, stderr=GTS_STDERR_FILE)
-					retry = MONITORED_PROCESS_LAUNCH_TIMEOUT
-					while retry > 0:
-						sleep(1)
-						cpl = json.loads(server.pid_list())	#get the current pid list
-						npl = list(set(epl) ^ set(cpl)) 	#find the new pid(s)
-						epl = cpl				#update the existing pid list
-						if new_pid in npl:
-							monitor.update({new_pid:{'cmd':cmd_line,'process':p}})	#store the pid/cmd_line/process
-							print "gal: Monitored Process Launched (PID:",new_pid,"CMD:",cmd_line,")"
-							launching = 0
-							break
-						else:
-							retry -= 1
-					if retry == 0:
-						print "gal: ERROR: Monitored Process Failed to Launch","(CMD:",cmd_line,")"		
+	#process monitor loop
+	for pid in monitor.keys():
+		sleep(5) #check one pid every n seconds.
+		if server.pid_check(pid,WATCHDOG_TIMEOUT) == "NOK":
+			#watchdog timed out
+			print "gal: WATCHDOG: PID",pid,"EXPIRED"
+			#remove the expired PID
+			server.pid_remove(pid)
+			epl = json.loads(server.pid_list()) 	#get the current pid list
+			cmd_line = monitor[pid]['cmd']
+			#terminate the process
+			terminate_process(monitor[pid]['process'])
+			monitor.pop(pid)
+			#launch new process
+			launching = 1
+			while launching == 1:
+				new_pid = make_pid()
+				p = Popen(shlex.split(cmd_line + new_pid),stdin=fnull, stdout=fnull, stderr=GTS_STDERR_FILE)
+				retry = MONITORED_PROCESS_LAUNCH_TIMEOUT
+				while retry > 0:
+					sleep(1)
+					cpl = json.loads(server.pid_list())	#get the current pid list
+					npl = list(set(epl) ^ set(cpl)) 	#find the new pid(s)
+					epl = cpl				#update the existing pid list
+					if new_pid in npl:
+						monitor.update({new_pid:{'cmd':cmd_line,'process':p}})	#store the pid/cmd_line/process
+						print "gal: Monitored Process Launched (PID:",new_pid,"CMD:",cmd_line,")"
+						launching = 0
+						break
+					else:
+						retry -= 1
+				if retry == 0:
+					print "gal: ERROR: Monitored Process Failed to Launch","(CMD:",cmd_line,")"		
 
 fnull.close()
