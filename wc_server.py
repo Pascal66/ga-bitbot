@@ -147,6 +147,14 @@ def set_default_db(db_hash = None):
 def server_static(filepath):
 	return static_file(filepath, root='./report')
 
+@route('/img/<filepath:path>')
+def server_static(filepath):
+	return static_file(filepath, root='./report/img')
+
+@route('/js/<filepath:path>')
+def server_static(filepath):
+	return static_file(filepath, root='./report/js')
+
 
 run(host=ip_address, port=PORT)
 

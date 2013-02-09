@@ -33,6 +33,11 @@ tr:nth-child(odd) td 	{background-color:#2C2E2A;}
 .ui-input-label-text	{ background: url(../img/label.png) repeat-x top center; border: 2px solid #555555;
 			-moz-border-radius: 5px; padding: 5px; color: black; font-weight: bold;
 			-webkit-border-radius: 5px; font-size: 1em;}
+
+.ui-highlight-text	{ background: url(../img/highlight.png) repeat-x top center; border: 2px solid #555555;
+			-moz-border-radius: 5px; padding: 5px; color: black; font-weight: bold;
+			-webkit-border-radius: 5px; font-size: 1em;}
+
 .ui-error-text		{ background: url(../img/error.png) repeat-x top center; border: 2px solid #555555;
 			-moz-border-radius: 5px; padding: 5px; color: black; font-weight: bold;
 			-webkit-border-radius: 5px; font-size: 1em;}

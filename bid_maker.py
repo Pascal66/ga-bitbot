@@ -91,7 +91,7 @@ while 1:
 	gdhl.remove('0db45d2a4141101bdfe48e3314cfbca3') #remove the undefined db
 	#for each db
 	for gdh in gdhl:
-		time.sleep(10) #throttle the load to the client computer and the gene server.
+		time.sleep(5) #throttle the load to the client computer and the gene server.
 		#register as a default client (this will allow remote dynamic configuration of the report generation)
 		pid = "BID_MAKER"
 		#gdh = json.loads(server.get_default_gene_def_hash())
@@ -192,7 +192,7 @@ while 1:
 					#time stamp the bid and capture the gene id
 					p.update({'bid_maker_time_stamp':time.time(),'gene_id':ag['id'],'score':score})
 
-					te.chart("./report/chart.templ",gdh + '/' + ag['id'] + '.html',write_cache_only=True)
+					te.chart("./report/chart.templ",gdh + '/' + ag['id'] + '.html',chart_zoom_periods,basic_chart=chart_type,write_cache_only=True)
 
 					#print "Evaluating target price"
 					if ((target >= p['buy']) or (abs(target - p['buy']) < 0.01)) and p['buy'] != 0: #submit the order at or below target

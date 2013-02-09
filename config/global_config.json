@@ -11,8 +11,8 @@
 		"load_throttle" : 1,
 		"load_throttle_sleep_interval" : 0.1,
 		"calibrate" : 1,
-		"cycle_time" : 30,
-		"min_cycle_time" : 16,
+		"cycle_time" : 60,
+		"min_cycle_time" : 30,
 		"cycle_time_step" : 2,
 		"pid_update_rate" : 25,
 
@@ -30,8 +30,8 @@
 		"enable_text_messaging":0,
 
 		"REPORTGEN_SECTION" : 1,
-		"chart_zoom_periods" : 1500,
-		"chart_now_periods" : 200,
+		"chart_zoom_periods" : 2500,
+		"chart_now_periods" : 800,
 		"win_loss_gate_pct" : 0.80,
 		"chart_type" : 1,
 

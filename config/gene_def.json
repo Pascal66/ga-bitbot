@@ -1,9 +1,9 @@
 {
-	"name":"med window low markup",
+	"name":"bct_slope - med window low markup",
 	"version":"0.7",
 	"description":"1.5 - 2.77% markup",
 
-	"fitness_script":"bct_alt",
+	"fitness_script":"bct_slope",
 	"fitness_config":
 	{
 		"set" :

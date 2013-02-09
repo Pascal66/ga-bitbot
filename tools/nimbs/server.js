@@ -58,7 +58,7 @@ var options = {
 
 
 //give a bad address for the depth init - needed for debug 
-//because multiple requests from server restarts will get the IP temporarialy blocked
+//because multiple requests from server restarts could get the IP banned
 
 /*
 console.log('Requesting depth initialization...');
@@ -278,6 +278,7 @@ function onMessage(msg)
 	{
 		if(typeof(msg.depth) !== 'undefined')
 		{
+			var p_depth = parseFloat(parseFloat(msg.depth.price).toFixed(2)); //round to the nearest cent 
 			if (msg.depth.type_str == 'bid')
 			{
 				bid_depth[msg.depth.price] = parseFloat(msg.depth.total_volume_int) / 100000000.0;
@@ -296,13 +297,11 @@ function onMessage(msg)
 	{
 		if(typeof(msg.trade) !== 'undefined')
 		{
-			trade_buffer.push({'volume':msg.trade.amount, 'price':msg.trade.price});
-			console.log('--ch_trades-amt-' + msg.trade.amount);
-			console.log('--ch_trades-price-' + msg.trade.price);
-			//for (var prop in msg.trade)
-			//{
-			//	console.log(prop + ": " + msg[prop])
-			//}
+			if (msg.trade.price_currency == 'USD')
+			{
+				trade_buffer.push({'volume':msg.trade.amount, 'price':msg.trade.price});
+				console.log('server.js: ch_trades-amt: ' + msg.trade.amount + ', ch_trades-price: ' + msg.trade.price);
+			}
 		}
 	}
 
@@ -322,8 +321,7 @@ function log_one_min_trade()
 	});
 	weighted = weighted / volume;
 	trade_buffer = []; //clear the buffer
-	console.log('--1min price--' + weighted);
-	console.log('--1min volume--' + volume);
+	console.log('server.js: 1min price: ' + weighted + ', 1min volume: ' + volume);
 	if (volume > 0)
 	{
 		gabb.emit('message', {'channel':'1min','price':weighted,'volume':volume,'time':(new Date).getTime()});
