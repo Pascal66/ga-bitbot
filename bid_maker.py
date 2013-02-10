@@ -193,6 +193,7 @@ while 1:
 					p.update({'bid_maker_time_stamp':time.time(),'gene_id':ag['id'],'score':score})
 
 					te.chart("./report/chart.templ",gdh + '/' + ag['id'] + '.html',chart_zoom_periods,basic_chart=chart_type,write_cache_only=True)
+					te.cache_output(gdh + '/' + ag['id'])
 
 					#print "Evaluating target price"
 					if ((target >= p['buy']) or (abs(target - p['buy']) < 0.01)) and p['buy'] != 0: #submit the order at or below target

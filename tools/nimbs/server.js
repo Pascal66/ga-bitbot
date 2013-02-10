@@ -231,6 +231,12 @@ gabb.on('connection', function (socket) {
 			});
 	});
 
+	socket.on('request_gene_data', function (gene_def,gene_id) {
+		console.log('gene data requested: id: ' + gene_id + ' , from db: ' + gene_def);
+		redis.get(gene_def + '/' + gene_id, function (err, reply) {
+			socket.emit('message', {'channel':'gene_data','value':JSON.parse(reply)});
+		});
+	});
 });
 
 

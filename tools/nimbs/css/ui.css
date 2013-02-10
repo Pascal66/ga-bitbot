@@ -42,8 +42,6 @@ tr:nth-child(odd) td 	{background-color:#2C2E2A;}
 			-moz-border-radius: 5px; padding: 5px; color: black; font-weight: bold;
 			-webkit-border-radius: 5px; font-size: 1em;}
 
-
-
 .ui-input-text	{ background: url(../img/button.png) repeat-x top center; border: 2px solid #c77000;
 			-moz-border-radius: 5px; padding: 5px; color: black; font-weight: bold;
 			-webkit-border-radius: 5px; font-size: 12px;  width: 80px; }
@@ -56,6 +54,16 @@ tr:nth-child(odd) td 	{background-color:#2C2E2A;}
 
 .help			{ float:right; display: block; background: url(../img/help-icon.png); width: 46px;height: 46px;}
 .help:hover		{ float:right; display: block; background: url(../img/help-icon-hover.png); width: 46px;height: 46px;}
+
+.ui-overlay		{background: url(../img/button.png) no-repeat center center fixed;-webkit-background-size: cover; opacity: 0.95;
+        		-moz-background-size: cover; -o-background-size: cover; background-size: cover; 
+			background-color:#2C2E2A;width:80%;height:80%;position:absolute;top:10%;right:10%;opacity: 90%;z-index: 1000;border: 2px solid #CEC169;;
+			-moz-border-radius: 5px; padding: 5px; color: black; font-weight: bold;
+			-webkit-border-radius: 5px; font-size: 12px;}
+
+.ui-overlay-content	{background-color:#2C2E2A;width:98%;height:92%;position:relative;top:0;right:0;opacity: 90%;z-index: 1001;border: 2px solid #CEC169;;
+			-moz-border-radius: 5px; padding: 5px; color: black; font-weight: bold;
+			-webkit-border-radius: 5px; font-size: 12px;}
 
 
 #spinner        {position:absolute;}

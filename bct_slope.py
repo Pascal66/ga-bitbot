@@ -756,6 +756,10 @@ class trade_engine:
 
 		return ret_log
 
+	def cache_output(self,cache_name):
+		self.logs.compress_logs(exclude_keys=['buy','sell','stop','trigger'],lossless_compression = False, max_lossy_length = 1000)
+		self.cache.set(cache_name,self.logs.json())
+
 	def chart(self,template,filename,periods=-1,basic_chart=False,write_cache_only=False):
 		self.log_orders()
 		
