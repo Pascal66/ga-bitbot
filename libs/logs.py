@@ -103,6 +103,20 @@ class logs:
 			self._log[key] = ret_log	
 		return ret_log
 
+
+	def prune_logs(self,start_time,exclude_keys=[]):
+		#prunes all logs data to after start_time
+		for key in self._log.keys():
+			if not (key in exclude_keys):
+				pruned = []
+				for i in xrange(len(self._log[key])):
+					if self._log[key][i][0] >= start_time:
+						pruned.append(self._log[key][i])
+				self._log[key] = pruned
+		return
+		
+
+
 if __name__ == "__main__":
 	log = logs()
 	log.append('alog',0)
@@ -168,6 +182,11 @@ if __name__ == "__main__":
 	print len(log._log['time_series2'])
 	print "non-excluded series len:"
 	print len(log._log['time_series3'])
+
+
+	print "testing pruning"
+	log.prune_logs(900,exclude_keys=['alog','blog','list','empty','time_series','time_series3'])
+	print len(log._log['time_series2'])
 
 
 

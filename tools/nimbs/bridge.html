@@ -9,19 +9,16 @@
 <script language="javascript" type="text/javascript" src="/js/d3.v2.min.js"></script>
 <script language="javascript" type="text/javascript" src="/js/d3.parcoords.js"></script>
 
-
 <script language="javascript" type="text/javascript" src="/js/jquery-1.8.3.js"></script>
 <script language="javascript" type="text/javascript" src="/js/jquery.flot.js"></script>
 <script language="javascript" type="text/javascript" src="/js/jquery.flot.resize.js"></script>
+<script language="javascript" type="text/javascript" src="/js/jquery.flot.navigate.min.js"></script>
+
 <script language="javascript" type="text/javascript" src="/js/jquery-ui-1.9.2.custom.min.js"></script>
 <script language="javascript" type="text/javascript" src="/js/jquery.dataTables.min.js"></script>
 
 <script language="javascript" type="text/javascript" src="/jslib/pcf2.js"></script>
 <script language="javascript" type="text/javascript" src="/jslib/gene_db.js"></script>
-
-
-
-
 
 <script>
   $(document).ready(function() {
@@ -39,8 +36,6 @@
 	$('#calc_button').button();
 	$('#gene_db_reload_button').button();
 
-
-
 	//fire off an initial db info request
 	requestDBLibInfo();
 
@@ -54,10 +49,8 @@ var gdbl = new gene_db_lib();
 var debug;
 </script>
 
-
-
 <body>
-<div class='ui-overlay' id='overlay'><input type='button' id='overlay_back_button' value='Back'><br><div id='overlay_content' class='ui-overlay-content'>OVERLAY</div></div>
+<div class='ui-overlay' id='overlay'><input type='button' id='overlay_back_button' value='<< Back'><br><div id='overlay_content' class='ui-overlay-content'>OVERLAY</div></div>
 <div id="tabs">
     <ul>
         <li><a href="#tab-1"><span>Targets</span></a></li>
@@ -171,8 +164,11 @@ var debug;
 	var conn = io.connect(window.location.hostname + ':8088/ga_bitbot');
 
 
+	//helper functions for flot time series formating
+	function pctFormatter(v, axis) {return v.toFixed(axis.tickDecimals) +"%";}
+	function dollarFormatter(v, axis) {return "$" + v.toFixed(axis.tickDecimals);}
 
-	// setup plot
+	// setup market depth plot
 	var options = {
 		series: { shadowSize: 0 },
 		yaxis: { min: 0.01, max: depth_max_volume, color: "#c2d98f" },
@@ -243,15 +239,8 @@ var debug;
 	}
 	function onMessage(msg)
 	{
-		if (msg.channel == 'full_ask')
-		{
-			ask_depth = msg.depth;
-		}
-		if (msg.channel == 'full_bid')
-		{
-			bid_depth = msg.depth;
-			//$('#debug').html(JSON.stringify(msg.depth));
-		}
+		if (msg.channel == 'full_ask'){ask_depth = msg.depth;}
+		if (msg.channel == 'full_bid'){bid_depth = msg.depth;}
 		if (msg.channel == '1min')
 		{
 			t = new Date(msg.time).toTimeString().replace(/.*(\d{2}:\d{2}:\d{2}).*/, "$1");
@@ -260,25 +249,48 @@ var debug;
 				$('#1min_table tr:last').remove();
 			}
 		}
-		if (msg.channel == 'gene_db')
-		{			
-			//gene_db = msg.value;
-			set_gene_db(msg.value);
-		}
-		if (msg.channel == 'gene_db_stripped')
-		{			
-			//gene_db = msg.value;
-			set_gene_db_info(msg.value);
-		}
-		if (msg.channel == 'gene_server_metrics')
-		{			
-			//gene_db = msg.value;
-			set_gene_server_metrics(msg.value);
-		}
+		if (msg.channel == 'gene_db'){set_gene_db(msg.value);}
+		if (msg.channel == 'gene_db_stripped'){ set_gene_db_info(msg.value);}
+		if (msg.channel == 'gene_server_metrics'){set_gene_server_metrics(msg.value);}
 		if (msg.channel == 'gene_data')
-		{			
-			//gene_db = msg.value;
-			debug = JSON.parse(msg.value);
+		{
+			debug = [];
+			var axis_data = {};
+			var selected_axis;
+			//clear the overlay content container
+			$('#overlay_content').html('<h2>Gene Link</h2>');
+			var gd = JSON.parse(msg.value);
+			for (var series in gd){
+				if (gd[series].length > 1){
+					//find the min max of each series to determine which axis it should belong to
+					selected_axis = gd[series].reduce(function(max, arr) {return max >= arr[1] ? max : arr[1];}, -Infinity);				
+					selected_axis = parseInt((selected_axis / 10.0).toFixed(0));
+					debug.push({ data: gd[series], label: series, yaxis: selected_axis ,lines: {show: true,fill: false,steps: true}});				
+					if (axis_data[selected_axis] == undefined){axis_data[selected_axis] = [];}
+					axis_data[selected_axis].push({ data: gd[series], label: series, yaxis: selected_axis ,lines: {show: true,fill: false,steps: true}});
+				}
+
+			}
+
+			//plot each axis in its own chart
+			for (selected_axis in axis_data){
+				var chart_height;
+				if (axis_data[selected_axis].length > 2){chart_height='40%';}else{chart_height='20%';}
+				$('#overlay_content').append('<div id="glc_'+selected_axis+'" style="width:98%;height:'+chart_height+';font-size:1.30em;"></div>')
+				$.plot($('#glc_' + selected_axis),axis_data[selected_axis],
+					{ 
+						series: { shadowSize: 0 },
+						yaxis: { color: "#c2d98f",zoomRange: [0.1, 10], panRange: [null, null]},
+						xaxis: { mode: 'time', show: true, zoomRange: [1, 2], panRange: [null,null],color: "#c2d98f" },
+						grid : { backgroundColor: "#242423"},
+//						zoom: {interactive: true},
+						pan: {interactive: true},
+						autoHighlight: true,
+		    				mouseActiveRadius: 3
+					}
+				);
+			};
+			
 			//$('#overlay_content').html(msg.value);
 			$('#overlay').show();
 		}		

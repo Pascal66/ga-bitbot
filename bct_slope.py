@@ -619,14 +619,13 @@ class trade_engine:
 		if not self.score_only:
 			#self.time = int(time.mktime(time.strptime(time_stamp))) * 1000
 			self.time = int(time_stamp * 1000) 
-			#self.input_log.append([self.time,record])
 			self.logs.append('price',[self.time,record])
 		
 		###Date,Sell,Buy,Last,Vol,High,Low,###
 		self.history.insert(0,record)
 		if len(self.history) > (self.wll + self.wls):
 			self.history.pop()	#maintain a moving window of
-					#the last wll records
+								#the last wll records
 		self.macd()		#calc macd
 		if self.rsi_enable > 0:
 			self.rs()		#calc RSI
@@ -756,8 +755,12 @@ class trade_engine:
 
 		return ret_log
 
-	def cache_output(self,cache_name):
-		self.logs.compress_logs(exclude_keys=['buy','sell','stop','trigger'],lossless_compression = False, max_lossy_length = 1000)
+	def cache_output(self,cache_name,periods=80000):
+		p = self.logs.get('price')
+		if len(p) > periods:
+			self.logs.prune_logs(p[-1*periods][0])
+
+		self.logs.compress_logs(exclude_keys=['buy','sell','stop','trigger'],lossless_compression = False, max_lossy_length = 10000)
 		self.cache.set(cache_name,self.logs.json())
 
 	def chart(self,template,filename,periods=-1,basic_chart=False,write_cache_only=False):

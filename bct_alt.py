@@ -748,8 +748,12 @@ class trade_engine:
 		return ret_log
 
 
-	def cache_output(self,cache_name):
-		self.logs.compress_logs(exclude_keys=['buy','sell','stop','trigger'],lossless_compression = False, max_lossy_length = 1000)
+	def cache_output(self,cache_name,periods=80000):
+		p = self.logs.get('price')
+		if len(p) > periods:
+			self.logs.prune_logs(p[-1*periods][0])
+
+		self.logs.compress_logs(exclude_keys=['buy','sell','stop','trigger'],lossless_compression = False, max_lossy_length = 10000)
 		self.cache.set(cache_name,self.logs.json())
 
 
