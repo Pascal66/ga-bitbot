@@ -32,16 +32,16 @@ _metrics = {}
 def class_call_metrics(func):
     @wraps(func)
     def _decorator(self, *args, **kwargs):
-    if not hasattr(self, '_metrics'):
-        self._metrics = {}
-    start = time.time()
-    result = func(self, *args, **kwargs)
-    finish = time.time()
-    if not self._metrics.has_key(func.__name__):
-        self._metrics.update({func.__name__:{'total_time':0,'calls':0}})
-    self._metrics[func.__name__]['total_time'] += finish - start
-    self._metrics[func.__name__]['calls'] += 1
-    return result
+        if not hasattr(self, '_metrics'):
+            self._metrics = {}
+        start = time.time()
+        result = func(self, *args, **kwargs)
+        finish = time.time()
+        if not self._metrics.has_key(func.__name__):
+            self._metrics.update({func.__name__:{'total_time':0,'calls':0}})
+        self._metrics[func.__name__]['total_time'] += finish - start
+        self._metrics[func.__name__]['calls'] += 1
+        return result
     return _decorator
 
 #decorator which can be used on funcitons
@@ -49,14 +49,14 @@ def class_call_metrics(func):
 def call_metrics(func):
     @wraps(func)
     def _decorator(*args, **kwargs):
-    start = time.time()
-    result = func(*args, **kwargs)
-    finish = time.time()
-    if not _metrics.has_key(func.__name__):
-        _metrics.update({func.__name__:{'total_time':0,'calls':0}})
-    _metrics[func.__name__]['total_time'] += finish - start
-    _metrics[func.__name__]['calls'] += 1
-    return result
+        start = time.time()
+        result = func(*args, **kwargs)
+        finish = time.time()
+        if not _metrics.has_key(func.__name__):
+            _metrics.update({func.__name__:{'total_time':0,'calls':0}})
+        _metrics[func.__name__]['total_time'] += finish - start
+        _metrics[func.__name__]['calls'] += 1
+        return result
     return _decorator
 
 
@@ -68,14 +68,14 @@ if __name__ == '__main__':
     class test():    
         @class_call_metrics
         def test(self,data):
-        """test method doc string"""
-        z = 0
-        for i in range(9999):
-            for x in range(9999):
-                z += 1
+            """test method doc string"""
+            z = 0
+            for i in range(9999):
+                for x in range(9999):
+                    z += 1
 
-        print "data:",data              
-        return 1
+            print "data:",data              
+            return 1
 
 
     @call_metrics
