@@ -11,7 +11,7 @@
 			"input_file_name": "./datafeed/bcfeed_mtgoxUSD_1min.csv",
 			"nlsf": 7.0,
 			"stbf": 1.025,
-			"commision": 0.06,
+			"commision": 0.006,
 			"atr_depth": 15,
 			"max_length" : 75000,
 			"enable_flash_crash_protection" : 1,
