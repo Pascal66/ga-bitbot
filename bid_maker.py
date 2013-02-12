@@ -8,23 +8,23 @@ Copyright 2011 Brian Monkaba
 
 This file is part of ga-bitbot.
 
-        ga-bitbot is free software: you can redistribute it and/or modify
-        it under the terms of the GNU General Public License as published by
-        the Free Software Foundation, either version 3 of the License, or
-        (at your option) any later version.
+    ga-bitbot is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
-        ga-bitbot is distributed in the hope that it will be useful,
-        but WITHOUT ANY WARRANTY; without even the implied warranty of
-        MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-        GNU General Public License for more details.
+    ga-bitbot is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
-        You should have received a copy of the GNU General Public License
-        along with ga-bitbot.  If not, see <http://www.gnu.org/licenses/>.
+    You should have received a copy of the GNU General Public License
+    along with ga-bitbot.  If not, see <http://www.gnu.org/licenses/>.
 """ 
  
 #
-#       Generates GA trade simulation reports using the gene server
-#       Also calculates & submits the next buy trigger
+#   Generates GA trade simulation reports using the gene server
+#   Also calculates & submits the next buy trigger
 #
 
 __appversion__ = "0.01a"
@@ -65,176 +65,176 @@ chart_type = 0
 config_loaded = 0
 #load config
 try:
-        __main__ = load_config_file_into_object('global_config.json',__main__)
+    __main__ = load_config_file_into_object('global_config.json',__main__)
 except:
-        print "bid_maker: error detected while loading the configuration. the application will now exit."
+    print "bid_maker: error detected while loading the configuration. the application will now exit."
+    import sys
+    sys.exit()
+else:
+    if config_loaded == False:
+        print "bid_maker: configuration failed to load. the application will now exit."
         import sys
         sys.exit()
-else:
-        if config_loaded == False:
-                print "bid_maker: configuration failed to load. the application will now exit."
-                import sys
-                sys.exit()
-        else:
-                print "bid_maker: configuration loaded."
+    else:
+        print "bid_maker: configuration loaded."
 
 
 
 while 1:
-        start_time = time.time()
+    start_time = time.time()
 
-        skip_sleep_delay = False #default to sleep delay mode between cycles
-                                #will be set to true (and skip the sleep delay) if target prices are found.
+    skip_sleep_delay = False #default to sleep delay mode between cycles
+                #will be set to true (and skip the sleep delay) if target prices are found.
 
-        #get the hash list of all the databases
-        gdhl = json.loads(server.get_gene_def_hash_list())
-        gdhl.remove('0db45d2a4141101bdfe48e3314cfbca3') #remove the undefined db
-        #for each db
-        for gdh in gdhl:
-                time.sleep(5) #throttle the load to the client computer and the gene server.
-                #register as a default client (this will allow remote dynamic configuration of the report generation)
-                pid = "BID_MAKER"
-                #gdh = json.loads(server.get_default_gene_def_hash())
-                #load the gene def config
-                gd = json.loads(server.get_gene_def(gdh))
-                server.pid_register_client(pid,gdh)
+    #get the hash list of all the databases
+    gdhl = json.loads(server.get_gene_def_hash_list())
+    gdhl.remove('0db45d2a4141101bdfe48e3314cfbca3') #remove the undefined db
+    #for each db
+    for gdh in gdhl:
+        time.sleep(5) #throttle the load to the client computer and the gene server.
+        #register as a default client (this will allow remote dynamic configuration of the report generation)
+        pid = "BID_MAKER"
+        #gdh = json.loads(server.get_default_gene_def_hash())
+        #load the gene def config
+        gd = json.loads(server.get_gene_def(gdh))
+        server.pid_register_client(pid,gdh)
 
-                print "_" * 80
-                print "bid_maker: " + time.ctime()
-                print "bid_maker: finding target bid for",gdh
+        print "_" * 80
+        print "bid_maker: " + time.ctime()
+        print "bid_maker: finding target bid for",gdh
 
 
-                #create the trade engine        
-                print "bid_maker: loading the fitness function"
-                ff = None
-                if gd.has_key('fitness_script'):
-                        ff = __import__(gd['fitness_script'])
-                else:
-                        ff = __import__('bct')
-                ff = reload(ff) #make sure we're not using a cached version of the module
-                te = ff.trade_engine()
-                #te.cache.disable()     #dont use cached data for reporting
-                te.cache_input = False  #dont use cached data for reporting
+        #create the trade engine    
+        print "bid_maker: loading the fitness function"
+        ff = None
+        if gd.has_key('fitness_script'):
+            ff = __import__(gd['fitness_script'])
+        else:
+            ff = __import__('bct')
+        ff = reload(ff) #make sure we're not using a cached version of the module
+        te = ff.trade_engine()
+        #te.cache.disable() #dont use cached data for reporting
+        te.cache_input = False  #dont use cached data for reporting
 
-                #apply global configs
-                te.max_length = max_length
-                te.enable_flash_crash_protection = enable_flash_crash_protection 
-                te.flash_crash_protection_delay = flash_crash_protection_delay
-                
-                #load the gene def fitness config into the trade engine
-                if gd.has_key('fitness_config'):
-                        te = load_config_into_object(gd['fitness_config'],te)
-                quartile = te.initialize()                              
-                #select the quartile to test
-                te.test_quartile(quartile)
-
-                #get the high score gene from the gene server
-                try:
-                        ag = json.loads(server.get(60*60*24*7,quartile,pid))
-                except:
-                        print "bid_maker: warning: gene server error or no data available."
-                        #if the quartile is active set the buy to 0 to prevent old targets from remaining active
-                        #this is for fault protection as it should never normaly happen:
-                        if quartile == server.get_active_quartile():
-                                p = {'buy':-1.00,'bid_maker_time_stamp':time.time(),'gene_id':ag['id'],'score':0}
-                                server.put_target(json.dumps(p),pid)
-                else:
+        #apply global configs
+        te.max_length = max_length
+        te.enable_flash_crash_protection = enable_flash_crash_protection 
+        te.flash_crash_protection_delay = flash_crash_protection_delay
         
-                        if type(ag) == type([]):
-                                ag = ag[0]
-        
+        #load the gene def fitness config into the trade engine
+        if gd.has_key('fitness_config'):
+            te = load_config_into_object(gd['fitness_config'],te)
+        quartile = te.initialize()              
+        #select the quartile to test
+        te.test_quartile(quartile)
 
-                        #load the gene dictionary into the trade engine
-                        te = load_config_into_object({'set':ag},te)
+        #get the high score gene from the gene server
+        try:
+            ag = json.loads(server.get(60*60*24*7,quartile,pid))
+        except:
+            print "bid_maker: warning: gene server error or no data available."
+            #if the quartile is active set the buy to 0 to prevent old targets from remaining active
+            #this is for fault protection as it should never normaly happen:
+            if quartile == server.get_active_quartile():
+                p = {'buy':-1.00,'bid_maker_time_stamp':time.time(),'gene_id':ag['id'],'score':0}
+                server.put_target(json.dumps(p),pid)
+        else:
+    
+            if type(ag) == type([]):
+                ag = ag[0]
+    
 
-                        print "_" * 40
-                        print "bid_maker: quartile:",quartile, "(%.4f)"%ag['score'],"+active"
-                        server.put_active_quartile(quartile,pid)
+            #load the gene dictionary into the trade engine
+            te = load_config_into_object({'set':ag},te)
 
-                        #run the trade engine
-                        try:
-                                te.run()
-                        except:
-                                print "bid_maker: gene fault"
+            print "_" * 40
+            print "bid_maker: quartile:",quartile, "(%.4f)"%ag['score'],"+active"
+            server.put_active_quartile(quartile,pid)
+
+            #run the trade engine
+            try:
+                te.run()
+            except:
+                print "bid_maker: gene fault"
+            else:
+                if len(te.positions) == 0:
+                    print "bid_maker: no positions, order cleared"
+                    p = {'buy':-1.00,'bid_maker_time_stamp':time.time(),'gene_id':ag['id'],'score':0}
+                    server.put_target(json.dumps(p),pid)
+
+                # Calc the next buy trigger point
+                else:   #if len(te.positions) > 0:
+                    #get the target trigger price
+                    target = te.get_target()
+                    print "bid_maker: inverse MACD result (target): ",target
+
+                    if target > te.history[1]:
+                        target = te.history[1]
+
+                    #first check to see if the tested input triggered a buy:
+                    if te.positions[-1]['buy_period'] == te.period - 1:
+                        p = te.positions[-1]
+                        target = p['buy']
+                    else:
+                        print "bid_maker: last buy order was", te.period - te.positions[-1]['buy_period'],"periods ago."
+                        #if not try to calculate the trigger point to get the buy orders in early...
+                        #print "Trying to trigger with: ",target
+                        st = time.time()
+                        te.input(st,target)
+                        p = te.positions[-1].copy()
+                        if p['buy'] != target:
+                            #print "Order not triggered @",target
+                            p['buy'] = 0.00
+                            p['target'] = 0.00
+                    
+                    score = te.score()
+                    print "bid_maker: score: ",score
+                    #time stamp the bid and capture the gene id
+                    p.update({'bid_maker_time_stamp':time.time(),'gene_id':ag['id'],'score':score})
+
+                    te.chart("./report/chart.templ",gdh + '/' + ag['id'] + '.html',chart_zoom_periods,basic_chart=chart_type,write_cache_only=True)
+                    te.cache_output(gdh + '/' + ag['id'],periods=30000)
+
+                    #print "Evaluating target price"
+                    if ((target >= p['buy']) or (abs(target - p['buy']) < 0.01)) and p['buy'] != 0: #submit the order at or below target
+                        #format the orders
+                        p['buy'] = float(price_format%(p['buy'] - 0.01))
+                        p['target'] = float(price_format%p['target'])
+                        p.update({'stop_age':(60 * te.stop_age)})
+                        if float(te.wins / float(te.wins + te.loss + 0.000001)) > win_loss_gate_pct:
+                            #only submit an order if the win/loss ratio is greater than x%
+                            print "bid_maker: sending target buy order to server @ $" + str(p['buy'])
+                            server.put_target(json.dumps(p),pid)
+                            skip_sleep_delay = True #if target buy orders are active skip the sleep delay
                         else:
-                                if len(te.positions) == 0:
-                                        print "bid_maker: no positions, order cleared"
-                                        p = {'buy':-1.00,'bid_maker_time_stamp':time.time(),'gene_id':ag['id'],'score':0}
-                                        server.put_target(json.dumps(p),pid)
-
-                                # Calc the next buy trigger point
-                                else:   #if len(te.positions) > 0:
-                                        #get the target trigger price
-                                        target = te.get_target()
-                                        print "bid_maker: inverse MACD result (target): ",target
-
-                                        if target > te.history[1]:
-                                                target = te.history[1]
-
-                                        #first check to see if the tested input triggered a buy:
-                                        if te.positions[-1]['buy_period'] == te.period - 1:
-                                                p = te.positions[-1]
-                                                target = p['buy']
-                                        else:
-                                                print "bid_maker: last buy order was", te.period - te.positions[-1]['buy_period'],"periods ago."
-                                                #if not try to calculate the trigger point to get the buy orders in early...
-                                                #print "Trying to trigger with: ",target
-                                                st = time.time()
-                                                te.input(st,target)
-                                                p = te.positions[-1].copy()
-                                                if p['buy'] != target:
-                                                        #print "Order not triggered @",target
-                                                        p['buy'] = 0.00
-                                                        p['target'] = 0.00
-                                        
-                                        score = te.score()
-                                        print "bid_maker: score: ",score
-                                        #time stamp the bid and capture the gene id
-                                        p.update({'bid_maker_time_stamp':time.time(),'gene_id':ag['id'],'score':score})
-
-                                        te.chart("./report/chart.templ",gdh + '/' + ag['id'] + '.html',chart_zoom_periods,basic_chart=chart_type,write_cache_only=True)
-                                        te.cache_output(gdh + '/' + ag['id'],periods=30000)
-
-                                        #print "Evaluating target price"
-                                        if ((target >= p['buy']) or (abs(target - p['buy']) < 0.01)) and p['buy'] != 0: #submit the order at or below target
-                                                #format the orders
-                                                p['buy'] = float(price_format%(p['buy'] - 0.01))
-                                                p['target'] = float(price_format%p['target'])
-                                                p.update({'stop_age':(60 * te.stop_age)})
-                                                if float(te.wins / float(te.wins + te.loss + 0.000001)) > win_loss_gate_pct:
-                                                        #only submit an order if the win/loss ratio is greater than x%
-                                                        print "bid_maker: sending target buy order to server @ $" + str(p['buy'])
-                                                        server.put_target(json.dumps(p),pid)
-                                                        skip_sleep_delay = True #if target buy orders are active skip the sleep delay
-                                                else:
-                                                        print "bid_maker: underperforming trade strategy, no order"
-                                                        p['buy'] = 0.00
-                                                        p['target'] = 0.00
-                                                        server.put_target(json.dumps(p),pid)
-                                                print "-" * 40
-                                                print "bid_maker: trigger criteria met, bid set."
-                                                #print "\tQuartile     :",quartile
-                                                print "\tBuy        :$", p['buy']
-                                                print "\tTarget     :$",p['target']
-                                                print "\tWin Ratio    :","%.3f"%((te.wins / float(te.wins + te.loss + 0.000001)) * 100),"%"
-                                                print "-" * 40
-                                        else:
-                                                print "-" * 40
-                                                print "bid_maker: trigger criteria not met, no bid set."
-                                                print "\tBuy        :$", p['buy']
-                                                print "\tTarget     :$",p['target']
-                                                print "\tInput Target :$",target
-                                                #print "\tMACD Log     : ",te.logs.get('macd')[-1][1]
-                                                #print "\tMACD Trip    : ",te.macd_buy_trip
-                                                print "-" * 40
-                                                p.update({'stop_age':(60 * te.stop_age)}) #DEBUG ONLY!! - delete when done.
-                                                p['buy'] = 0.00
-                                                p['target'] = 0.00
-                                                server.put_target(json.dumps(p),pid)
+                            print "bid_maker: underperforming trade strategy, no order"
+                            p['buy'] = 0.00
+                            p['target'] = 0.00
+                            server.put_target(json.dumps(p),pid)
+                        print "-" * 40
+                        print "bid_maker: trigger criteria met, bid set."
+                        #print "\tQuartile     :",quartile
+                        print "\tBuy        :$", p['buy']
+                        print "\tTarget     :$",p['target']
+                        print "\tWin Ratio    :","%.3f"%((te.wins / float(te.wins + te.loss + 0.000001)) * 100),"%"
+                        print "-" * 40
+                    else:
+                        print "-" * 40
+                        print "bid_maker: trigger criteria not met, no bid set."
+                        print "\tBuy        :$", p['buy']
+                        print "\tTarget     :$",p['target']
+                        print "\tInput Target :$",target
+                        #print "\tMACD Log     : ",te.logs.get('macd')[-1][1]
+                        #print "\tMACD Trip    : ",te.macd_buy_trip
+                        print "-" * 40
+                        p.update({'stop_age':(60 * te.stop_age)}) #DEBUG ONLY!! - delete when done.
+                        p['buy'] = 0.00
+                        p['target'] = 0.00
+                        server.put_target(json.dumps(p),pid)
 
 
-        while True:
-                loop_time = time.time() - start_time
-                if loop_time > 60:
-                        break
-                time.sleep(60 - loop_time)
+    while True:
+        loop_time = time.time() - start_time
+        if loop_time > 60:
+            break
+        time.sleep(60 - loop_time)
