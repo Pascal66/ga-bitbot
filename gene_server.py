@@ -25,7 +25,7 @@ This file is part of ga-bitbot.
 
 # 
 #   gene server
-#	- a xmlrpc server providing a storage/query/configuration/monitoring service for the GA trade system
+#       - a xmlrpc server providing a storage/query/configuration/monitoring service for the GA trade system
 #
 
 import gene_server_config
@@ -63,491 +63,491 @@ g_gene_library = {'0db45d2a4141101bdfe48e3314cfbca3':deepcopy(g_gene_conf)} #def
 g_save_counter = 0
 g_trgt = json.dumps({'buy':0})
 g_active_quartile = 0
-g_d = [[],[],[],[]]	#default group high scores - quartiles 1-4
-g_bobs = [[],[],[],[]]	#default group best of the best - quartiles 1-4
+g_d = [[],[],[],[]]     #default group high scores - quartiles 1-4
+g_bobs = [[],[],[],[]]  #default group best of the best - quartiles 1-4
 g_pids = {}
 
 def echo(msg):
-	return msg
+        return msg
 
 @call_metrics.call_metrics
 def trade_enable(state,gdh):
-	"""
-	sets the trade_enable state
-	state = 0, disable trading
-	state = 1, enable trading
-	"""
-	global g_gene_library
-	try:
-		state = int(state)
-	except:
-		return "NOK : state",state
-	if not (state==1 or state==0):
-		return "NOK : val"
-	if not g_gene_library.has_key(gdh):
-		return "NOK : gdh",gdh
-	g_gene_library[gdh]['trade_enabled'] = state
-	return "OK"
+        """
+        sets the trade_enable state
+        state = 0, disable trading
+        state = 1, enable trading
+        """
+        global g_gene_library
+        try:
+                state = int(state)
+        except:
+                return "NOK : state",state
+        if not (state==1 or state==0):
+                return "NOK : val"
+        if not g_gene_library.has_key(gdh):
+                return "NOK : gdh",gdh
+        g_gene_library[gdh]['trade_enabled'] = state
+        return "OK"
 
 @call_metrics.call_metrics
 def trade_priority(priority,gdh):
-	"""
-	sets the trade priority
-	priority = 0, highest priority
-	.
-	.
-	priority = 9, lowest priority
-	"""
-	global g_gene_library
-	try:
-		priority = int(priority)
-	except:
-		return "NOK:priority",priority
-	if (priority < 0 or priority > 9):
-		return "NOK:val",priority
-	if not g_gene_library.has_key(gdh):
-		return "NOK:gdh",gdh
-	g_gene_library[gdh]['trade_priority'] = priority
-	return "OK"
+        """
+        sets the trade priority
+        priority = 0, highest priority
+        .
+        .
+        priority = 9, lowest priority
+        """
+        global g_gene_library
+        try:
+                priority = int(priority)
+        except:
+                return "NOK:priority",priority
+        if (priority < 0 or priority > 9):
+                return "NOK:val",priority
+        if not g_gene_library.has_key(gdh):
+                return "NOK:gdh",gdh
+        g_gene_library[gdh]['trade_priority'] = priority
+        return "OK"
 
 @call_metrics.call_metrics
 def put_target(target,pid=None):
-	global g_trgt
-	global g_gene_library
-	gdh = get_pid_gene_def_hash(pid)
-	g_gene_library[gdh]['g_trgt'] = target
-	return "OK"
+        global g_trgt
+        global g_gene_library
+        gdh = get_pid_gene_def_hash(pid)
+        g_gene_library[gdh]['g_trgt'] = target
+        return "OK"
 
 @call_metrics.call_metrics
 def get_target(pid=None):
-	global g_trgt
-	global g_gene_library
-	gdh = get_pid_gene_def_hash(pid)
-	return g_gene_library[gdh]['g_trgt']
+        global g_trgt
+        global g_gene_library
+        gdh = get_pid_gene_def_hash(pid)
+        return g_gene_library[gdh]['g_trgt']
 
 @call_metrics.call_metrics
 def put_active_quartile(quartile,pid=None):
-	global g_active_quartile
-	global g_gene_library
-	g_active_quartile = quartile
-	gdh = get_pid_gene_def_hash(pid)
-	g_gene_library[gdh]['g_active_quartile'] = quartile
-	if gdh == g_default_group_gene_def_hash:
-		g_active_quartile = quartile
-	return "OK"
+        global g_active_quartile
+        global g_gene_library
+        g_active_quartile = quartile
+        gdh = get_pid_gene_def_hash(pid)
+        g_gene_library[gdh]['g_active_quartile'] = quartile
+        if gdh == g_default_group_gene_def_hash:
+                g_active_quartile = quartile
+        return "OK"
 
 @call_metrics.call_metrics
 def get_active_quartile(pid=None):
-	global g_active_quartile
-	global g_gene_library
-	gdh = get_pid_gene_def_hash(pid)
-	#return g_gene_library[gdh]['g_active_quartile']
-	return g_active_quartile
+        global g_active_quartile
+        global g_gene_library
+        gdh = get_pid_gene_def_hash(pid)
+        #return g_gene_library[gdh]['g_active_quartile']
+        return g_active_quartile
 
 @call_metrics.call_metrics 
 def get_gene(n_sec,quartile,pid = None):
-	global g_d
-	global g_bobs
-	global g_gene_library
-	gdh = get_pid_gene_def_hash(pid)
+        global g_d
+        global g_bobs
+        global g_gene_library
+        gdh = get_pid_gene_def_hash(pid)
 
-	t = time.time() - n_sec
-	#get the highest score calculated within the last n seconds
-	#or return the latest if none are found.
-	r = []
-	#collect the high scoring records
-	for a_d in g_gene_library[gdh]['gene_high_scores'][quartile - 1]:
-		if a_d['time'] > t:
-			r.append(a_d)
+        t = time.time() - n_sec
+        #get the highest score calculated within the last n seconds
+        #or return the latest if none are found.
+        r = []
+        #collect the high scoring records
+        for a_d in g_gene_library[gdh]['gene_high_scores'][quartile - 1]:
+                if a_d['time'] > t:
+                        r.append(a_d)
 
-	#collect the bob records
-	for a_d in g_gene_library[gdh]['gene_best'][quartile - 1]:
-		if a_d['time'] > t:
-			r.append(a_d)
+        #collect the bob records
+        for a_d in g_gene_library[gdh]['gene_best'][quartile - 1]:
+                if a_d['time'] > t:
+                        r.append(a_d)
 
-	#if no records found, grab the most recent
-	if len(r) == 0:
-		r = sorted(g_gene_library[gdh]['gene_high_scores'][quartile - 1], key=itemgetter('score'),reverse = True)[0]
-		r.append(sorted(g_gene_library[gdh]['gene_best'][quartile - 1], key=itemgetter('score'),reverse = True)[0])
-	
-	if len(r) > 1:
-		#if more than one record found find the highest scoring one
-		r = sorted(r, key=itemgetter('score'),reverse = True)[0]
+        #if no records found, grab the most recent
+        if len(r) == 0:
+                r = sorted(g_gene_library[gdh]['gene_high_scores'][quartile - 1], key=itemgetter('score'),reverse = True)[0]
+                r.append(sorted(g_gene_library[gdh]['gene_best'][quartile - 1], key=itemgetter('score'),reverse = True)[0])
+        
+        if len(r) > 1:
+                #if more than one record found find the highest scoring one
+                r = sorted(r, key=itemgetter('score'),reverse = True)[0]
 
-	print "get",r['time'],r['score']
-		
-	return json.dumps(r)
+        print "get",r['time'],r['score']
+                
+        return json.dumps(r)
 
 @call_metrics.call_metrics
 def get_all_genes(quartile,pid = None):
-	global g_d
-	global g_gene_library
-	gdh = get_pid_gene_def_hash(pid)
-	return json.dumps(sorted(g_gene_library[gdh]['gene_high_scores'][quartile - 1], key=itemgetter('score')))
-	#return json.dumps(sorted(g_d[quartile - 1], key=itemgetter('score')))
+        global g_d
+        global g_gene_library
+        gdh = get_pid_gene_def_hash(pid)
+        return json.dumps(sorted(g_gene_library[gdh]['gene_high_scores'][quartile - 1], key=itemgetter('score')))
+        #return json.dumps(sorted(g_d[quartile - 1], key=itemgetter('score')))
 
 @call_metrics.call_metrics
 def get_bobs(quartile,pid = None):
-	global g_bobs
-	global g_gene_library
-	gdh = get_pid_gene_def_hash(pid)
-	return json.dumps(sorted(g_gene_library[gdh]['gene_best'][quartile - 1], key=itemgetter('score')))
-	#return json.dumps(sorted(g_bobs[quartile - 1], key=itemgetter('score')))
+        global g_bobs
+        global g_gene_library
+        gdh = get_pid_gene_def_hash(pid)
+        return json.dumps(sorted(g_gene_library[gdh]['gene_best'][quartile - 1], key=itemgetter('score')))
+        #return json.dumps(sorted(g_bobs[quartile - 1], key=itemgetter('score')))
 
 @call_metrics.call_metrics
 def put_gene(d,quartile,pid = None):
-	global g_d
-	global g_bobs
-	global g_gene_library
-	gdh = get_pid_gene_def_hash(pid)
-	#dictionary must have two key values, time & score
-	#add the record and sort the dictionary list
-	d = json.loads(d)
+        global g_d
+        global g_bobs
+        global g_gene_library
+        gdh = get_pid_gene_def_hash(pid)
+        #dictionary must have two key values, time & score
+        #add the record and sort the dictionary list
+        d = json.loads(d)
 
-	if any(adict['gene'] == d['gene'] for adict in g_gene_library[gdh]['gene_high_scores'][quartile - 1]):
-		print "put_gene: duplicate gene detected"
-		for i in xrange(len(g_gene_library[gdh]['gene_high_scores'][quartile - 1])):
-			if g_gene_library[gdh]['gene_high_scores'][quartile - 1][i]['gene'] == d['gene']:
-				print "put_gene: removing previous record"
-				g_gene_library[gdh]['gene_high_scores'][quartile - 1].pop(i)
-				break
+        if any(adict['gene'] == d['gene'] for adict in g_gene_library[gdh]['gene_high_scores'][quartile - 1]):
+                print "put_gene: duplicate gene detected"
+                for i in xrange(len(g_gene_library[gdh]['gene_high_scores'][quartile - 1])):
+                        if g_gene_library[gdh]['gene_high_scores'][quartile - 1][i]['gene'] == d['gene']:
+                                print "put_gene: removing previous record"
+                                g_gene_library[gdh]['gene_high_scores'][quartile - 1].pop(i)
+                                break
 
-	if d['score'] != -987654321.12346:	
-		#timestamp the gene submission
-		d['time'] = time.time()
+        if d['score'] != -987654321.12346:      
+                #timestamp the gene submission
+                d['time'] = time.time()
 
-		g_gene_library[gdh]['gene_high_scores'][quartile - 1].append(d)
-		g_gene_library[gdh]['gene_high_scores'][quartile - 1] = sorted(g_gene_library[gdh]['gene_high_scores'][quartile - 1], key=itemgetter('score'),reverse = True)
-	
-		print "put",d['time'],d['score']
-		#prune the dictionary list
-		if len(g_gene_library[gdh]['gene_high_scores'][quartile - 1]) > max_len:
-			g_gene_library[gdh]['gene_high_scores'][quartile - 1] = g_gene_library[gdh]['gene_high_scores'][quartile - 1][:max_len]
+                g_gene_library[gdh]['gene_high_scores'][quartile - 1].append(d)
+                g_gene_library[gdh]['gene_high_scores'][quartile - 1] = sorted(g_gene_library[gdh]['gene_high_scores'][quartile - 1], key=itemgetter('score'),reverse = True)
+        
+                print "put",d['time'],d['score']
+                #prune the dictionary list
+                if len(g_gene_library[gdh]['gene_high_scores'][quartile - 1]) > max_len:
+                        g_gene_library[gdh]['gene_high_scores'][quartile - 1] = g_gene_library[gdh]['gene_high_scores'][quartile - 1][:max_len]
 
-	#update the bob dict if needed.
-	if any(adict['gene'] == d['gene'] for adict in g_gene_library[gdh]['gene_best'][quartile - 1]):
-		print "put_gene: BOB gene detected"
-		#update the gene
-		put_bob(json.dumps(d),quartile,pid)
+        #update the bob dict if needed.
+        if any(adict['gene'] == d['gene'] for adict in g_gene_library[gdh]['gene_best'][quartile - 1]):
+                print "put_gene: BOB gene detected"
+                #update the gene
+                put_bob(json.dumps(d),quartile,pid)
 
 
-	return "OK"
+        return "OK"
 
 @call_metrics.call_metrics
 def put_gene_buffered(d_buffer,quartile,pid = None):
-	for d in d_buffer:
-		put_gene(d,quartile,pid)
-	return "OK"
+        for d in d_buffer:
+                put_gene(d,quartile,pid)
+        return "OK"
 
 @call_metrics.call_metrics
 def put_bob(d,quartile,pid = None):
-	global g_bobs
-	global g_gene_library
-	gdh = get_pid_gene_def_hash(pid)
-	#dictionary must have two key values, time & score
-	#add the record and sort the dictionary list
-	d = json.loads(d)
+        global g_bobs
+        global g_gene_library
+        gdh = get_pid_gene_def_hash(pid)
+        #dictionary must have two key values, time & score
+        #add the record and sort the dictionary list
+        d = json.loads(d)
 
-	if any(adict['gene'] == d['gene'] for adict in g_gene_library[gdh]['gene_best'][quartile - 1]):
-		print "put_bob: duplicate gene detected"
-		for i in xrange(len(g_gene_library[gdh]['gene_best'][quartile - 1])):
-			if g_gene_library[gdh]['gene_best'][quartile - 1][i]['gene'] == d['gene']:
-				print "put_bob: removing previous record"
-				g_gene_library[gdh]['gene_best'][quartile - 1].pop(i)
-				break
+        if any(adict['gene'] == d['gene'] for adict in g_gene_library[gdh]['gene_best'][quartile - 1]):
+                print "put_bob: duplicate gene detected"
+                for i in xrange(len(g_gene_library[gdh]['gene_best'][quartile - 1])):
+                        if g_gene_library[gdh]['gene_best'][quartile - 1][i]['gene'] == d['gene']:
+                                print "put_bob: removing previous record"
+                                g_gene_library[gdh]['gene_best'][quartile - 1].pop(i)
+                                break
 
-	if d['score'] != -987654321.12346:
-		#timestamp the gene submission
-		d['time'] = time.time()
+        if d['score'] != -987654321.12346:
+                #timestamp the gene submission
+                d['time'] = time.time()
 
-		g_gene_library[gdh]['gene_best'][quartile - 1].append(d)
-		g_gene_library[gdh]['gene_best'][quartile - 1] = sorted(g_gene_library[gdh]['gene_best'][quartile - 1], key=itemgetter('score'),reverse = True)
-	
-		print "put bob",d['time'],d['score']
-		#prune the dictionary list
-		if len(g_gene_library[gdh]['gene_best'][quartile - 1]) > max_bobs:
-			g_gene_library[gdh]['gene_best'][quartile - 1] = g_gene_library[gdh]['gene_best'][quartile - 1][:max_bobs]
-	return "OK"
+                g_gene_library[gdh]['gene_best'][quartile - 1].append(d)
+                g_gene_library[gdh]['gene_best'][quartile - 1] = sorted(g_gene_library[gdh]['gene_best'][quartile - 1], key=itemgetter('score'),reverse = True)
+        
+                print "put bob",d['time'],d['score']
+                #prune the dictionary list
+                if len(g_gene_library[gdh]['gene_best'][quartile - 1]) > max_bobs:
+                        g_gene_library[gdh]['gene_best'][quartile - 1] = g_gene_library[gdh]['gene_best'][quartile - 1][:max_bobs]
+        return "OK"
 
 #remote process services 
 @call_metrics.call_metrics
 def pid_register_gene_def(pid,gene_def):
-	global g_pids
-	global g_gene_library
-	global g_gene_conf
-	#calc the hash of gene_def
-	conf_hash = hashlib.md5(gene_def).hexdigest()
-	if conf_hash in g_gene_library.keys():
-		#gene_def already exists
-		pass
-	else:
-		gc = deepcopy(g_gene_conf)
-		gc['gene_def_hash'] = conf_hash
-		gc['gene_def'] = gene_def
-		g_gene_library.update({conf_hash:gc})
+        global g_pids
+        global g_gene_library
+        global g_gene_conf
+        #calc the hash of gene_def
+        conf_hash = hashlib.md5(gene_def).hexdigest()
+        if conf_hash in g_gene_library.keys():
+                #gene_def already exists
+                pass
+        else:
+                gc = deepcopy(g_gene_conf)
+                gc['gene_def_hash'] = conf_hash
+                gc['gene_def'] = gene_def
+                g_gene_library.update({conf_hash:gc})
 
-	pid_register_client(pid,conf_hash)
-	return conf_hash
+        pid_register_client(pid,conf_hash)
+        return conf_hash
 
 @call_metrics.call_metrics
 def pid_register_client(pid,gene_def_hash):
-	global g_pids
-	global g_gene_library
-	global g_default_group_gene_def_hash
-	global g_default_group_set
-	print pid,gene_def_hash
+        global g_pids
+        global g_gene_library
+        global g_default_group_gene_def_hash
+        global g_default_group_set
+        print pid,gene_def_hash
 
-	if gene_def_hash in g_gene_library.keys():
-		#the first registered client sets the default group
-		if g_default_group_set == False:
-			g_default_group_set = True
-			g_default_group_gene_def_hash = gene_def_hash
-		pid_alive(pid)		
-		g_pids[pid].update({'gene_def_hash':gene_def_hash})		
-		return "OK"
-	return "NOK:HASH NOT FOUND:"+gene_def_hash
+        if gene_def_hash in g_gene_library.keys():
+                #the first registered client sets the default group
+                if g_default_group_set == False:
+                        g_default_group_set = True
+                        g_default_group_gene_def_hash = gene_def_hash
+                pid_alive(pid)          
+                g_pids[pid].update({'gene_def_hash':gene_def_hash})             
+                return "OK"
+        return "NOK:HASH NOT FOUND:"+gene_def_hash
 
 @call_metrics.call_metrics
 def pid_alive(pid):
-	global g_pids
-	global g_undefined_gene_def_hash
-	global g_default_group_gene_def_hash
-	global g_default_group_set
-	#pid ping (watchdog reset)
-	if pid in g_pids.keys(): #existing pid
-		g_pids[pid]['watchdog_reset'] = time.time()
-	else: #new pid
-		g_pids.update({pid:{'watchdog_reset':time.time(),'msg_buffer':[],'gene_def_hash':None}})
-		pid_register_gene_def(pid,"UNDEFINED") #g_undefined_gene_def_hash
-		if g_default_group_set == False:
-			g_default_group_set = True
-			g_default_group_gene_def_hash = g_undefined_gene_def_hash
-	return "OK"
+        global g_pids
+        global g_undefined_gene_def_hash
+        global g_default_group_gene_def_hash
+        global g_default_group_set
+        #pid ping (watchdog reset)
+        if pid in g_pids.keys(): #existing pid
+                g_pids[pid]['watchdog_reset'] = time.time()
+        else: #new pid
+                g_pids.update({pid:{'watchdog_reset':time.time(),'msg_buffer':[],'gene_def_hash':None}})
+                pid_register_gene_def(pid,"UNDEFINED") #g_undefined_gene_def_hash
+                if g_default_group_set == False:
+                        g_default_group_set = True
+                        g_default_group_gene_def_hash = g_undefined_gene_def_hash
+        return "OK"
 
 @call_metrics.call_metrics
 def pid_check(pid,time_out):
-	global g_pids
-	#check for PID watchdog timeout (seconds)
-	if pid in g_pids.keys():
-		dt = time.time() - g_pids[pid]['watchdog_reset']
-		if dt > time_out:
-			return "NOK"
-		else:
-			return "OK"
-	else:
-		return "NOK"
+        global g_pids
+        #check for PID watchdog timeout (seconds)
+        if pid in g_pids.keys():
+                dt = time.time() - g_pids[pid]['watchdog_reset']
+                if dt > time_out:
+                        return "NOK"
+                else:
+                        return "OK"
+        else:
+                return "NOK"
 
 @call_metrics.call_metrics
 def pid_remove(pid):
-	global g_pids
-	try:
-		g_pids.pop(pid)
-	except:
-		pass
-	return "OK"
+        global g_pids
+        try:
+                g_pids.pop(pid)
+        except:
+                pass
+        return "OK"
 
 @call_metrics.call_metrics
 def pid_msg(pid,msg):
-	global g_pids
-	#append a message to the PID buffer
-	if pid in g_pids.keys(): #existing pid
-		g_pids[pid]['msg_buffer'].insert(0,msg)
-		#limit the message buffer size
-		if len(g_pids[pid]['msg_buffer']) > MAX_PID_MESSAGE_BUFFER_SIZE:
-			g_pids[pid]['msg_buffer'] = g_pids[pid]['msg_buffer'][:-1]
-		return "OK"
-	else:
-		return "NOK"
+        global g_pids
+        #append a message to the PID buffer
+        if pid in g_pids.keys(): #existing pid
+                g_pids[pid]['msg_buffer'].insert(0,msg)
+                #limit the message buffer size
+                if len(g_pids[pid]['msg_buffer']) > MAX_PID_MESSAGE_BUFFER_SIZE:
+                        g_pids[pid]['msg_buffer'] = g_pids[pid]['msg_buffer'][:-1]
+                return "OK"
+        else:
+                return "NOK"
 
 @call_metrics.call_metrics
 def pid_list(ping_seconds=9999999):
-	global g_pids
-	pids = []
-	for pid in g_pids.keys():
-		if pid_check(pid,ping_seconds) == "OK":
-			pids.append(pid)
-	return json.dumps(pids)
+        global g_pids
+        pids = []
+        for pid in g_pids.keys():
+                if pid_check(pid,ping_seconds) == "OK":
+                        pids.append(pid)
+        return json.dumps(pids)
 
 @call_metrics.call_metrics
 def get_pids():
-	global g_pids
-	js_pids = json.dumps(g_pids)
-	#clear the message buffers
-	#for pid in g_pids.keys():
-	#	g_pids[pid]['msg_buffer'] = ''
-	return js_pids
+        global g_pids
+        js_pids = json.dumps(g_pids)
+        #clear the message buffers
+        #for pid in g_pids.keys():
+        #       g_pids[pid]['msg_buffer'] = ''
+        return js_pids
 
 @call_metrics.call_metrics
 def get_pid_gene_def_hash(pid):
-	global g_pids
-	global g_undefined_gene_def_hash
-	if pid == None:
-		return g_undefined_gene_def_hash
-	elif pid in g_pids.keys():
-		return g_pids[pid]['gene_def_hash']
-	else:
-		return "NOK:PID_NOT_FOUND"
+        global g_pids
+        global g_undefined_gene_def_hash
+        if pid == None:
+                return g_undefined_gene_def_hash
+        elif pid in g_pids.keys():
+                return g_pids[pid]['gene_def_hash']
+        else:
+                return "NOK:PID_NOT_FOUND"
 
 @call_metrics.call_metrics
 def get_default_gene_def_hash():
-	global g_default_group_gene_def_hash
-	return json.dumps(g_default_group_gene_def_hash)
+        global g_default_group_gene_def_hash
+        return json.dumps(g_default_group_gene_def_hash)
 
 @call_metrics.call_metrics
 def get_gene_def_hash_list():
-	global g_gene_library
-	return json.dumps(g_gene_library.keys())
+        global g_gene_library
+        return json.dumps(g_gene_library.keys())
 
 @call_metrics.call_metrics
 def get_gene_def(gene_def_hash):
-	global g_gene_library
-	if gene_def_hash in g_gene_library.keys():
-		return g_gene_library[gene_def_hash]['gene_def']
-	return json.dumps('NOK:NOT_FOUND')
+        global g_gene_library
+        if gene_def_hash in g_gene_library.keys():
+                return g_gene_library[gene_def_hash]['gene_def']
+        return json.dumps('NOK:NOT_FOUND')
 
 @call_metrics.call_metrics
 def set_default_gene_def_hash(gd_hash):
-	global g_default_group_gene_def_hash
-	if get_gene_def(gd_hash).find('NOK:') < 0:
-		g_default_group_set = True
-		g_default_group_gene_def_hash = gd_hash
-		return json.dumps(gd_hash)
+        global g_default_group_gene_def_hash
+        if get_gene_def(gd_hash).find('NOK:') < 0:
+                g_default_group_set = True
+                g_default_group_gene_def_hash = gd_hash
+                return json.dumps(gd_hash)
 
 #system services
 def shutdown():
-	global quit
-	quit = 1
-	save_db()
-	return 1
+        global quit
+        quit = 1
+        save_db()
+        return 1
 
 @call_metrics.call_metrics
 def get_db():
-	global g_gene_library
-	return json.dumps(g_gene_library)
+        global g_gene_library
+        return json.dumps(g_gene_library)
 
 @call_metrics.call_metrics
 def get_db_stripped():
-	global g_gene_library
-	#sdb = deepcopy(g_gene_library)
-	#for key in sdb:
-	#	sdb[key].pop('gene_def')
-	#	sdb[key].pop('gene_high_scores')
-	#	sdb[key].pop('gene_best')
-	#return json.dumps(sdb)
-	strip_list = ['gene_def','gene_high_scores','gene_best']
-	sdbl = {}
-	for db_key in g_gene_library:
-		sdb = {}
-		for item_key in g_gene_library[db_key]:
-			if not item_key in strip_list:
-				sdb.update({item_key:g_gene_library[db_key][item_key]})
-		sdbl.update({db_key:sdb})
-	return json.dumps(sdbl)
+        global g_gene_library
+        #sdb = deepcopy(g_gene_library)
+        #for key in sdb:
+        #       sdb[key].pop('gene_def')
+        #       sdb[key].pop('gene_high_scores')
+        #       sdb[key].pop('gene_best')
+        #return json.dumps(sdb)
+        strip_list = ['gene_def','gene_high_scores','gene_best']
+        sdbl = {}
+        for db_key in g_gene_library:
+                sdb = {}
+                for item_key in g_gene_library[db_key]:
+                        if not item_key in strip_list:
+                                sdb.update({item_key:g_gene_library[db_key][item_key]})
+                sdbl.update({db_key:sdb})
+        return json.dumps(sdbl)
 
 @call_metrics.call_metrics
 def save_db():
-	global AUTO_BACKUP_AFTER_N_SAVES
-	global g_save_counter
-	global g_gene_library
-	g_save_counter += 1
-	if g_save_counter == AUTO_BACKUP_AFTER_N_SAVES:
-		g_save_counter = 0
-		backup = True
-	else:
-		backup = False
+        global AUTO_BACKUP_AFTER_N_SAVES
+        global g_save_counter
+        global g_gene_library
+        g_save_counter += 1
+        if g_save_counter == AUTO_BACKUP_AFTER_N_SAVES:
+                g_save_counter = 0
+                backup = True
+        else:
+                backup = False
 
-	if backup:
-		f = open('./config/gene_server_db_library.json.bak','w')
-		f.write(json.dumps(g_gene_library))
-		f.close()
+        if backup:
+                f = open('./config/gene_server_db_library.json.bak','w')
+                f.write(json.dumps(g_gene_library))
+                f.close()
 
-	f = open('./config/gene_server_db_library.json','w')
-	f.write(json.dumps(g_gene_library))
-	return 'OK'
+        f = open('./config/gene_server_db_library.json','w')
+        f.write(json.dumps(g_gene_library))
+        return 'OK'
 
 @call_metrics.call_metrics
 def reload_db():
-	global g_gene_library
-	import os
-	reload_error = False
-	#save the gene db before shut down
-	print "reloading stored gene data into server..."
-	
-	#
-	# migrate any old style db archives from old db format into the new format...delete the old files once migrated
-	#	
-	for quartile in [1,2,3,4]:
-		try:
-			f = open('./config/gene_server_db_backup_quartile' + str(quartile) + '.json','r')
-			d = json.loads(f.read())
-			f.close()
+        global g_gene_library
+        import os
+        reload_error = False
+        #save the gene db before shut down
+        print "reloading stored gene data into server..."
+        
+        #
+        # migrate any old style db archives from old db format into the new format...delete the old files once migrated
+        #       
+        for quartile in [1,2,3,4]:
+                try:
+                        f = open('./config/gene_server_db_backup_quartile' + str(quartile) + '.json','r')
+                        d = json.loads(f.read())
+                        f.close()
 
-			for g in d['bobs']:
-				put_bob(json.dumps(g),quartile)
-			for g in d['high_scores']:
-				put_gene(json.dumps(g),quartile)
-			reload_error = True #force load the backup too
-			save_db() #save using the new format
-			#delete the old format files once loaded.
-			os.remove('./config/gene_server_db_backup_quartile' + str(quartile) + '.json')	
-		except:
-			reload_error = True
-	#migrate the backups too...
-	if reload_error == True:
-		for quartile in [1,2,3,4]:
-			try:
-				f = open('./config/gene_server_db_backup_quartile' + str(quartile) + '.json.bak','r')
-				d = json.loads(f.read())
-				f.close()
+                        for g in d['bobs']:
+                                put_bob(json.dumps(g),quartile)
+                        for g in d['high_scores']:
+                                put_gene(json.dumps(g),quartile)
+                        reload_error = True #force load the backup too
+                        save_db() #save using the new format
+                        #delete the old format files once loaded.
+                        os.remove('./config/gene_server_db_backup_quartile' + str(quartile) + '.json')  
+                except:
+                        reload_error = True
+        #migrate the backups too...
+        if reload_error == True:
+                for quartile in [1,2,3,4]:
+                        try:
+                                f = open('./config/gene_server_db_backup_quartile' + str(quartile) + '.json.bak','r')
+                                d = json.loads(f.read())
+                                f.close()
 
-				for g in d['bobs']:
-					put_bob(json.dumps(g),quartile)
-				for g in d['high_scores']:
-					put_gene(json.dumps(g),quartile)
-				save_db() #save using the new format
-				#delete the old format files once loaded.
-				os.remove('./config/gene_server_db_backup_quartile' + str(quartile) + '.json.bak')
-			except:
-				reload_error = True
-				pass
+                                for g in d['bobs']:
+                                        put_bob(json.dumps(g),quartile)
+                                for g in d['high_scores']:
+                                        put_gene(json.dumps(g),quartile)
+                                save_db() #save using the new format
+                                #delete the old format files once loaded.
+                                os.remove('./config/gene_server_db_backup_quartile' + str(quartile) + '.json.bak')
+                        except:
+                                reload_error = True
+                                pass
 
-	#try to load new db archive format
-	try:
-		f = open('./config/gene_server_db_library.json','r')
-		g_gene_library = json.loads(f.read())
-		f.close()
-		reload_error = False
-	except:
-		reload_error = True
+        #try to load new db archive format
+        try:
+                f = open('./config/gene_server_db_library.json','r')
+                g_gene_library = json.loads(f.read())
+                f.close()
+                reload_error = False
+        except:
+                reload_error = True
 
-	if reload_error == True:
-		try:
-			f = open('./config/gene_server_db_library.json.bak','r')
-			g_gene_library = json.loads(f.read())
-			f.close()
-			reload_error = False
-		except:
-			reload_error = True
+        if reload_error == True:
+                try:
+                        f = open('./config/gene_server_db_library.json.bak','r')
+                        g_gene_library = json.loads(f.read())
+                        f.close()
+                        reload_error = False
+                except:
+                        reload_error = True
 
-	if reload_error == True:
-		return "NOK"
+        if reload_error == True:
+                return "NOK"
 
-	#upgrade old db format to include new records
-	for key in g_gene_library.keys():
-		if g_gene_library[key].has_key('trade_enabled') == False:
-			g_gene_library[key].update({'trade_enabled':0})
-		if g_gene_library[key].has_key('trade_priority') == False:
-			g_gene_library[key].update({'trade_priority':0})
+        #upgrade old db format to include new records
+        for key in g_gene_library.keys():
+                if g_gene_library[key].has_key('trade_enabled') == False:
+                        g_gene_library[key].update({'trade_enabled':0})
+                if g_gene_library[key].has_key('trade_priority') == False:
+                        g_gene_library[key].update({'trade_priority':0})
 
-	return "OK"
+        return "OK"
 
 
 def get_gene_server_metrics():
-	return json.dumps(call_metrics.get_metrics())
+        return json.dumps(call_metrics.get_metrics())
 
 #set the service url
 class RequestHandler(SimpleXMLRPCRequestHandler):
-	rpc_paths = ('/gene','/RPC2')
+        rpc_paths = ('/gene','/RPC2')
 
 #create the server
 server = SimpleXMLRPCServer((__server__, __port__),requestHandler = RequestHandler,logRequests = False, allow_none = True)
@@ -599,7 +599,7 @@ server.register_function(put_gene,'mc_put')
 server.register_introspection_functions()
 
 if __name__ == "__main__":
-	print "gene_server: running on port %s"%__port__
-	while not quit:
-		server.handle_request()
+        print "gene_server: running on port %s"%__port__
+        while not quit:
+                server.handle_request()
 

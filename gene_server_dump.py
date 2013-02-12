@@ -23,7 +23,7 @@ This file is part of ga-bitbot.
 """ 
  
 #
-#	Dumps the stored gene data from the server to a local file
+#       Dumps the stored gene data from the server to a local file
 #
 
 __appversion__ = "0.01a"
@@ -44,38 +44,38 @@ server = xmlrpclib.Server('http://' + __server__ + ":" + __port__)
 print "Connected to",__server__,":",__port__
 
 def ppdict(d):
-	#pretty print a dict
-	print "-"*40
-	try:
-		for key in d.keys():
-			print key,':',d[key]			
-	except:
-		print d
-	return d
+        #pretty print a dict
+        print "-"*40
+        try:
+                for key in d.keys():
+                        print key,':',d[key]                    
+        except:
+                print d
+        return d
 
 def pwdict(d,filename):
-	#pretty write a dict
-	f = open(filename,'w')
-	try:
-		for key in d.keys():
-			f.write(key + " : " + str(d[key]) + "\n")
-	except:
-		pass
-	f.write('\n' + '-'*80 + '\n')
-	f.write(str(d))
-	f.close()
-	return d
+        #pretty write a dict
+        f = open(filename,'w')
+        try:
+                for key in d.keys():
+                        f.write(key + " : " + str(d[key]) + "\n")
+        except:
+                pass
+        f.write('\n' + '-'*80 + '\n')
+        f.write(str(d))
+        f.close()
+        return d
 
 for quartile in [1,2,3,4]:
-	try:
-		print "-"*80
-		print "Quartile:",quartile
-		ag = json.loads(server.get(60*360,quartile))	
-		#ppdict(ag)
-		print "gene last updated",time.time() - ag['time'],"seconds ago.", "SCORE:",ag['score']
-		pwdict(ag,'./test_data/gene_high_score_' + str(quartile))
-	except:
-		pass
+        try:
+                print "-"*80
+                print "Quartile:",quartile
+                ag = json.loads(server.get(60*360,quartile))    
+                #ppdict(ag)
+                print "gene last updated",time.time() - ag['time'],"seconds ago.", "SCORE:",ag['score']
+                pwdict(ag,'./test_data/gene_high_score_' + str(quartile))
+        except:
+                pass
 
 print "-"*80
 print "PID STATUS:"
@@ -86,16 +86,16 @@ pwdict(pid_status,'./test_data/pid_status')
 print "-"*80
 print "PID Watchdog Check (90 sec): "
 for pid in pid_status.keys():
-	print pid,server.pid_check(pid,90)
+        print pid,server.pid_check(pid,90)
 
 #save all genes
 for quartile in [1,2,3,4]:
-	gd = {'bobs':[],'high_scores':[]}
-	gd['high_scores'] = json.loads(server.get_all(quartile))
-	gd['bobs'] = json.loads(server.get_bobs(quartile))
-	f = open('./config/gene_server_db_backup_quartile' + str(quartile) + '.json','w')
-	f.write(json.dumps(gd))
-	f.close()
+        gd = {'bobs':[],'high_scores':[]}
+        gd['high_scores'] = json.loads(server.get_all(quartile))
+        gd['bobs'] = json.loads(server.get_bobs(quartile))
+        f = open('./config/gene_server_db_backup_quartile' + str(quartile) + '.json','w')
+        f.write(json.dumps(gd))
+        f.close()
 
 
 

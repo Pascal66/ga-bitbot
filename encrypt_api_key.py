@@ -47,17 +47,17 @@ password = raw_input()
 
 print "\n"
 try:
-	f = open('./config/salt.txt','r')
-	salt = f.read()
-	f.close()
-	print "Using the current local password salt..."
+        f = open('./config/salt.txt','r')
+        salt = f.read()
+        f.close()
+        print "Using the current local password salt..."
 except:
-	print "Generating the local password salt..."
-	pre_salt = str(time.time() * random.random() * 1000000) + 'H7gfJ8756Jg7HBJGtbnm856gnnblkjiINBMBV734'
-	salt = hashlib.sha512(pre_salt).digest()
-	f = open('./config/salt.txt','w')
-	f.write(salt)
-	f.close()
+        print "Generating the local password salt..."
+        pre_salt = str(time.time() * random.random() * 1000000) + 'H7gfJ8756Jg7HBJGtbnm856gnnblkjiINBMBV734'
+        salt = hashlib.sha512(pre_salt).digest()
+        f = open('./config/salt.txt','w')
+        f.write(salt)
+        f.close()
 
 
 
@@ -70,7 +70,7 @@ text = json.dumps({"key":key,"secret":secret})
 #pad the text
 pad_len = 16 - len(text)%16
 text += " " * pad_len
-ciphertext = iv + encryptor.encrypt(text)	#prepend the iv parameter to the encrypted data 
+ciphertext = iv + encryptor.encrypt(text)       #prepend the iv parameter to the encrypted data 
 f = open('./config/api_key.txt','w')
 f.write(ciphertext)
 f.close()
@@ -86,11 +86,11 @@ hash_pass = hashlib.sha256(password + salt).digest()
 decryptor = AES.new(hash_pass, AES.MODE_CBC,d[:AES.block_size])
 text = decryptor.decrypt(d[AES.block_size:])
 try:
-	d = json.loads(text)
+        d = json.loads(text)
 except:
-	print "Failed verification...try again."
+        print "Failed verification...try again."
 else:
-	print "Verification complete."
-	print "\nDon't forget your password:",password," This is what ga-bitbot will request to enable automated trading."
+        print "Verification complete."
+        print "\nDon't forget your password:",password," This is what ga-bitbot will request to enable automated trading."
 
 
