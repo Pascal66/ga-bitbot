@@ -1,6 +1,6 @@
 
 """
-gts v0.01 
+gts v0.01
 
 genetic test sequencer
 
@@ -45,13 +45,13 @@ if __name__ == "__main__":
     __port__ = str(gene_server_config.__port__)
 
     #make sure the port number matches the server.
-    server = xmlrpclib.Server('http://' + __server__ + ":" + __port__)  
+    server = xmlrpclib.Server('http://' + __server__ + ":" + __port__)
     multicall = xmlrpclib.MultiCall(server)
 
     print "gts: connected to gene_server ",__server__,":",__port__
 
-    
-    #the variable values below are superceded by the configuration loaded from the 
+
+    #the variable values below are superceded by the configuration loaded from the
     #configuration file global_config.json
     #!!!!!!!! to change the values edit the json configuration file NOT the variables below !!!!!!!!
     max_length = 60 * 24 * 60
@@ -65,7 +65,7 @@ if __name__ == "__main__":
     enable_flash_crash_protection = False
     flash_crash_protection_delay = 60 * 3 #three hours
     config_loaded = 0
-    #!!!!!!!!!!!!!!!!end of loaded config values!!!!!!!! 
+    #!!!!!!!!!!!!!!!!end of loaded config values!!!!!!!!
 
     #define the module exit function
     profile = False
@@ -154,7 +154,7 @@ if __name__ == "__main__":
     while not (quartile in ['1','2','3','4','all']):
         print "Which quartile group to test? (1,2,3,4):"
         quartile = raw_input()
-    if quartile != 'all':   
+    if quartile != 'all':
         quartile = int(quartile)
     else:
         quartile = 1
@@ -220,7 +220,7 @@ if __name__ == "__main__":
 
     #reset the process watchdog
     server.pid_alive(pid)
-    #send a copy of the command line args   
+    #send a copy of the command line args
     server.pid_msg(pid,str(sys.argv))
 
     ff = None
@@ -234,7 +234,7 @@ if __name__ == "__main__":
 
     #apply global configs
     te.max_length = max_length
-    te.enable_flash_crash_protection = enable_flash_crash_protection 
+    te.enable_flash_crash_protection = enable_flash_crash_protection
     te.flash_crash_protection_delay = flash_crash_protection_delay
     #load the gene_def fitness_config, if available
     if gd.has_key('fitness_config'):
@@ -255,7 +255,7 @@ if __name__ == "__main__":
         if (type(bootstrap_bobs) == type([])) and (type(bootstrap_all) == type([])):
             g.seed()
             if len(bootstrap_all) > 100:
-                g.pool = []     
+                g.pool = []
             g.insert_genedict_list(bootstrap_bobs)
             g.insert_genedict_list(bootstrap_all)
             g.pool_size = len(g.pool)
@@ -264,7 +264,7 @@ if __name__ == "__main__":
                 g.reset_scores()
             else:
                 #mate the genes before testing
-                g.next_gen() 
+                g.next_gen()
         else: #if no BOBS or high scores..seed with a new population
             print "gts: no BOBs or high scores available...seeding new pool."
             g.seed()
@@ -274,7 +274,7 @@ if __name__ == "__main__":
         print "gts: %s high scores loaded"%len(bootstrap_all)
 
         print "gts: Pool size: %s"%len(g.pool)
-    
+
     else:
         bob_simulator = False
         #update_all_scores = False
@@ -309,9 +309,9 @@ if __name__ == "__main__":
             if score_only: #quartile_cycle == True and bob_simulator == True:
                 #force a state jump to load the next quartile to retest the genes
                 #in this mode the only function of the client is to cycle through the quartiles to retest existing genes
-                g.local_optima_reached = True 
+                g.local_optima_reached = True
 
-            #update_all_scores = False  #on the first pass only, bob clients need to resubmit updated scores for every gene 
+            #update_all_scores = False  #on the first pass only, bob clients need to resubmit updated scores for every gene
             loop_count = 0
             #reset the watchdog monitor
             server.pid_alive(pid)
@@ -334,8 +334,8 @@ if __name__ == "__main__":
             print performance_metrics
             pmd = {'channel':'gts_metric','gps':gps,'kss':kss,'pool':g.pool_size,'total':total_count}
             server.pid_msg(pid,json.dumps(pmd))
-            
-        if g.local_optima_reached:  
+
+        if g.local_optima_reached:
             test_count = 0
 
             #initialize fitness function (load updated data)
@@ -352,7 +352,7 @@ if __name__ == "__main__":
                         multicall() #send any batched calls to the server
                         print "gts: run once done."
                         gts_exit("gts: run once done.",pid)
-            
+
             elif max_gene != None:
                 #debug
                 print "gts: ",max_gene
@@ -360,7 +360,7 @@ if __name__ == "__main__":
                 print "gts: submit BOB for id:%s to server (%.2f)"%(str(max_gene['id']),max_gene['score'])
                 server.put_bob(json.dumps(max_gene),quartile,pid)
                 if quartile_cycle == True:
-                    #if cycling is enabled then 
+                    #if cycling is enabled then
                     #the client will cycle through the quartiles as local optimas are found
                     #jump to the next quartile
                     quartile += 1
@@ -388,13 +388,13 @@ if __name__ == "__main__":
                 gts_exit("gts: run once done.",pid)
 
             if bob_simulator:
-                #update_all_scores = True   #on the first pass only, bob clients need to resubmit updated scores for every gene 
+                #update_all_scores = True   #on the first pass only, bob clients need to resubmit updated scores for every gene
                 bootstrap_bobs = json.loads(server.get_bobs(quartile,pid))
                 bootstrap_all = json.loads(server.get_all(quartile,pid))
                 g.pool_size = len(g.pool)
                 if (type(bootstrap_bobs) == type([])) and (type(bootstrap_all) == type([])):
                     g.seed()
-                    g.pool = []     
+                    g.pool = []
                     g.insert_genedict_list(bootstrap_bobs)
                     g.insert_genedict_list(bootstrap_all)
                     if quartile_cycle == True:
@@ -402,8 +402,8 @@ if __name__ == "__main__":
                         g.reset_scores()
                     else:
                         #mate the genes before testing
-                        g.next_gen() 
-                    
+                        g.next_gen()
+
                 else: #if no BOBS or high scores..seed with a new population
                     #print "no BOBs or high scores available...seeding new pool."
                     g.seed()
@@ -422,10 +422,10 @@ if __name__ == "__main__":
 
         #create/reset the trade engine
         te.reset()
-            
+
         #get the next gene
         ag = g.get_next()
-        
+
         #configure the trade engine
         te = load_config_into_object({'set':ag},te)
 

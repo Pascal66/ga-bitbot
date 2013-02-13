@@ -1,6 +1,6 @@
 
 """
-load_config v0.01 
+load_config v0.01
 
 configuration loader
 
@@ -53,7 +53,7 @@ def load_config_into_object(config_dict,obj):
 
     The call child keys contain the class functions to be called while the value is a list of argument lists which are applied to each function
 
-        call:{"function_1":[[arg1,arg2, ... ], [ ... ] ],"function_2":[[arg1,arg2, ... ], [ ... ] ] } 
+        call:{"function_1":[[arg1,arg2, ... ], [ ... ] ],"function_2":[[arg1,arg2, ... ], [ ... ] ] }
 
         example resultant call:  function_1(arg1,arg2, ...)
 
@@ -92,7 +92,7 @@ def load_config_file_into_object(config_file,obj):
 
     The call child keys contain the class functions to be called while the value is a list of argument lists which are applied to each function
 
-        call:{"function_1":[[arg1,arg2, ... ], [ ... ] ],"function_2":[[arg1,arg2, ... ], [ ... ] ] } 
+        call:{"function_1":[[arg1,arg2, ... ], [ ... ] ],"function_2":[[arg1,arg2, ... ], [ ... ] ] }
 
         example resultant call:  function_1(arg1,arg2, ...)
 

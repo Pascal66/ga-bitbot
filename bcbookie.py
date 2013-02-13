@@ -1,6 +1,6 @@
 
 """
-bcbookie v0.01 
+bcbookie v0.01
 
 Copyright 2011 Brian Monkaba
 
@@ -42,7 +42,7 @@ __server__ = gene_server_config.__server__
 __port__ = str(gene_server_config.__port__)
 
 #make sure the port number matches the server.
-server = xmlrpclib.Server('http://' + __server__ + ":" + __port__)  
+server = xmlrpclib.Server('http://' + __server__ + ":" + __port__)
 
 print "Connected to",__server__,":",__port__
 
@@ -65,7 +65,7 @@ class bookie:
 
         #These variables update automaticaly - do not modify
         self.client_info = None
-        self.client_commission = 0 
+        self.client_commission = 0
         self.orders = []
         self.records = []
         self.balance = 0
@@ -75,7 +75,7 @@ class bookie:
         self.btc_price = 0
         self.load_records()
         self.active_quartile = 0
-    
+
     def report(self):
         #get all the keys available in the list of dicts
         merge = {}
@@ -88,7 +88,7 @@ class bookie:
         f = open('./report/book.templ','r')
         template = f.read()
         f.close()
-        
+
         account_value = float(self.usds) + float(self.btcs) * float(self.btc_price)
         info = "Last Report Update: %s <br> Current Market Price: $%.3f  || Total Account Value: $%.4f || "%(ctime(),self.btc_price, account_value)
         info += "Holdings:  BTC: %.3f  USD: $%.3f<br>"%(float(self.btcs), float(self.usds))
@@ -97,7 +97,7 @@ class bookie:
         #dump the records into a table structure
         if len(self.records) > 0:
             export = sorted(self.records, key=itemgetter('priority'),reverse=True)
-            
+
             output = '<table border="1" id="dtable" class="imgtbl">\n'
             #write the header
             output += '\t<thead>><tr>\n'
@@ -106,7 +106,7 @@ class bookie:
                 output +='\t\t\t'+key + '\n'
                 output +='\t\t</th>\n'
             output +='\t</tr></thead><tbody>\n'
-        
+
             #write the row records
             count = 0
             for r in export:
@@ -170,7 +170,7 @@ class bookie:
             except:
                 print "get_info: client error..retrying @ " + ctime()
 
-    
+
     def get_price(self):
         while 1:
             try:
@@ -178,7 +178,7 @@ class bookie:
                 return self.btc_price
             except:
                 print "get_price: client error..retrying @ " + ctime()
-    
+
     def load_orders(self):
         while 1:
             try:
@@ -186,7 +186,7 @@ class bookie:
                 return
             except:
                 print "load_orders: client error..retrying @ " + ctime()
-    
+
     def load_records(self):
         #load records from local file
         try:
@@ -197,17 +197,17 @@ class bookie:
         except:
             print "load_records: no records to load"
         self.record_synch()
-    
+
     def save_records(self):
         #save records to local file
         f = open("./report/bookie_records.pkl",'w')
         f.write(pickle.dumps(self.records))
         f.close()
-    
+
     def add_record(self,record):
         self.records.append(record)
         self.save_records()
-    
+
     def get_last_order(self):
         #the last order will be the one with the largest date stamp
         self.load_orders()
@@ -233,7 +233,7 @@ class bookie:
                 if str(o['price']) == str(price):
                     return o
         return None
-        
+
     def funds(self):
         while 1:
             try:
@@ -252,14 +252,14 @@ class bookie:
             print "sell: price adjustment: qty,price: ",amount,price
 
         while 1:
-            try:    
+            try:
                 order = self.client.sell_btc(amount, price)
                 order.update({'commission':self.client_commission,'parent_oid':parent_oid,'localtime':time(),'pending_counter':10,'book':'open','commit':price,'target':price,'stop':price,'max_wait':999999,'max_hold':999999})
-                self.add_record(order)      
+                self.add_record(order)
                 return
             except:
                 print "sell: client error..retrying @ " + ctime()
-   
+
     def validate_buy(self,buy_price,target_price):
         if (buy_price * 1.00013) >= target_price:
             print "validate_buy: target too low %.2f, order (%.2f) not submitted",target_price,buy_price
@@ -309,7 +309,7 @@ class bookie:
             if order == None:
                 print 'buy: first level order verification failed'
                 order = self.find_order(qty,buy_price)
-        
+
             if order == None:
                 print 'buy: second level order verification failed'
                 self.funds()
@@ -322,7 +322,7 @@ class bookie:
                 self.add_record(order)
                 #print 'buy: posting instant order for sale @ target (off book)'
                 #self.sell(qty, target_price)
-        
+
 
             elif order['status'] == 2 and order['real_status'] != 'pending':
                 self.cancel_buy_order(order['oid'])
@@ -335,24 +335,24 @@ class bookie:
                 self.add_record(order)
                 print "buy: order confirmed : %s BTC @ $%s"%(str(order['amount']),str(order['price']))
                 return True
-        
+
         else:
             print "buy: lack of funds or min qty not met, order not submitted:"
             print "\tqty",qty
             print "\tcost",cost
             print "\tfunds",self.usds
             return False
-    
+
     def cancel_buy_order(self,oid):
         print "cancel_buy_order: canceling"
         while 1:
-            try:    
+            try:
                 self.client.cancel_buy_order(oid)
                 self.save_records()
                 return
             except:
                 print "cancel_buy_order: client error..retrying @ " + ctime()
-    
+
     def record_synch(self):
         #find out which orders have been filled
         #tag buy orders as held
@@ -371,7 +371,7 @@ class bookie:
                         #update with the current order status
                         r['status'] = o['status']
                         r['real_status'] = o['real_status']
-                        r.update({'amount_remaining':o['amount']})              
+                        r.update({'amount_remaining':o['amount']})
 
                 if found == 0:
                     print "\trecord_synch: OID:",r['oid'], " not active"
@@ -394,7 +394,7 @@ class bookie:
                                 msg = 'Bought %sBTC @ $%s'%(str(r['amount']),str(r['price']))
                                 msg += 'Account Balance: (%sBTC , $%s) Total Value: $%s'%(str(self.btcs),str(self.usds),str(float(self.usds) + float(self.btcs) * float(self.btc_price)))
                                 self.aws_client.send(msg)
-                        #these last two states should never be reached:                     
+                        #these last two states should never be reached:
                         elif r['status'] == 2 and r['real_status'] == "pending":
                             print "\t\trecord_synch: OID:",r['oid'], " remaining open (real_status:pending)"
                         else:
@@ -413,16 +413,16 @@ class bookie:
                         print "\trecord_synch: record error found, canceling order"
                         self.cancel_buy_order(r['oid'])
                         r['book'] += ": error"
-            if order_found == 0:        
+            if order_found == 0:
                 print "!!!!!!! record_synch: orphaned or manual order found:","TYPE:",o['type'],"AMOUNT:",o['amount'],"PRICE:",o['price']
-        
+
         if error_found > 0:
             print "record_synch: order error(s) found and canceled"
-       
+
         self.save_records()
 
-    
-    
+
+
     def update(self):
         #periodicaly call this function to process open orders
         # -automates sells,stop loss, etc...
@@ -440,7 +440,7 @@ class bookie:
         print "-" * 80
         for r in self.records:
             #check open orders first...
-            if r['book'] == "open":     
+            if r['book'] == "open":
                 if r['type'] == 1: #sell
                     print "\tupdate: OID:",r['oid'], " sell order active"
                     pass    #sell orders stand until completed.
@@ -483,11 +483,11 @@ class bookie:
                                 r['amount'] = total_amount
                         else:
                             r['book'] = "buy_cancel:max_wait"
-    
+
         print "-" * 80
         print "checking held positions"
         print "-" * 80
-        for r in self.records:      
+        for r in self.records:
             #check held positions
             put_for_sale = 0
             if r['book'] == "held":
@@ -498,7 +498,7 @@ class bookie:
                     self.sell(float(r['amount']) - (float(r['amount']) * (r['commission'] / 100.0)),r['target'],parent_oid = r['oid'])
                     r['book'] = "closed:commit"
                     put_for_sale = 1
-                #check max age  
+                #check max age
                 elif dt > r['max_hold'] and put_for_sale == 0:
                     #dump the position
                     print "\t-+- update: selling position: target timeout: (OID):",r['oid']
@@ -522,21 +522,21 @@ class bookie:
                     stop_delta = "%.2f"%(current_price - r['stop'])
                     delta_target = "%.2f"%(r['target'] - current_price)
                     print "update: sell order OID:%s time left: %s stop_delta: %s delta_target: %s"%(oid,time_left,stop_delta,delta_target)
-    
+
         #save the updated records
         self.save_records()
         #return the account balance
         self.funds()
         return self.usds,self.btcs
-        
-            
-    
-    
+
+
+
+
 if __name__ == "__main__":
     import __main__
     from load_config import *
 
-    #the variable values below are superceded by the configuration loaded from the 
+    #the variable values below are superceded by the configuration loaded from the
     #configuration file global_config.json
     #!!!!!!!! to change the values edit the json configuration file NOT the variables below !!!!!!!!
     monitor_mode = False
@@ -570,14 +570,14 @@ if __name__ == "__main__":
         else:
             print "Configuration loaded."
 
-    print "Note: The Amazon SNS text messaging service can be enabled/disabled by modifying the bcbookie_main.json configuration file"  
+    print "Note: The Amazon SNS text messaging service can be enabled/disabled by modifying the bcbookie_main.json configuration file"
 
     b = bookie(enable_text_messaging=enable_text_messaging,enable_flash_crash_protection=enable_flash_crash_protection,flash_crash_protection_delay=flash_crash_protection_delay)
 
 
     print "main: generating inital report"
     b.report()
-    
+
     print "main: entering main loop"
     while 1:
 
@@ -592,8 +592,8 @@ if __name__ == "__main__":
             pid = "BCBOOKIE"
             #gdh = json.loads(server.get_default_gene_def_hash())
             #print "using gene_def_hash",gdh
-            #server.pid_register_client(pid,gdh)            
-            
+            #server.pid_register_client(pid,gdh)
+
             #get the current quartile
             #b.active_quartile = server.get_active_quartile(pid)
             #t = json.loads(server.get_target(pid))
@@ -640,7 +640,7 @@ if __name__ == "__main__":
                 print "main: warning - ignoring invalid target order:"
                 print str(t)
 
-            if monitor_mode == False and target_order_validated == True: 
+            if monitor_mode == False and target_order_validated == True:
                 commit = ((t['target'] - t['buy']) * commit_pct_to_target) + t['buy'] #commit sell order at n% to target
                 if t['buy'] > min_bid_price and t['buy'] < max_bid_price:
                     order_initiated = True
@@ -660,9 +660,9 @@ if __name__ == "__main__":
                     print "main: No GA order available."
             else:
                 print "main: monitor mode or target order not validated."
-        #update the report      
+        #update the report
         b.report()
         print "sleeping..."
         print "_"*80
-        print "\n\n"  
+        print "\n\n"
         sleep(sleep_state_seconds)

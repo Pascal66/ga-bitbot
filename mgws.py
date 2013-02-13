@@ -1,6 +1,6 @@
 
 """
-mgws v0.01 
+mgws v0.01
 
 MtGox Web Socket Interface
 
@@ -64,7 +64,7 @@ while 1:
         reset_connection = True
         stream_data = ""
         stream_buffer = ""
-    
+
     #reset the connection if need be
     while reset_connection == True:
         try:
@@ -116,4 +116,4 @@ while 1:
             break
 
 
-    
+

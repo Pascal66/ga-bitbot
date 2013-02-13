@@ -1,5 +1,5 @@
 """
-MtGoxHMAC v0.01 
+MtGoxHMAC v0.01
 
 Copyright 2011 Brian Monkaba
 
@@ -47,7 +47,7 @@ class Client:
         if enc_password == "":
             print "MtGoxHMAC: Enter your API key file encryption password."
             enc_password = getpass.getpass()#raw_input()
-        try:    
+        try:
             f = open('./config/salt.txt','r')
             salt = f.read()
             f.close()
@@ -66,7 +66,7 @@ class Client:
             print "If you haven't yet generated the encrypted key file, run the encrypt_api_key.py script."
             while 1:
                 pass
-        
+
         self.buff = ""
         self.timeout = 15
         self.__url_parts = urlparse.urlsplit("https://mtgox.com/api/0/")
@@ -89,7 +89,7 @@ class Client:
             #print "### Throttled ###"
             time.sleep(self.query_time_slice - tdelta)
         return
-       
+
     def perform(self, path, params,JSON=True,API_VERSION=0):
         self.throttle()
         nonce =  str(int(time.time()*1000))
@@ -125,7 +125,7 @@ class Client:
                 self.__url_parts_1.query,
                 self.__url_parts_1.fragment
             ))
-        
+
         req = urllib2.Request(url, post_data, header)
 
         with closing(urllib2.urlopen(req, post_data)) as res:
@@ -142,7 +142,7 @@ class Client:
             else:
                 return data
         return data
-        
+
 
     def request(self, path, params,JSON=True,API_VERSION=0):
         ret = self.perform(path, params,JSON,API_VERSION)
@@ -201,9 +201,9 @@ class Client:
     def get_history_usd(self):
         return self.request('history_USD.csv',None,JSON=False)
     def get_info(self):
-        return self.request('info.php', None) 
+        return self.request('info.php', None)
     def get_ticker(self):
-        return self.request("ticker.php", None)["ticker"]  
+        return self.request("ticker.php", None)["ticker"]
     def get_depth(self):
         return self.request("data/getDepth.php", {"Currency":"USD"})
     def get_trades(self):
@@ -217,7 +217,7 @@ class Client:
         #new mtgox market orders begin in a pending state
         #so we have to make a second delayed call to verify the order was actually accepted
         #there is a risk here that the mtgox system will not be able to verify the order before
-        #the second call so it could reported as still pending. 
+        #the second call so it could reported as still pending.
         #In this case, the host script will need to verify the order at a later time.
         #to do: check how the system responds to instant orders and partialy filled orders.
         if amount < 0.01:
@@ -238,7 +238,7 @@ class Client:
                 return order
         else:
             return None
-        
+
 
 
     def sell_btc(self, amount, price):
@@ -260,14 +260,14 @@ class Client:
                 return order
         else:
             return None
-    
+
     def cancel_buy_order(self, oid):
         params = {"oid":str(oid), "type":str(2)}
-        return self.request("cancelOrder.php", params)    
+        return self.request("cancelOrder.php", params)
 
     def cancel_sell_order(self, oid):
         params = {"oid":str(oid), "type":str(1)}
-        return self.request("cancelOrder.php", params)  
+        return self.request("cancelOrder.php", params)
 
 
 if __name__ == "__main__":
@@ -276,7 +276,7 @@ if __name__ == "__main__":
         print "-"*40
         try:
             for key in d.keys():
-                print key,':',d[key]            
+                print key,':',d[key]
         except:
             print d
         return d
@@ -305,7 +305,7 @@ if __name__ == "__main__":
     ppdict(pwdict(c.get_info(),'./test_data/mg_info.txt'))
     ppdict(pwdict(c.get_ticker(),'./test_data/mg_ticker.txt'))
     ppdict(pwdict(c.get_depth(),'./test_data/mg_depth.txt'))
-    ppdict(pwdict(c.get_balance(),'./test_data/mg_balance.txt'))    
+    ppdict(pwdict(c.get_balance(),'./test_data/mg_balance.txt'))
     ppdict(pwdict(c.get_orders(),'./test_data/mg_orders.txt'))
     ppdict(pwdict(c.cancel_buy_order(b['oid']),'./test_data/mg_cancel_buy.txt'))
     ppdict(pwdict(c.cancel_sell_order(s['oid']),'./test_data/mg_cancel_sell.txt'))

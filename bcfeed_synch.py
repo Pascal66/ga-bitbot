@@ -1,4 +1,4 @@
-#converts bitcoincharts csv download into the 
+#converts bitcoincharts csv download into the
 #1min format used by the genetic trade framework
 from time import *
 import urllib2
@@ -81,7 +81,7 @@ for r in d:
             one_min.append([last_t,wp,tv])
             #print last_t,wp,tv
         accum_r = [map(float,sr)]
-    
+
     last_t = int(t)
     last_m = ctime(last_t).split(':')[1]
 
@@ -97,9 +97,9 @@ if auto_move_output == 1 :
 else:
     f = open('./datafeed_reboot/bcfeed_mtgoxUSD_1min.csv','w')
 
-    
+
 for t,p,v in one_min:
     f.write(",".join(map(str,[t,p,v])) + '\n')
 f.close()
 print "bcfeed_synch: Done."
-    
+

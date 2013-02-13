@@ -1,6 +1,6 @@
 
 """
-bcfeed v0.01 
+bcfeed v0.01
 
 Copyright 2011 Brian Monkaba
 
@@ -50,7 +50,7 @@ while 1:
         reset_connection = True
         stream_data = ""
         stream_buffer = ""
-        
+
 
     #capture any available data from the feed
     if len(stream_data) > 0:
@@ -81,12 +81,12 @@ while 1:
         for i in range(len(df_d[symbol]['p'])):
             wps += df_d[symbol]['p'][i] * df_d[symbol]['v'][i]
             tv += df_d[symbol]['v'][i]
-        if tv > 0:          
+        if tv > 0:
             wp = wps/tv
             #add the weighted price and total volume
             df_d[symbol].update({'wp':wps/tv,'tv':tv})
             print "-"*40
-            print "symbol :",symbol     
+            print "symbol :",symbol
             print "time   :",t
             print "price  :",wp
             print "volume :",tv

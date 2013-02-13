@@ -1,6 +1,6 @@
 
 """
-db_admin_util v0.01 
+db_admin_util v0.01
 
 ga-bitbot database administration utility
 
@@ -41,7 +41,7 @@ gene_server_running = False
 try:
     #make sure the port number matches the server.
     server = xmlrpclib.Server('http://' + __server__ + ":" + __port__)
-    server.save()  
+    server.save()
     gene_server_running = True
 except:
     pass
@@ -146,7 +146,7 @@ while 1:
             print 'hs ',mn,avg,mx,record_count
             print "-"*20
 
-        
+
     elif ui == 'a' or ui == 'd' or ui == 'e':
         index = 0
         for key in gene_library.keys():
@@ -168,7 +168,7 @@ while 1:
                     details += "    name: " + gd['name']
                 if 'description' in gd.keys():
                     details += "\tdescription: " + gd['description']
-                
+
 
             except:
                 if gene_library[key]['gene_def'] == "UNDEFINED":
@@ -177,7 +177,7 @@ while 1:
                     details += "Invalid gene_def :",gene_library[key]['gene_def'][:30],"..."
             print details
             print ""
-            
+
         if ui == 'd' or ui == 'e':
             index = -999
             while not index in range(len(gene_library.keys())):

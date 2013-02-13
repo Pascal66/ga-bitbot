@@ -1,6 +1,6 @@
 
 """
-gene_server_dump v0.01 
+gene_server_dump v0.01
 
 gene server dump
 
@@ -20,8 +20,8 @@ This file is part of ga-bitbot.
 
     You should have received a copy of the GNU General Public License
     along with ga-bitbot.  If not, see <http://www.gnu.org/licenses/>.
-""" 
- 
+"""
+
 #
 #   Dumps the stored gene data from the server to a local file
 #
@@ -39,7 +39,7 @@ __server__ = gene_server_config.__server__
 __port__ = str(gene_server_config.__port__)
 
 #make sure the port number matches the server.
-server = xmlrpclib.Server('http://' + __server__ + ":" + __port__)  
+server = xmlrpclib.Server('http://' + __server__ + ":" + __port__)
 
 print "Connected to",__server__,":",__port__
 
@@ -48,7 +48,7 @@ def ppdict(d):
     print "-"*40
     try:
         for key in d.keys():
-            print key,':',d[key]            
+            print key,':',d[key]
     except:
         print d
     return d
@@ -70,7 +70,7 @@ for quartile in [1,2,3,4]:
     try:
         print "-"*80
         print "Quartile:",quartile
-        ag = json.loads(server.get(60*360,quartile))    
+        ag = json.loads(server.get(60*360,quartile))
         #ppdict(ag)
         print "gene last updated",time.time() - ag['time'],"seconds ago.", "SCORE:",ag['score']
         pwdict(ag,'./test_data/gene_high_score_' + str(quartile))

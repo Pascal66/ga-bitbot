@@ -1,6 +1,6 @@
 
 """
-encrypt_api_key v0.01 
+encrypt_api_key v0.01
 
 genetic trade simulator
 
@@ -70,7 +70,7 @@ text = json.dumps({"key":key,"secret":secret})
 #pad the text
 pad_len = 16 - len(text)%16
 text += " " * pad_len
-ciphertext = iv + encryptor.encrypt(text)   #prepend the iv parameter to the encrypted data 
+ciphertext = iv + encryptor.encrypt(text)   #prepend the iv parameter to the encrypted data
 f = open('./config/api_key.txt','w')
 f.write(ciphertext)
 f.close()

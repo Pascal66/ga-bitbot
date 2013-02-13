@@ -1,5 +1,5 @@
 """
-AWS_SNS v0.01 
+AWS_SNS v0.01
 
 Copyright 2011 Brian Monkaba
 
@@ -56,7 +56,7 @@ class Client:
         if enc_password == "":
             print "AWS_SNS: Enter your AWS file encryption password."
             enc_password = getpass.getpass()#raw_input()
-        try:    
+        try:
             f = open('./config/salt.txt','r')
             salt = f.read()
             f.close()
@@ -77,9 +77,9 @@ class Client:
             print "Note: Text messaging services requires an AWS subscription with Amazon.com"
             while 1:
                 pass
-        
+
         self.connection = boto.connect_sns(self.key, self.secret)
-        
+
     def send(self,text_message):
         return self.connection.publish(topic=self.topic_arn,message=text_message)
 
@@ -89,7 +89,7 @@ if __name__ == "__main__":
         print "-"*40
         try:
             for key in d.keys():
-                print key,':',d[key]            
+                print key,':',d[key]
         except:
             print d
         return d

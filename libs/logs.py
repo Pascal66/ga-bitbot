@@ -1,6 +1,6 @@
 
 """
-logs v0.01 
+logs v0.01
 
 simple keyed dictionary log
 
@@ -27,7 +27,7 @@ import json
 class logs:
     def __init__(self):
         self._log = {}
-    
+
     def addkey(self,key):
         if self._log.has_key(key):
             return
@@ -100,7 +100,7 @@ class logs:
                 avg = (self._log[key][i-1][1] - avg) * 0.2 + avg
                 avg = (self._log[key][i][1] - avg) * 0.2 + avg
             ret_log.append(self._log[key][len(self._log[key])-1])   #make sure the last record is captured
-            self._log[key] = ret_log    
+            self._log[key] = ret_log
         return ret_log
 
 
@@ -114,7 +114,7 @@ class logs:
                         pruned.append(self._log[key][i])
                 self._log[key] = pruned
         return
-        
+
 
 
 if __name__ == "__main__":
@@ -160,7 +160,7 @@ if __name__ == "__main__":
         log.append('time_series',[i,value])
         log.append('time_series2',[i,value])
         log.append('time_series3',[i,value])
-    
+
     uncompressed = log.get('time_series')
     compressed = log.compress_log('time_series',lossless_compression = False, max_lossy_length = 16)
 

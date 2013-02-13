@@ -1,6 +1,6 @@
 
 """
-wc_server v0.01 
+wc_server v0.01
 
 web client server
 
@@ -20,8 +20,8 @@ This file is part of ga-bitbot.
 
     You should have received a copy of the GNU General Public License
     along with ga-bitbot.  If not, see <http://www.gnu.org/licenses/>.
-""" 
- 
+"""
+
 #
 #   server provides a web based client interface
 #
@@ -51,7 +51,7 @@ __server__ = gene_server_config.__server__
 __port__ = str(gene_server_config.__port__)
 
 #make sure the port number matches the server.
-server = xmlrpclib.Server('http://' + __server__ + ":" + __port__)  
+server = xmlrpclib.Server('http://' + __server__ + ":" + __port__)
 
 print "Connected to",__server__,":",__port__
 
@@ -66,7 +66,7 @@ def ppdict(d,nest=0):
     try:
         for key in d.keys():
             if type(d[key]) != type({}):
-                
+
                 output += "---> "*nest + '<b>' + str(key) + '</b>' + ': ' + str(d[key]) + '<br>'
             else:
                 output += '<b>' + str(key) + '</b>'+ ':' + ppdict(d[key],nest + 1) + '<br>'

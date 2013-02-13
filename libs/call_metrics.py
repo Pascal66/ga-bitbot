@@ -1,8 +1,8 @@
 
 """
-call_metrics v0.01 
+call_metrics v0.01
 
-a class function decorator which collects metrics (number of calls and total execution time) 
+a class function decorator which collects metrics (number of calls and total execution time)
 
 Copyright 2012 Brian Monkaba
 
@@ -65,7 +65,7 @@ def get_metrics():
 
 
 if __name__ == '__main__':
-    class test():    
+    class test():
         @class_call_metrics
         def test(self,data):
             """test method doc string"""
@@ -74,7 +74,7 @@ if __name__ == '__main__':
                 for x in range(9999):
                     z += 1
 
-            print "data:",data              
+            print "data:",data
             return 1
 
 
@@ -86,7 +86,7 @@ if __name__ == '__main__':
     t = test()
     for i in range(10):
         print t.test(i)
-    
+
     print t._metrics
     print t.test.__doc__
 

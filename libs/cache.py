@@ -1,5 +1,5 @@
 """
-cache v0.01 
+cache v0.01
 
 simple object serializing cache wrapper and client side partitioner for redis
 
@@ -45,7 +45,7 @@ class cache:
     def __init__(self):
         self.using_redis = using_redis
         self.serialize_with = 'JSON' #or 'cPickle' or 'None'
-        self.partitions = 1 #default 1 (one redis instance) 
+        self.partitions = 1 #default 1 (one redis instance)
                     #each additional instance assumes +1 to the last port number
         self.partition_history = {'0':0,'1':0,'2':0,'3':0,'4':0,'5':0,'6':0,'7':0}
         self.port = 6379

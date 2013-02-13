@@ -1,6 +1,6 @@
 
 """
-encrypt_aws_key v0.01 
+encrypt_aws_key v0.01
 
 genetic trade simulator
 

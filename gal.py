@@ -1,6 +1,6 @@
 
 """
-gal v0.01 
+gal v0.01
 
 ga-bitbot application / system launcher
 
@@ -45,7 +45,7 @@ def make_pid():
     md = hashlib.md5()
     md.update(str(time()) + str(random.random() * 1000000))
     return md.hexdigest()[0:16]
-    
+
 
 print "-"*80
 print "\n\tCommand line options:\n\t\tserver\t\tlaunches only the server components\n\t\tclient\t\tlaunches only the client components\n\t\tall\t\tlaunches all components"
@@ -81,7 +81,7 @@ else:
     print "gal: launching all components"
     sleep(3)
 
-#the variable values below are superceded by the configuration loaded from the 
+#the variable values below are superceded by the configuration loaded from the
 #configuration file global_config.json
 #!!!!!!!! to change the values edit the json configuration file NOT the variables below !!!!!!!!
 WATCHDOG_TIMEOUT = 60 #seconds
@@ -107,7 +107,7 @@ else:
     else:
         print "gal: Configuration loaded."
 
-#open a null file to redirect stdout/stderr from the launched subprocesses 
+#open a null file to redirect stdout/stderr from the launched subprocesses
 fnull = open(os.devnull,'w')
 
 if GENE_SERVER_STDERR_FILE == "/dev/null":
@@ -141,7 +141,7 @@ else:
 # server - focused on updating scores
 # client - focused on finding new genes
 #
-# At least one gts instance in each mode should not run with the get_config option 
+# At least one gts instance in each mode should not run with the get_config option
 # to make sure any new gene_def.json configs get loaded into the db.
 #
 
@@ -259,7 +259,7 @@ import xmlrpclib
 import json
 __server__ = gene_server_config.__server__
 __port__ = str(gene_server_config.__port__)
-server = xmlrpclib.Server('http://' + __server__ + ":" + __port__)  
+server = xmlrpclib.Server('http://' + __server__ + ":" + __port__)
 print "gal: connected to gene server ",__server__,":",__port__
 
 
@@ -269,8 +269,8 @@ if mode == 'all' or mode == 'server':
 
 print "gal: Launching GA Clients..."
 
-#collect system process PIDS for monitoring. 
-#(not the same as system OS PIDs -- They are more like GUIDs as this is a multiclient distributed system) 
+#collect system process PIDS for monitoring.
+#(not the same as system OS PIDs -- They are more like GUIDs as this is a multiclient distributed system)
 epl = json.loads(server.pid_list()) #get the existing pid list
 
 #start the monitored processes
@@ -311,7 +311,7 @@ while 1:
             count = 0
             server.save()
         if run_client == 0:
-            sleep(30) 
+            sleep(30)
 
     #process monitor loop
     for pid in monitor.keys():
@@ -345,6 +345,6 @@ while 1:
                     else:
                         retry -= 1
                 if retry == 0:
-                    print "gal: ERROR: Monitored Process Failed to Launch","(CMD:",cmd_line,")"     
+                    print "gal: ERROR: Monitored Process Failed to Launch","(CMD:",cmd_line,")"
 
 fnull.close()

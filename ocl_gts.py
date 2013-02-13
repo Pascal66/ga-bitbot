@@ -1,6 +1,6 @@
 
 """
-ocl_gts v0.01 
+ocl_gts v0.01
 
 pyopencl genetic trade simulator
 
@@ -26,7 +26,7 @@ This file is part of ga-bitbot.
 
 
 import pyopencl as cl
-import numpy 
+import numpy
 
 # connect to the xml server
 #
@@ -42,7 +42,7 @@ __server__ = gene_server_config.__server__
 __port__ = str(gene_server_config.__port__)
 
 #make sure the port number matches the server.
-server = xmlrpclib.Server('http://' + __server__ + ":" + __port__)  
+server = xmlrpclib.Server('http://' + __server__ + ":" + __port__)
 
 print "Connected to",__server__,":",__port__
 
@@ -82,18 +82,18 @@ if __name__ == "__main__":
 
     ocl_mb_wg_macd_pct = None
     input_len = 0
-    
+
     def load():
         global ocl_mb_wg_macd_pct
         global input_len
-        
+
         #open the history file
         #print "loading the data set"
         f = open("./datafeed/bcfeed_mtgoxUSD_1min.csv",'r')
         #f = open("./datafeed/test_data.csv",'r')
         d = f.readlines()
         f.close()
-    
+
         if len(d) > max_length:
             #truncate the dataset
             d = d[max_length * -1:]
@@ -132,7 +132,7 @@ if __name__ == "__main__":
     input = load()
     te.classify_market(input)
     wg_market_classification = [int(i[1] * 4) for i in te.market_class] #use the python based bct trade engine market classification
-    wg_input = [i[1] for i in input] 
+    wg_input = [i[1] for i in input]
 
 
     #process command line args
@@ -147,7 +147,7 @@ if __name__ == "__main__":
         if len(sys.argv) == 4:
             if sys.argv[3] == 'v':
                 verbose = True
-        
+
 
     #which quartile group to test
     while not (quartile in ['1','2','3','4']):
@@ -167,9 +167,9 @@ if __name__ == "__main__":
         bootstrap_all = json.loads(server.get_all(quartile))
         if (type(bootstrap_bobs) == type([])) and (type(bootstrap_all) == type([])):
             g.seed()
-            #g.pool = []        
+            #g.pool = []
             g.insert_genedict_list(bootstrap_bobs)
-            g.insert_genedict_list(bootstrap_all)   
+            g.insert_genedict_list(bootstrap_all)
             g.reset_scores()
         else: #if no BOBS or high scores..seed with a new population
             print "no BOBs or high scores available...seeding new pool."
@@ -179,7 +179,7 @@ if __name__ == "__main__":
         print "%s high scores loaded"%len(bootstrap_all)
 
         print "Pool size: %s"%len(g.pool)
-    
+
     else:
         bob_simulator = False
         g.local_optima_trigger = 5
@@ -215,7 +215,7 @@ if __name__ == "__main__":
                 cycle_time -= cycle_time_step
                 if cycle_time < min_cycle_time:
                     cycle_time = min_cycle_time
-                
+
                 if (suggested_size - g.pool_size) > 1000:
                     g.pool_size += 100
                 else:
@@ -233,7 +233,7 @@ if __name__ == "__main__":
             wg_input = [i[1] for i in input]
 
         if g.local_optima_reached:
-            print '#'*10, " Local optima reached...sending bob to the gene_server ", '#'*10     
+            print '#'*10, " Local optima reached...sending bob to the gene_server ", '#'*10
             max_score = 0
             test_count = 0
 
@@ -248,10 +248,10 @@ if __name__ == "__main__":
                 bootstrap_all = json.loads(server.get_all(quartile))
                 if (type(bootstrap_bobs) == type([])) and (type(bootstrap_all) == type([])):
                     g.seed()
-                    g.pool = []     
+                    g.pool = []
                     g.insert_genedict_list(bootstrap_bobs)
-                    g.insert_genedict_list(bootstrap_all)   
-                    g.reset_scores()            
+                    g.insert_genedict_list(bootstrap_all)
+                    g.reset_scores()
                     print "BOBs loaded...",len(g.pool)
                 else: #if no BOBS or high scores..seed with a new population
                     print "no BOBs or high scores available...seeding new pool."
@@ -275,7 +275,7 @@ if __name__ == "__main__":
                     #the latest price data
             g.next_gen()
             g.reset_scores()
-        
+
 
         #build the opencl workgroup
         wg_id = []
@@ -335,7 +335,7 @@ if __name__ == "__main__":
         #ocl_mb_wg_market_classification = cl.Buffer(ctx, mf.READ_ONLY | mf.ALLOC_HOST_PTR | mf.COPY_HOST_PTR, hostbuf=mb_wg_market_classification)
         ocl_mb_wg_input = cl.Buffer(ctx, mf.READ_ONLY | mf.ALLOC_HOST_PTR | mf.COPY_HOST_PTR, hostbuf=mb_wg_input)
         #ocl_mb_wg_orders = cl.Buffer(ctx, mf.READ_WRITE | mf.ALLOC_HOST_PTR | mf.COPY_HOST_PTR, hostbuf=mb_wg_orders)#mb_wg_orders.nbytes
-        
+
         #unmapped - can be transferred on demand
         #ocl_mb_wg_quartile = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=mb_wg_quartile)
         #ocl_mb_wg_score = cl.Buffer(ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf=mb_wg_score)
@@ -348,11 +348,11 @@ if __name__ == "__main__":
         #ocl_mb_wg_stop_age = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=mb_wg_stop_age)
         #ocl_mb_wg_macd_buy_trip = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=mb_wg_macd_buy_trip)
         #ocl_mb_wg_buy_wait_after_stop_loss = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=mb_wg_buy_wait_after_stop_loss)
-        
+
         #allocate uninitalized buffer(s)
         #input_len = numpy.uint32(len(input))
         #buf_size = len(input) * work_group_size * work_item_size * 4 #float32 is four bytes
-        #print "#DEBUG# Buffer size: ",buf_size 
+        #print "#DEBUG# Buffer size: ",buf_size
         #ocl_mb_wg_macd_pct = cl.Buffer(ctx, mf.WRITE_ONLY, size=buf_size)
         #print ocl_mb_wg_macd_pct.get_info(cl.mem_info.SIZE)
         #queue.flush()
@@ -381,13 +381,13 @@ if __name__ == "__main__":
         kernel.set_arg(13,ocl_mb_wg_orders)
         kernel.set_arg(14,input_len)
         """
-        
+
         kernel.set_arg(0,ocl_mb_wg_macd_pct)
         kernel.set_arg(1,ocl_mb_wg_wll)
         kernel.set_arg(2,ocl_mb_wg_wls)
         kernel.set_arg(3,ocl_mb_wg_input)
         kernel.set_arg(4,input_len)
-        
+
         #execute the workgroup
         print "executing the workgroup"
         event = cl.enqueue_nd_range_kernel(queue,kernel,mb_wg_wll.shape,(work_item_size,))
@@ -396,7 +396,7 @@ if __name__ == "__main__":
         #copy the result buffer (scores) back to the host
         #scores = numpy.empty_like(mb_wg_score)
         #cl.enqueue_read_buffer(queue, ocl_mb_wg_score, scores).wait()
-        
+
 
         #time.sleep(0.01)
 
@@ -405,7 +405,7 @@ if __name__ == "__main__":
             #write out the orders array
             orders = numpy.empty_like(mb_wg_orders)
             cl.enqueue_read_buffer(queue, ocl_mb_wg_orders, orders).wait()
-            f = open('/tmp/orders/' + str(total_count),'w' )        
+            f = open('/tmp/orders/' + str(total_count),'w' )
             for i in range(0,len(orders),order_array_size):
                 if int(abs(orders[i])) != i/(max_open_orders * order_array_size): #dont save untouched memory
                     f.write(wg_id[i/(max_open_orders * order_array_size)] + ':\t\t' + str(i/(max_open_orders * order_array_size))+': '+ "\t".join(map(str,(orders[i],orders[i+1],orders[i+2],orders[i+3],orders[i+4],orders[i+5],orders[i+6],orders[i+7],orders[i+8],orders[i+9],orders[i+10],orders[i+11],orders[i+12],orders[i+13],orders[i+14],orders[i+15]))))
@@ -425,18 +425,18 @@ if __name__ == "__main__":
         #ocl_mb_wg_quartile.release()
         #ocl_mb_wg_market_classification.release()
         ocl_mb_wg_input.release()
-        #ocl_mb_wg_score.release() 
+        #ocl_mb_wg_score.release()
 
         #process the results
         for i in range(work_group_size):
             #score = float(scores[i])
             score = -10000
 
-            #dump the scores buffer to a file - used for debugging          
+            #dump the scores buffer to a file - used for debugging
             if deep_logging_enable == True:
                 #write out the scores
                 if score > 0.1 or 1:
-                    f = open('/tmp/scores/' + str(wg_id[i]),'a' )       
+                    f = open('/tmp/scores/' + str(wg_id[i]),'a' )
                     f.write(",".join(map(str,(time.ctime(),total_count,score, wg_gene[i], \
                         wg_shares[i], \
                         wg_wll[i], \

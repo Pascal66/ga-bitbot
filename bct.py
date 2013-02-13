@@ -1,6 +1,6 @@
 
 """
-bct v0.01 
+bct v0.01
 
 Bitcoin Trade Simulator
 
@@ -35,7 +35,7 @@ class trade_engine:
         self.cache = cache()
         #configurable variables
         self.input_file_name = "./datafeed/bcfeed_mtgoxUSD_1min.csv"    #default input file
-        self.score_only = False     #set to true to only calculate what is required for scoring a strategy 
+        self.score_only = False     #set to true to only calculate what is required for scoring a strategy
                         #to speed up performance.
         self.shares = 0.1       #order size
         self.wll = 180          #window length long
@@ -51,19 +51,19 @@ class trade_engine:
         self.macd_buy_trip = -0.66  #macd buy indicator
         self.min_i_pos = 0      #min periods of increasing price
                         #before buy order placed
-        
+
         self.min_i_neg = 0      #min periods of declining price
                         #before sell order placed
-        
+
         self.stbf = 2.02        #short trade biasing factor
                         #-- increase to favor day trading
                         #-- decrease to 2 to eliminate bias
 
         self.nlsf = 5.0         #non-linear scoring factor - favor the latest trades
-                        #max factor = exp(self.nlsf) @ the last sample periord 
-        
+                        #max factor = exp(self.nlsf) @ the last sample periord
+
         self.commision = 0.006      #mt.gox commision
-        
+
         self.quartile = 1       #define which market detection quartile to trade on (1-4)
         self.input_data = []
         self.input_data_length = 0
@@ -81,7 +81,7 @@ class trade_engine:
             f = open(self.input_file_name,'r')
             d = f.readlines()
             f.close()
-    
+
             if len(d) > self.max_data_len:
                 #truncate the dataset
                 d = d[self.max_data_len * -1:]
@@ -91,10 +91,10 @@ class trade_engine:
                 r = row.split(',')[1] #last price
                 t = row.split(',')[0] #time
                 self.input_data.append([int(float(t)),float(r)])
-        
+
             self.cache.set('input_data',self.input_data)
             self.cache.expire('input_data',60*8)
-        
+
         self.input_data_length = len(self.input_data)
         return self.input_data
 
@@ -117,7 +117,7 @@ class trade_engine:
         for i in self.input_data:
             self.input(i[0],i[1])
         return
-        
+
     def reset(self):
         #metrics and state variables
         self.history = []           #moving window of the inputs
@@ -137,7 +137,7 @@ class trade_engine:
         self.score_balance = 0          #cumlative score
         self.buy_delay = 0          #delay buy counter
         self.buy_delay_inital = self.buy_delay  #delay buy counter
-        self.macd_pct = 0           
+        self.macd_pct = 0
         self.macd_abs = 0
         self.avg_wl = 0
         self.avg_ws = 0
@@ -154,19 +154,19 @@ class trade_engine:
         self.order_history = "NOT GENERATED"
         self.current_quartile = 0
         return
-    
+
     def test_quartile(self,quartile):
         #valid inputs are 1-4
         self.quartile = quartile / 4.0
-    
+
     def classify_market(self,input_list):
         #print "start market classify"
-        #market detection preprocessor splits the input data into 
+        #market detection preprocessor splits the input data into
         #quartiles based on the true range indicator
 
         self.market_class = []
         atr_depth = 60 * 1 #one hour atr
-        
+
         #print "calc the true pct range indicator"
         last_t = 0
         last_tr = 0
@@ -174,7 +174,7 @@ class trade_engine:
         tr = 0
         for i in xrange(len(input_list)):
             t,p = input_list[i]
-            t = int(t * 1000) 
+            t = int(t * 1000)
             if i > atr_depth + 1:
                 dsp = [r[1] for r in input_list[i - atr_depth - 1:i]]   #get the price data set
                 dsp_min = min(dsp)
@@ -210,7 +210,7 @@ class trade_engine:
             if p > quartiles[2]:
                 self.market_class[i][1] = 1.0
             if i < atr_depth + 1:
-                self.market_class[i][1] = 0.0   #ignore early (uncalculated) data 
+                self.market_class[i][1] = 0.0   #ignore early (uncalculated) data
         self.classified_market_data = True
         self.current_quartile = int(self.market_class[len(self.market_class)-1][1] * 4) #return the current quartile (1-4)
         return self.current_quartile
@@ -245,7 +245,7 @@ class trade_engine:
         m += "\nMACD Max Pct: " + str(self.metric_macd_pct_max)+ "%"
         m += "\nMACD Min Pct: " + str(self.metric_macd_pct_min)+ "%"
         return m
-    
+
     def dump_open_positions(self):
         #dump all active trades to get a current balance
         self.positions_open = [] #clear out the subset buffer
@@ -261,9 +261,9 @@ class trade_engine:
 
     def score(self):
         self.dump_open_positions()
-        if (self.wins + self.loss) > 0:     
+        if (self.wins + self.loss) > 0:
             self.positions = sorted(self.positions, key=itemgetter('buy_period'))
-            exp_scale = self.nlsf / self.period #float(self.positions[-1]['buy_period'])    
+            exp_scale = self.nlsf / self.period #float(self.positions[-1]['buy_period'])
             final_score_balance = 0
             for p in self.positions:
                 p['score'] = 0
@@ -278,7 +278,7 @@ class trade_engine:
                         p['score'] *= (1/4.0) #I'm knocking down very short term trades because there's a chance the system will miss them in live trading
                 if p['status'] == "stop":
                     if p['actual'] > p['buy']:
-                        age = float(self.stop_age) 
+                        age = float(self.stop_age)
                         #if there wasn't a loss caused by the stop order
                         p['score'] = (((p['buy'] - p['actual']) / p['buy']) * 100.0)  * self.shares
                         #apply non-linear scaling to the trade based on the round trip time (age)
@@ -287,7 +287,7 @@ class trade_engine:
                         p['score'] *= 100.0
                     else:
                         #losing position gets a negative score
-                        age = float(self.stop_age) 
+                        age = float(self.stop_age)
                         p['score'] = ((((p['actual'] - p['buy']) / p['buy']) * 100.0)  * self.shares)
                         #apply non-linear scaling to the trade based on the round trip time (age)
                         #favors a faster turn around time on positions
@@ -295,14 +295,14 @@ class trade_engine:
                         p['score'] *= 1000.0    #increase weighting for losing positions
 
                 #apply e^0 to e^1 weighting to favor the latest trade results
-                p['score'] *= exp(exp_scale * p['buy_period']) 
+                p['score'] *= exp(exp_scale * p['buy_period'])
                 final_score_balance += p['score']
 
-            
+
             #because stop loss will generaly be higher that the target (markup) percentage
             #the loss count needs to be weighted by the pct difference
             loss_weighting_factor = self.stop_loss / self.markup
-            
+
             final_score_balance *= self.wins / (self.wins + (self.loss * loss_weighting_factor) * 1.0)
             #final_score_balance *= self.markup * len(self.positions)
 
@@ -347,8 +347,8 @@ class trade_engine:
         current_price = self.history[0]
         #if the balance is sufficient to place an order and there is no buy delay
         buy = current_price * -1
-        #but only if the classified input data matches the quartile assigned 
-        #OR if the input data was not pre-classified in which case quartile partitioning is disabled. 
+        #but only if the classified input data matches the quartile assigned
+        #OR if the input data was not pre-classified in which case quartile partitioning is disabled.
         if self.classified_market_data == False or self.quartile == self.market_class[self.period][1]:
             if self.balance > (current_price * self.shares) and self.buy_delay == 0 :
                 if self.macd_pct < self.macd_buy_trip:
@@ -364,13 +364,13 @@ class trade_engine:
                     new_position = {'master_index':len(self.positions),'age':0,'buy_period':self.period,'sell_period':0,'trade_pos': self.balance,'shares':actual_shares,'buy':buy,'cost':self.shares*buy,'target':target,'stop':stop,'status':"active",'actual':0,'score':0}
                     self.positions.append(new_position.copy())
                     #maintain a seperate subset of open positions to speed up the search to close the open positions
-                    #after a long run there may be thousands of closed positions 
+                    #after a long run there may be thousands of closed positions
                     #it was killing performance searching all of them for the few open positions at any given time
-                    self.positions_open.append(new_position.copy()) 
-                
-        
+                    self.positions_open.append(new_position.copy())
+
+
         current_net_worth = 0
-        
+
         #check for sold and stop loss orders
         sell = current_price * -1
         stop = current_price * -1
@@ -394,7 +394,7 @@ class trade_engine:
             #handle the stop orders
             elif position['status'] == "active" and (position['stop'] >= current_price or position['age'] >= self.stop_age):
                 if position['stop'] >= current_price:
-                    if self.enable_flash_crash_protection == True and self.market_class[self.period][1] == 1.0:                     
+                    if self.enable_flash_crash_protection == True and self.market_class[self.period][1] == 1.0:
                         stop_order_executed = False
                         #convert the stop loss order into a short term hold position
                         position['age'] = self.stop_age - self.flash_crash_protection_delay
@@ -428,7 +428,7 @@ class trade_engine:
                     #self.positions = filter(lambda x: x.get('buy_period') != buy_period, self.positions) #delete the old record
                     #self.positions.append(position.copy()) #and add the updated record
                     self.positions[position['master_index']] = position.copy()
-            #handle active (open) positions 
+            #handle active (open) positions
             elif position['status'] == "active":
                 #position remains open, capture the current value
                 current_net_worth += current_price * (position['shares'] - (position['shares'] * self.commision))
@@ -449,7 +449,7 @@ class trade_engine:
             if stop > 0:
                 self.stop_log.append([self.time,stop])
         return
-    
+
     def get_target(self):
         #calculates the inverse macd
         #wolfram alpha used to transform the macd equation to solve for the trigger price:
@@ -474,11 +474,11 @@ class trade_engine:
         if len(self.history) == self.wll:
             s = 0
             l = 0
-            
+
             #calculate the ema weighting multipliers
             ema_short_mult = (2.0 / (self.wls + 1) )
             ema_long_mult = (2.0 / (self.wll + 1) )
-            
+
             #bootstrap the ema calc using a simple moving avg if needed
             if self.ema_long == 0:
                 for i in xrange(self.wll):
@@ -493,14 +493,14 @@ class trade_engine:
                 #calculate the long and short ema
                 self.ema_long = (self.history[0] - self.ema_long) * ema_long_mult + self.ema_long
                 self.ema_short = (self.history[0] - self.ema_short) * ema_short_mult + self.ema_short
-            
-            
+
+
             #calculate the absolute and pct differences between the
             #long and short emas
             self.macd_abs = self.ema_short - self.ema_long
             self.macd_pct = (self.macd_abs / self.ema_short) * 100
-            
-            
+
+
             """
             #track the number of sequential positive and negative periods
             if self.history[0] - self.history[1] > 0:
@@ -526,17 +526,17 @@ class trade_engine:
             self.macd_pct_log.append([self.time,self.macd_pct])
             self.wl_log.append([self.time,self.ema_long])
             self.ws_log.append([self.time,self.ema_short])
-        
-        
+
+
     def display(self):
         #used for debug
         print ",".join(map(str,[self.history[0],self.macd_pct,self.buy_wait]))
-    
+
     def input(self,time_stamp,record):
         #self.time = int(time.mktime(time.strptime(time_stamp))) * 1000
-        self.time = int(time_stamp * 1000) 
+        self.time = int(time_stamp * 1000)
         self.input_log.append([self.time,record])
-        
+
         ###Date,Sell,Buy,Last,Vol,High,Low,###
         self.history.insert(0,record)
         if len(self.history) > self.wll:
@@ -590,26 +590,26 @@ class trade_engine:
                             color = 'b'
                         self.order_history +="<td class='%s'>"%color
                         if type(p[key]) == type(1.0):
-                            self.order_history += "%.2f"% round(p[key],2)               
-                        else:   
+                            self.order_history += "%.2f"% round(p[key],2)
+                        else:
                             self.order_history += str(p[key])
-                        
+
                         self.order_history +="</td>"
-                
+
                 elif p['status']!='dumped':
                     self.order_history +="<td>N/A</td>"
-            
+
             if p['status']!='dumped':
-                self.order_history +="</tr>\n"  
+                self.order_history +="</tr>\n"
 
         self.order_history += "</table>"
         return
-    
+
     def log_transactions(self,filename):
         #log the transactions to a file
         #used with excel / gdocs to chart price and buy/sell indicators
         f = open(filename,'w')
-        
+
         for i in xrange(len(self.input_log)):
             for position in self.positions:
                 if position['buy_period'] == i:
@@ -629,7 +629,7 @@ class trade_engine:
         f.close()
         return
 
-    def compress_log(self,log,lossless_compression = False):        
+    def compress_log(self,log,lossless_compression = False):
         #removes records with no change in price, before and after record n
         compressible = True
         while compressible:
@@ -666,22 +666,22 @@ class trade_engine:
                 avg = (log[i-1][1] - avg) * 0.2 + avg
                 avg = (log[i][1] - avg) * 0.2 + avg
             ret_log.append(log[len(log)-1]) #make sure the last record is captured
-            log = ret_log   
+            log = ret_log
 
         return ret_log
 
     def chart(self,template,filename,periods=-1,basic_chart=False):
         self.log_orders()
-        
+
         f = open(template,'r')
         tmpl = f.read()
         f.close()
-        
+
         if periods < 0:
             periods = self.period * -1
         else:
             periods *= -1
-        
+
         #insert all quartiles at the begining of the market class data to ensure correct
         #chart scaling. This covers the case where the chart period doesn't see all quartiles
         mc = self.market_class[periods:]
@@ -736,7 +736,7 @@ class trade_engine:
                 if self.trigger_log[i][0] >= time_stamp:
                     trigger_price = str(self.trigger_log[i:]).replace('L','')
                     break
-        
+
         print "chart: filling the template"
         tmpl = tmpl.replace("{LAST_UPDATE}",time.ctime())
         tmpl = tmpl.replace("{PRICES}",input)
@@ -789,7 +789,7 @@ if __name__ == "__main__":
 
     __appversion__ = "0.02a"
     print "Bitcoin trade simulator profiler v%s"%__appversion__
-    
+
     print " -- this is a test script to profile the performance of bct.py"
     print " -- the trade results should be ignored as the trade strategy inputs"
     print " are designed to stress the module with many trade positions"
@@ -815,7 +815,7 @@ if __name__ == "__main__":
     print "Score:",te.score()
     print "Closing Balance:",te.balance
     print "Transaction Count: ",len(te.positions)
-    
+
     #Commented out the follwing reports -- they generate very large files and in the case of this test script of limited use.
     #print "Generating reports..."
     #te.log_transactions('./report/profile_transactions.csv')

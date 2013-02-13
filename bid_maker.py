@@ -1,6 +1,6 @@
 
 """
-bid_maker v0.01 
+bid_maker v0.01
 
 sets the bid prices
 
@@ -20,8 +20,8 @@ This file is part of ga-bitbot.
 
     You should have received a copy of the GNU General Public License
     along with ga-bitbot.  If not, see <http://www.gnu.org/licenses/>.
-""" 
- 
+"""
+
 #
 #   Generates GA trade simulation reports using the gene server
 #   Also calculates & submits the next buy trigger
@@ -43,7 +43,7 @@ __server__ = gene_server_config.__server__
 __port__ = str(gene_server_config.__port__)
 
 #make sure the port number matches the server.
-server = xmlrpclib.Server('http://' + __server__ + ":" + __port__)  
+server = xmlrpclib.Server('http://' + __server__ + ":" + __port__)
 
 print "bid_maker: connected to",__server__,":",__port__
 
@@ -51,7 +51,7 @@ print "bid_maker: connected to",__server__,":",__port__
 from load_config import *
 import __main__
 
-#the variable values below are superceded by the configuration loaded from the 
+#the variable values below are superceded by the configuration loaded from the
 #configuration file global_config.json
 #!!!!!!!! to change the values edit the json configuration file NOT the variables below !!!!!!!!
 max_length = 60 * 24 * 60
@@ -104,7 +104,7 @@ while 1:
         print "bid_maker: finding target bid for",gdh
 
 
-        #create the trade engine    
+        #create the trade engine
         print "bid_maker: loading the fitness function"
         ff = None
         if gd.has_key('fitness_script'):
@@ -118,13 +118,13 @@ while 1:
 
         #apply global configs
         te.max_length = max_length
-        te.enable_flash_crash_protection = enable_flash_crash_protection 
+        te.enable_flash_crash_protection = enable_flash_crash_protection
         te.flash_crash_protection_delay = flash_crash_protection_delay
-        
+
         #load the gene def fitness config into the trade engine
         if gd.has_key('fitness_config'):
             te = load_config_into_object(gd['fitness_config'],te)
-        quartile = te.initialize()              
+        quartile = te.initialize()
         #select the quartile to test
         te.test_quartile(quartile)
 
@@ -139,10 +139,10 @@ while 1:
                 p = {'buy':-1.00,'bid_maker_time_stamp':time.time(),'gene_id':ag['id'],'score':0}
                 server.put_target(json.dumps(p),pid)
         else:
-    
+
             if type(ag) == type([]):
                 ag = ag[0]
-    
+
 
             #load the gene dictionary into the trade engine
             te = load_config_into_object({'set':ag},te)
@@ -186,7 +186,7 @@ while 1:
                             #print "Order not triggered @",target
                             p['buy'] = 0.00
                             p['target'] = 0.00
-                    
+
                     score = te.score()
                     print "bid_maker: score: ",score
                     #time stamp the bid and capture the gene id

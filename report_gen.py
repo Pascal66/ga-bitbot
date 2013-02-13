@@ -1,6 +1,6 @@
 
 """
-report_gen v0.01 
+report_gen v0.01
 
 report generator
 
@@ -20,8 +20,8 @@ This file is part of ga-bitbot.
 
     You should have received a copy of the GNU General Public License
     along with ga-bitbot.  If not, see <http://www.gnu.org/licenses/>.
-""" 
- 
+"""
+
 #
 #   Generates GA trade simulation reports using the gene server
 #   Also calculates & submits the next buy trigger
@@ -43,7 +43,7 @@ __server__ = gene_server_config.__server__
 __port__ = str(gene_server_config.__port__)
 
 #make sure the port number matches the server.
-server = xmlrpclib.Server('http://' + __server__ + ":" + __port__)  
+server = xmlrpclib.Server('http://' + __server__ + ":" + __port__)
 
 print "Connected to",__server__,":",__port__
 
@@ -51,7 +51,7 @@ print "Connected to",__server__,":",__port__
 from load_config import *
 import __main__
 
-#the variable values below are superceded by the configuration loaded from the 
+#the variable values below are superceded by the configuration loaded from the
 #configuration file global_config.json
 #!!!!!!!! to change the values edit the json configuration file NOT the variables below !!!!!!!!
 max_length = 60 * 24 * 60
@@ -133,10 +133,10 @@ while 1:
     server.pid_register_client(pid,gdh)
 
     print "_" * 80
-    print time.ctime()  
+    print time.ctime()
     #load the data set
     input = load()
-    
+
     buys = []
     targets = []
     for quartile in [4,3,2,1]:
@@ -154,11 +154,11 @@ while 1:
             #generate empty charts to prevent old data from being reported.
             generate_empty_charts(quartile)
         else:
-        
+
             if type(ag) == type([]):
                 ag = ag[0]
-        
-            #create the trade engine    
+
+            #create the trade engine
             print "report: loading the fitness function"
             ff = None
             if gd.has_key('fitness_script'):
@@ -171,14 +171,14 @@ while 1:
 
             #apply global configs
             te.max_length = max_length
-            te.enable_flash_crash_protection = enable_flash_crash_protection 
+            te.enable_flash_crash_protection = enable_flash_crash_protection
             te.flash_crash_protection_delay = flash_crash_protection_delay
             #load the gene dictionary into the trade engine
             te = load_config_into_object({'set':ag},te)
             #load the gene def fitness config into the trade engine
             if gd.has_key('fitness_config'):
                 te = load_config_into_object(gd['fitness_config'],te)
-            
+
             #preprocess the data
             #current_quartile = te.classify_market(input)
             current_quartile = te.initialize()
@@ -203,7 +203,7 @@ while 1:
             else:
                 if len(te.positions) == 0:
                     #no data to report but the chart reports need to be created to prevent stale data reports or 404 errors.
-                    generate_empty_charts(quartile)                 
+                    generate_empty_charts(quartile)
                     if current_quartile == quartile:
                         print "no positions, order not submitted"
                         p = {'buy':0.00}
