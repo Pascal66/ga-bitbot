@@ -192,7 +192,7 @@ while 1:
                     #time stamp the bid and capture the gene id
                     p.update({'bid_maker_time_stamp':time.time(),'gene_id':ag['id'],'score':score})
 
-                    te.chart("./report/chart.templ",gdh + '/' + ag['id'] + '.html',chart_zoom_periods,basic_chart=chart_type,write_cache_only=True)
+                    #te.chart("./report/chart.templ",gdh + '/' + ag['id'] + '.html',chart_zoom_periods,basic_chart=chart_type,write_cache_only=True)
                     te.cache_output(gdh + '/' + ag['id'],periods=30000)
 
                     #print "Evaluating target price"
