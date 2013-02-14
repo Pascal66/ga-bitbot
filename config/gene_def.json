@@ -1,9 +1,9 @@
 {
-	"name":"bct_slope - med window low markup",
+	"name":"bct_active - med window low markup",
 	"version":"0.7",
 	"description":"1.5 - 2.77% markup",
 
-	"fitness_script":"bct_slope",
+	"fitness_script":"bct_active",
 	"fitness_config":
 	{
 		"set" :
@@ -52,8 +52,8 @@
 			["buy_wait",4,0,1],
 			["buy_wait_after_stop_loss",8,0,1],
 			["markup",7,4,0.015],
-			["stop_loss",8,4,0.02],
-			["stop_age",8,0,1000,2.0],
+			["stop_loss",8,4,0.03],
+			["stop_age",8,0,5000,2.0],
 			["macd_buy_trip",10,2,2.0,-2.0],
 			["rsi_enable",1,0,1],
 			["rsi_length",7,0,3],

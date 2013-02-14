@@ -57,7 +57,7 @@ tr:nth-child(odd) td 	{background-color:#2C2E2A;}
 
 .ui-overlay		{background: url(../img/overlay.png) no-repeat center center fixed;-webkit-background-size: cover; opacity: 1.0;
         		-moz-background-size: cover; -o-background-size: cover; background-size: cover; 
-			background-color:#2C2E2A;width:100%;height:100%;position:absolute;top:0%;right:0%;opacity: 100%;z-index: 1000;border: 2px solid #000000;;
+			background-color:#2C2E2A;width:99%;height:100%;position:absolute;top:0%;right:0%;opacity: 100%;z-index: 1000;border: 2px solid #000000;;
 			-moz-border-radius: 5px; padding: 5px; 
 			-webkit-border-radius: 5px; font-size: 12px;}
 

@@ -28,6 +28,9 @@
 		"max_bid_price" : 20.00,
 		"enable_underbids" : 1,
 		"enable_text_messaging":0,
+        "enable_constant_bid" : 0,
+        "constant_bid_discount" : 0.10,
+        "constant_bid_qty" : 0.777,
 
 		"REPORTGEN_SECTION" : 1,
 		"chart_zoom_periods" : 2500,

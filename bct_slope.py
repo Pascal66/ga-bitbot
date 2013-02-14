@@ -23,8 +23,6 @@ This file is part of ga-bitbot.
     You should have received a copy of the GNU General Public License
     along with ga-bitbot.  If not, see <http://www.gnu.org/licenses/>.
 """
-
-import pdb
 import time
 from operator import itemgetter
 from math import exp
@@ -297,7 +295,7 @@ class trade_engine:
             if position['status'] == "active":
                 position['status'] = "dumped"
                 position['actual'] = self.history[1]    #HACK! go back in time one period to make sure we're using a real price
-                                    #and not a buy order target from the reporting script.
+                                                        #and not a buy order target from the reporting script.
                 if position['buy_period'] != self.period:
                     position['sell_period'] = self.period
                 else:
@@ -353,10 +351,6 @@ class trade_engine:
                     rr = 2.0
                 final_score_balance *= rr
 
-
-            #if self.opening_balance > self.balance:
-            #   #losing strategy
-            #   final_score_balance -= 5000 #999999999
         else:
             #no trades generated
             final_score_balance = -987654321.123456789
@@ -894,7 +888,7 @@ def test():
 
 
 if __name__ == "__main__":
-
+    import pdb
     __appversion__ = "0.02a"
     print "Bitcoin trade simulator profiler v%s"%__appversion__
 
@@ -930,4 +924,3 @@ if __name__ == "__main__":
     #te.log_orders('./report/profile_orders.csv')
     #te.chart("./report/chart.templ","./report/chart_profile.html")
     print "Done."
-

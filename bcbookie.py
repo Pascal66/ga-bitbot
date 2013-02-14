@@ -553,6 +553,9 @@ if __name__ == "__main__":
     enable_underbids = True
     enable_text_messaging = False
     price_format = "%.3f"
+    enable_constant_bid = 0
+    constant_bid_discount = 0.20
+    constant_bid_qty = 0.1
     config_loaded = 0
 
     #load config
@@ -639,6 +642,10 @@ if __name__ == "__main__":
             else:
                 print "main: warning - ignoring invalid target order:"
                 print str(t)
+
+            if monitor_mode == False and enable_constant_bid == True and b.btc_price > 0.0 and target_order_validated == False:
+                #If there are no bids AND enable constant bid is true then place an order at the constant bid discount
+                b.buy(constant_bid_qty,b.btc_price * ( 1 - constant_bid_discount),b.btc_price * ( 1 - (constant_bid_discount / 1.4)),b.btc_price * ( 1 - (constant_bid_discount / 1.4)),b.btc_price * ( 1 - (constant_bid_discount * 2)),buy_order_wait,7000)
 
             if monitor_mode == False and target_order_validated == True:
                 commit = ((t['target'] - t['buy']) * commit_pct_to_target) + t['buy'] #commit sell order at n% to target
