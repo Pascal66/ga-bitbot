@@ -65,6 +65,10 @@ d = f.read()
 gene_library = json.loads(d)
 f.close()
 
+signed_package_library = {}
+if gene_library.has_key('signed_package_library'):
+    signed_package_library = gene_library.pop('signed_package_library')
+
 while 1:
     ui = raw_input('\nstatus: ' + status + '\n'+'?:')
     if ui == 'h':

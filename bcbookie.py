@@ -643,7 +643,7 @@ if __name__ == "__main__":
                 print "main: warning - ignoring invalid target order:"
                 print str(t)
 
-            if monitor_mode == False and enable_constant_bid == True and b.btc_price > 0.0 and target_order_validated == False:
+            if monitor_mode == False and enable_constant_bid == True and b.btc_price > 0.0:# and target_order_validated == False:
                 #If there are no bids AND enable constant bid is true then place an order at the constant bid discount
                 b.buy(constant_bid_qty,b.btc_price * ( 1 - constant_bid_discount),b.btc_price * ( 1 - (constant_bid_discount / 1.4)),b.btc_price * ( 1 - (constant_bid_discount / 1.4)),b.btc_price * ( 1 - (constant_bid_discount * 2)),buy_order_wait,7000)
 

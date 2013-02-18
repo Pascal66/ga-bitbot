@@ -27,20 +27,22 @@ import json
 class logs:
     def __init__(self):
         self._log = {}
+        self._metacontent = {} #data about data content
 
     def addkey(self,key):
         if self._log.has_key(key):
             return
         else:
             self._log.update({key:[]})
+            self._metacontent.update({key:{}})
         return
-
 
     def append(self,key,value):
         if self._log.has_key(key):
             self._log[key].append(value)
         else:
             self._log.update({key:[value]})
+            self._metacontent.update({key:{}})
         return
 
     def get(self,key):
@@ -49,11 +51,27 @@ class logs:
         else:
             return None
 
+    def get_metacontent(self,key):
+        #gets the metacontent dictionary for a given key
+        if self._metacontent.has_key(key):
+            return self._metacontent[key]
+        else:
+            return None
+
+    def set_metacontent(self,key,meta):
+        #sets the metacontent dictionary for a given key
+        if self._metacontent.has_key(key):
+            self._metacontent[key] = meta
+        else:
+            self._log.update({key:[]})
+            self._metacontent.update({key:meta})
+
     def reset(self):
         self._log = {}
+        self._metacontent = {}
 
     def json(self):
-        return json.dumps(self._log)
+        return json.dumps({'content':self._log,'metacontent':self._metacontent})
 
     def compress_logs(self,exclude_keys=[],lossless_compression = True, max_lossy_length = 4000):
         for key in self._log.keys():
@@ -65,6 +83,7 @@ class logs:
         #time series compression
         #removes records with no change in value, before and after record n
         #clamps floats to three decimal points
+        #data must be in the format of [time_stamp,...]
         compressible = True
         while compressible:
             compressible = False
@@ -106,6 +125,7 @@ class logs:
 
     def prune_logs(self,start_time,exclude_keys=[]):
         #prunes all logs data to after start_time
+        #data must be in the format of [time_stamp,...]
         for key in self._log.keys():
             if not (key in exclude_keys):
                 pruned = []
@@ -142,6 +162,9 @@ if __name__ == "__main__":
     print log.get('alog')
     print log.get('blog')
     print log.get('list')
+
+    log.set_metacontent('alog',{'type':'int','description':'data description'})
+    print log.get_metacontent('alog')
 
     print log.json()
     log.reset()

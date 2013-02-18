@@ -6,6 +6,7 @@
 		"enable_flash_crash_protection" : 1,
 		"flash_crash_protection_delay" : 240,
 		"price_format" : "%.5f",
+        "trusted_keys_path":"./config/trusted_keys/",
 
 		"GTS_SECTION" : 1,
 		"load_throttle" : 1,
@@ -30,7 +31,7 @@
 		"enable_text_messaging":0,
         "enable_constant_bid" : 0,
         "constant_bid_discount" : 0.10,
-        "constant_bid_qty" : 0.777,
+        "constant_bid_qty" : 7.777,
 
 		"REPORTGEN_SECTION" : 1,
 		"chart_zoom_periods" : 2500,

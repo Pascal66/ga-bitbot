@@ -58,7 +58,7 @@ g_default_group_gene_def_hash = g_undefined_gene_def_hash
 
 g_gene_conf = {'gene_def_hash':g_undefined_gene_def_hash,'gene_def':'UNDEFINED','gene_high_scores':[[],[],[],[]],'gene_best':[[],[],[],[]],'g_trgt':json.dumps({'buy':0}),'g_active_quartile':0,'trade_enabled':0,'trade_priority':0}
 g_gene_library = {'0db45d2a4141101bdfe48e3314cfbca3':deepcopy(g_gene_conf)} #default library starts with the default UNDEFINED group.
-
+g_signed_package_library = {} 
 
 g_save_counter = 0
 g_trgt = json.dumps({'buy':0})
@@ -69,6 +69,38 @@ g_pids = {}
 
 def echo(msg):
     return msg
+
+@call_metrics.call_metrics
+def put_signed_package(package):
+    global g_signed_package_library
+    try:
+        package = json.loads(package)
+    except:
+        return "NOK"
+    g_signed_package_library.update({package['package_name']:package})
+    return "OK"
+
+
+@call_metrics.call_metrics
+def get_signed_package(package_name):
+    global g_signed_package_library
+    if g_signed_package_library.has_key(package_name):
+        return json.dumps(g_signed_package_library[package_name])
+    return "NOK"
+
+
+@call_metrics.call_metrics
+def check_signed_package(package_name,MD5):
+    """
+    used by clients to check that local packages 
+    are in synch with the signed package library
+    """
+    global g_signed_package_library
+    if g_signed_package_library.has_key(package_name):
+        if g_signed_package_library[package_name]['MD5'] == MD5:
+            return "OK"
+        return "NOK"
+    return "NA"
 
 @call_metrics.call_metrics
 def trade_enable(state,gdh):
@@ -377,7 +409,7 @@ def get_pids():
     #   g_pids[pid]['msg_buffer'] = ''
     return js_pids
 
-@call_metrics.call_metrics
+
 def get_pid_gene_def_hash(pid):
     global g_pids
     global g_undefined_gene_def_hash
@@ -449,12 +481,17 @@ def save_db():
     global AUTO_BACKUP_AFTER_N_SAVES
     global g_save_counter
     global g_gene_library
+    global g_signed_package_library
+
     g_save_counter += 1
     if g_save_counter == AUTO_BACKUP_AFTER_N_SAVES:
         g_save_counter = 0
         backup = True
     else:
         backup = False
+
+    #embed the signed package library into the gene library
+    g_gene_library.update({'signed_package_library':g_signed_package_library})
 
     if backup:
         f = open('./config/gene_server_db_library.json.bak','w')
@@ -463,11 +500,14 @@ def save_db():
 
     f = open('./config/gene_server_db_library.json','w')
     f.write(json.dumps(g_gene_library))
+    #pop the signed package library back out of the gene library
+    g_gene_library.pop('signed_package_library')
     return 'OK'
 
 @call_metrics.call_metrics
 def reload_db():
     global g_gene_library
+    global g_signed_package_library
     import os
     reload_error = False
     #save the gene db before shut down
@@ -532,6 +572,10 @@ def reload_db():
     if reload_error == True:
         return "NOK"
 
+    #extract the signed code library if one's available
+    if g_gene_library.has_key('signed_package_library'):
+        g_signed_package_library = g_gene_library.pop('signed_package_library')
+
     #upgrade old db format to include new records
     for key in g_gene_library.keys():
         if g_gene_library[key].has_key('trade_enabled') == False:
@@ -554,6 +598,10 @@ server = SimpleXMLRPCServer((__server__, __port__),requestHandler = RequestHandl
 
 #register the functions
 #client services
+server.register_function(put_signed_package,'put_signed_package')
+server.register_function(get_signed_package,'get_signed_package')
+server.register_function(check_signed_package,'check_signed_package')
+
 server.register_function(trade_enable,'trade_enable')
 server.register_function(trade_priority,'trade_priority')
 

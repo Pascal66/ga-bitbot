@@ -259,13 +259,23 @@ var debug;
 			var selected_axis;
 			//clear the overlay content container
 			$('#overlay_content').html('<h2>Gene Link</h2>');
-			var gd = JSON.parse(msg.value);
+            var gd = JSON.parse(msg.value)['content'];
+            var meta_gd = JSON.parse(msg.value)['metacontent'];
 			for (var series in gd){
 				if (gd[series].length > 1){
 					//find the min max of each series to determine which axis it should belong to
 					selected_axis = gd[series].reduce(function(max, arr) {return max >= arr[1] ? max : arr[1];}, -Infinity);				
 					selected_axis = parseInt((selected_axis / 10.0).toFixed(0));
-					debug.push({ data: gd[series], label: series, yaxis: selected_axis ,lines: {show: true,fill: false,steps: true}});				
+					debug.push({ data: gd[series], label: series, yaxis: selected_axis ,lines: {show: true,fill: false,steps: true}});	
+
+                    //deterime if data is a continuous series or event
+                    var dif = 0;
+                    for (var k = 1; k < gd[series].length; k++){
+                        dif += gd[series][k][0] - gd[series][k-1][0];
+                    }
+                    dif /= gd[series].length;
+                    console.log(series + ' dif:' + dif);
+			
 					if (axis_data[selected_axis] == undefined){axis_data[selected_axis] = [];}
 					axis_data[selected_axis].push({ data: gd[series], label: series, yaxis: selected_axis ,lines: {show: true,fill: false,steps: true}});
 				}
@@ -275,7 +285,7 @@ var debug;
 			//plot each axis in its own chart
 			for (selected_axis in axis_data){
 				var chart_height;
-				if (axis_data[selected_axis].length > 2){chart_height='40%';}else{chart_height='20%';}
+				if (axis_data[selected_axis].length > 2){chart_height='45%';}else{chart_height='15%';}
 				$('#overlay_content').append('<div id="glc_'+selected_axis+'" style="width:98%;height:'+chart_height+';font-size:1.30em;"></div>')
 				$.plot($('#glc_' + selected_axis),axis_data[selected_axis],
 					{ 
@@ -286,9 +296,12 @@ var debug;
 //						zoom: {interactive: true},
 						pan: {interactive: true},
 						autoHighlight: true,
+                         legend: { position: 'sw' },
 		    				mouseActiveRadius: 3
 					}
 				);
+                $('#glc_' + selected_axis + ' div.legend table').css("border", "1px solid #333333");
+                $('#glc_' + selected_axis + ' div.legend table').css("background", "#000000")
 			};
 			
 			//$('#overlay_content').html(msg.value);
