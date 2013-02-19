@@ -1,5 +1,5 @@
 """
-cspu v0.01
+cpsu v0.01
 
 ga-bitbot Cryptographic Package Signing Utility
 
@@ -17,9 +17,6 @@ ga-bitbot Cryptographic Package Signing Utility
      - compression flag
 
     The signature guarantees the origin of the package contents to the owner of the public key
-
-    All trusted keys 
-    
 
 Copyright 2013 Brian Monkaba
 
@@ -101,10 +98,10 @@ elif operation == 'get':
         receiver = CryptoPK.CryptoPKVerify(package,trusted_keys)
         if receiver.verified: #should pass
             receiver.update_local_file()
-            print "Package verified and up to date."
+            print "cspu:Info:Package verified and up to date."
         else:
-            print "Package failed verification"
-            print "- Either the public key isn't trusted or the package contents have been modified since it was signed."
+            print "cspu:Info:Package failed verification"
+            print "cspu:Info:- Either the public key isn't trusted or the package contents have been modified since it was signed."
     else:
         print "cspu:Error: Package not found"
 else:

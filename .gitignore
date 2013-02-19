@@ -1,10 +1,13 @@
 datafeed/bcfeed*csv
 datafeed_reboot/*
 *pyc
+config/aws_api_key.txt
 config/api_key.txt
 config/gene_server_db_library.json
 config/gene_server_db_library.json.bak
 config/salt.txt
+config/public.key
+config/private.key
 report/gene_server_error_log.txt
 report/gts_error_log.txt
 report/book.html

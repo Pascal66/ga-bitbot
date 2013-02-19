@@ -28,6 +28,7 @@ import gene_server_config
 import time
 import sys
 import random
+import subprocess
 import __main__
 import paths
 from genetic import *
@@ -64,6 +65,7 @@ if __name__ == "__main__":
     pid_update_rate = 20 #reset watchdog after every n genes tested
     enable_flash_crash_protection = False
     flash_crash_protection_delay = 60 * 3 #three hours
+    trusted_keys_path = "./config/trusted_keys/"
     config_loaded = 0
     #!!!!!!!!!!!!!!!!end of loaded config values!!!!!!!!
 
@@ -225,6 +227,15 @@ if __name__ == "__main__":
 
     ff = None
     if gd.has_key('fitness_script'):
+        #check for an updated signed package on the gene_server
+        #pypy probably wont have pycrypto installed - fall back to python in a subprocess to sync
+        #fitness module names in the gene_def exclude the .py file extention 
+        #but signed packages use the extention. check for extention, if none exists then add .py
+        print "gts: synchronizing signed code"        
+        if len(gd['fitness_script'].split('.')) == 1:
+            sync_filename = gd['fitness_script'] + '.py'
+        subprocess.call(('python','cpsu.py','get',sync_filename,trusted_keys_path))
+
         print "gts: loading the fitness module",gd['fitness_script']
         ff = __import__(gd['fitness_script'])
     else:
