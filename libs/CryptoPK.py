@@ -39,10 +39,17 @@ from Crypto.Signature import PKCS1_v1_5
 from Crypto.Hash import SHA512
 from Crypto.Hash import MD5
 from Crypto.PublicKey import RSA
+from Crypto.Cipher import AES
+from Crypto import Random
+import hashlib
 import base64
 import json
 import zlib
+import random
+import time
 import logging
+import sys
+import getpass
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +59,7 @@ class CryptoPKSign:
         self.key_path = key_path
         self.pub = ''
         self.prv = ''
+        self.prv_key_locked = True
         try: #load existing priv/pub key pair if available
             f = open(self.key_path + 'public.key')
             self.pub = f.read()
@@ -61,7 +69,7 @@ class CryptoPKSign:
             f.close()
         except: #if no key pair exists then create one
             logger.info("CryptoPKSign:__init__: no existing keys found, generating a new key pair")
-            self.__gen_key_pair()
+            self.__gen_key_pair()   
         return
 
     def __gen_key_pair(self):
@@ -78,8 +86,54 @@ class CryptoPKSign:
         f.write(self.prv)
         f.close()
 
+    def unlock_private_key(self):
+        if self.prv_key_locked == True:
+            #decrypts the private key
+            try: #load the salt file
+                f = open(self.key_path+'salt.txt','r')
+                salt = f.read()
+                f.close()
+                logger.info("CryptoPKSign:__init__: salt loaded")
+            except: #salt file not found, generate a new salt
+                pre_salt = str(time.time() * random.random() * 1000000) + 'H7gfJ8756Jg7HBJGtbnm856gnnblkjiINBMBV734'
+                salt = hashlib.sha512(pre_salt).digest()
+                f = open(self.key_path+'salt.txt','w')
+                f.write(salt)
+                f.close()
+                logger.info("CryptoPKSign:__init__: new salt file generated")
+            if self.prv.find('BEGIN RSA PRIVATE KEY') > -1:#check to see if the private key is encrypted
+                logger.warning("CryptoPKSign:__init__: non-enrypted private key found")
+                print "\n\nPrivate key is not encrypted\nEnter a new password to encrypt the private key:"
+                password = raw_input()
+                hash_pass = hashlib.sha256(password + salt).digest()
+                iv = Random.new().read(AES.block_size)
+                encryptor = AES.new(hash_pass, AES.MODE_CBC,iv)
+                text = json.dumps(self.prv)
+                pad_len = 16 - len(text)%16 #pad the text
+                text += " " * pad_len
+                ciphertext = iv + encryptor.encrypt(text)   #prepend the iv parameter to the encrypted data
+                f = open(self.key_path + 'private.key','w')
+                f.write(ciphertext)
+                f.close()
+            else:
+                #request password to decrypt private key
+                print "\n\nEnter the private key password:"
+                password = getpass.getpass()
+                hash_pass = hashlib.sha256(password + salt).digest()
+                decryptor = AES.new(hash_pass, AES.MODE_CBC,self.prv[:AES.block_size])
+                text = decryptor.decrypt(self.prv[AES.block_size:])
+                try:
+                    self.prv = json.loads(text)
+                except:
+                    logger.error("CryptoPKSign:unlock_private_key: invalid password or corrupted encrypted private key file found")
+                    sys.exit()
+        self.prv_key_locked = False
+        return
+
     def sign(self,plain_text,package_name='',compress_package=False):
         #returns a public key signed package as a json string
+
+        self.unlock_private_key()
 
         #MD5 is intended to be used by receivers who wish to validate that they have the latest package.
         md=MD5.new(plain_text).hexdigest() 

@@ -68,21 +68,21 @@ else:
 
 #make sure the port number matches the server.
 server = xmlrpclib.Server('http://' + __server__ + ":" + __port__)
-print "cspu: connected to",__server__,":",__port__
+print "cpsu: connected to",__server__,":",__port__
 
 if operation == 'sign':
     signer = CryptoPK.CryptoPKSign('./config/') #path to the signers key pair
     try:
         package = signer.sign_file(package_name,package_name=package_name,compress_package=True)
     except:
-        print "cspu:Error: Could not sign file, check that the file name given exists."
+        print "cpsu:Error: Could not sign file, check that the file name given exists."
     else:
-        print "cspu:Info:Package created"
+        print "cpsu:Info:Package created"
         try:
             if server.put_signed_package(package) == 'OK':
-                print "cspu:Info:Package uploaded to gene server"
+                print "cpsu:Info:Package uploaded to gene server"
         except:
-            print "cspu:Error: Could not upload package to the gene server. Verify the server is running and try again."
+            print "cpsu:Error: Could not upload package to the gene server. Verify the server is running and try again."
 
 elif operation == 'get':
     package = server.get_signed_package(package_name)
@@ -98,13 +98,13 @@ elif operation == 'get':
         receiver = CryptoPK.CryptoPKVerify(package,trusted_keys)
         if receiver.verified: #should pass
             receiver.update_local_file()
-            print "cspu:Info:Package verified and up to date."
+            print "cpsu:Info:Package verified and up to date."
         else:
-            print "cspu:Info:Package failed verification"
-            print "cspu:Info:- Either the public key isn't trusted or the package contents have been modified since it was signed."
+            print "cpsu:Info:Package failed verification"
+            print "cpsu:Info:- Either the public key isn't trusted or the package contents have been modified since it was signed."
     else:
-        print "cspu:Error: Package not found"
+        print "cpsu:Error: Package not found"
 else:
-    print "cspu:Error: Invalid operation"
+    print "cpsu:Error: Invalid operation"
 
 
