@@ -574,7 +574,7 @@ class trade_engine:
                 for i in xrange(self.wll):
                     if i < self.wls:
                         s += self.history[i]
-                        l += self.history[i]
+                    l += self.history[i]
                 self.avg_ws = s / self.wls
                 self.avg_wl = l / self.wll
                 self.ema_long = self.avg_wl
@@ -764,6 +764,7 @@ class trade_engine:
 
         self.logs.compress_logs(exclude_keys=['buy','sell','stop','trigger'],lossless_compression = False, max_lossy_length = 10000)
         self.cache.set(cache_name,self.logs.json())
+        self.cache.expire(cache_name,60*25)
 
     def chart(self,template,filename,periods=-1,basic_chart=False,write_cache_only=False):
         self.log_orders()

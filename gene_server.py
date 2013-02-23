@@ -199,7 +199,7 @@ def get_gene(n_sec,quartile,pid = None):
 
     #if no records found, grab the most recent
     if len(r) == 0:
-        r = sorted(g_gene_library[gdh]['gene_high_scores'][quartile - 1], key=itemgetter('score'),reverse = True)[0]
+        r = [sorted(g_gene_library[gdh]['gene_high_scores'][quartile - 1], key=itemgetter('score'),reverse = True)[0]]
         r.append(sorted(g_gene_library[gdh]['gene_best'][quartile - 1], key=itemgetter('score'),reverse = True)[0])
     
     if len(r) > 1:

@@ -484,7 +484,7 @@ class trade_engine:
                 for i in xrange(self.wll):
                     if i < self.wls:
                         s += self.history[i]
-                        l += self.history[i]
+                    l += self.history[i]
                 self.avg_ws = s / self.wls
                 self.avg_wl = l / self.wll
                 self.ema_long = self.avg_wl
