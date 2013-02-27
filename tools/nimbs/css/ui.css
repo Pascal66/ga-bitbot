@@ -57,7 +57,7 @@ tr:nth-child(odd) td 	{background-color:#2C2E2A;}
 
 .ui-overlay		{background: url(../img/overlay.png) no-repeat center center fixed;-webkit-background-size: cover; opacity: 1.0;
         		-moz-background-size: cover; -o-background-size: cover; background-size: cover; 
-			background-color:#2C2E2A;width:99%;height:100%;position:absolute;top:0%;right:0%;opacity: 100%;z-index: 1000;border: 2px solid #000000;;
+			background-color:#2C2E2A;width:99%;height:97%;position:absolute;top:0%;right:0%;opacity: 100%;z-index: 1000;border: 2px solid #000000;;
 			-moz-border-radius: 5px; padding: 5px; 
 			-webkit-border-radius: 5px; font-size: 12px;}
 
@@ -66,11 +66,11 @@ tr:nth-child(odd) td 	{background-color:#2C2E2A;}
 			-webkit-border-radius: 5px; font-size: 12px;overflow:auto;}
 
 
-#spinner        {position:absolute;}
+#spinner        {position: absolute; top: -20px;right: 10px;}
 #title          {color: #c77000;font-size: 24px; padding: 10px;border: 2px solid #c77000;
 			-moz-border-radius: 5px; font-weight: bold;
 			-webkit-border-radius: 5px;background-color: #000000;}
-#notifications  {-moz-border-radius: 5px; padding: 5px; -webkit-border-radius: 5px;position:absolute;top:15;right:10;}
+#notifications  {-moz-border-radius: 5px; padding: 1px; -webkit-border-radius: 5px;position:absolute;top:18;right:10;}
 #menu_buttons   {position:absolute;width:90px;top:1em;left:0em;}
 #explorer       {left:6em;top:2.5em;padding: 5px;border: 1px solid #000000;-moz-border-radius: 5px; -webkit-border-radius: 5px;}
 #dbstats       	{left:6em;padding: 5px;border: 1px solid #000000;-moz-border-radius: 5px; -webkit-border-radius: 5px;}

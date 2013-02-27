@@ -468,8 +468,8 @@ if __name__ == "__main__":
                 if verbose:
                     print "gts: ",ag['gene'],"\t".join(["%.5f"%max_score,"%.5f"%score,"%.3f"%g.prune_threshold])
                 g.set_score(ag['id'],score)
-                g.set_message(ag['id'],"Balance: " + str(te.balance) +"; Wins: " + str(te.wins)+ "; Loss:" + str(te.loss) +  "; Positions: " + str(len(te.positions)))
-
+                #g.set_message(ag['id'],"Balance: " + str(te.balance) +"; Wins: " + str(te.wins)+ "; Loss:" + str(te.loss) +  "; Positions: " + str(len(te.positions)))
+                g.set_message(ag['id'],te.text_summary)
 
                 if score > 1000 and profile == True:
                     gts_exit("gts: profiling complete")

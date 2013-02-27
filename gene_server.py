@@ -198,15 +198,15 @@ def get_gene(n_sec,quartile,pid = None):
             r.append(a_d)
 
     #if no records found, grab the most recent
-    if len(r) == 0:
-        r = [sorted(g_gene_library[gdh]['gene_high_scores'][quartile - 1], key=itemgetter('score'),reverse = True)[0]]
-        r.append(sorted(g_gene_library[gdh]['gene_best'][quartile - 1], key=itemgetter('score'),reverse = True)[0])
-    
-    if len(r) > 1:
+    if len(r) == 0 and len(g_gene_library[gdh]['gene_high_scores'][quartile - 1]) > 0:
+        r = sorted(g_gene_library[gdh]['gene_high_scores'][quartile - 1], key=itemgetter('time'),reverse = True)[0]
+        print "get",r['time'],r['score']
+    elif len(g_gene_library[gdh]['gene_high_scores'][quartile - 1]) > 0:
         #if more than one record found find the highest scoring one
         r = sorted(r, key=itemgetter('score'),reverse = True)[0]
-
-    print "get",r['time'],r['score']
+        print "get",r['time'],r['score']
+    else:
+        r = {}
         
     return json.dumps(r)
 

@@ -105,6 +105,7 @@ class trade_engine:
         self.balance = 1000         #account balance
         self.opening_balance = self.balance #record the starting balance
         self.score_balance = 0          #cumlative score
+        self.text_summary = ""
         self.buy_delay = 0          #delay buy counter
         self.buy_delay_inital = self.buy_delay  #delay buy counter
         self.macd_pct = 0
@@ -353,6 +354,8 @@ class trade_engine:
             final_score_balance = -987654321.123456789
 
         self.score_balance = final_score_balance
+        #create the text_summary of the results
+        self.text_summary = "Balance: " + str(self.balance) +"; Wins: " + str(self.wins)+ "; Loss:" + str(self.loss) +  "; Positions: " + str(len(self.positions))
         return final_score_balance
 
     def ai(self):

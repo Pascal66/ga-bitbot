@@ -136,7 +136,7 @@ while 1:
             #if the quartile is active set the buy to 0 to prevent old targets from remaining active
             #this is for fault protection as it should never normaly happen:
             if quartile == server.get_active_quartile():
-                p = {'buy':-1.00,'bid_maker_time_stamp':time.time(),'gene_id':ag['id'],'score':0}
+                p = {'buy':-1.00,'bid_maker_time_stamp':time.time(),'gene_id':'none','score':0}
                 server.put_target(json.dumps(p),pid)
         else:
 

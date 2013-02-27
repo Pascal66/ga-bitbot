@@ -26,7 +26,7 @@
 	$("#tabs").tabs({ show: { effect: "slide", duration: 900 } });
 
 	//$('#SS').attr('href',"/css/custom-goy/jquery-ui-1.9.2.custom.css");
-
+    $('#spinner').hide();
 	$('#dbstats').hide();
 	$('#explorer').hide();
 	$('#overlay').hide();
@@ -146,7 +146,7 @@ var debug;
 
 <div id="notifications">
 <label id="logo" class="ui-highlight-text">GA-BITBOT</label>
-<label id="connection_status" class="ui-error-text">disconnected</label>
+<label id="connection_status" class="ui-error-text">disconnected</label><img id="spinner" src='/img/spinner.gif'>
 </div>
 </body>
 <script>
@@ -254,58 +254,66 @@ var debug;
 		if (msg.channel == 'gene_server_metrics'){set_gene_server_metrics(msg.value);}
 		if (msg.channel == 'gene_data')
 		{
-			debug = [];
-			var axis_data = {};
-			var selected_axis;
-			//clear the overlay content container
-			$('#overlay_content').html('<h2>Gene Link</h2>');
-            var gd = JSON.parse(msg.value)['content'];
-            var meta_gd = JSON.parse(msg.value)['metacontent'];
-			for (var series in gd){
-				if (gd[series].length > 1){
-					//find the min max of each series to determine which axis it should belong to
-					selected_axis = gd[series].reduce(function(max, arr) {return max >= arr[1] ? max : arr[1];}, -Infinity);				
-					selected_axis = parseInt((selected_axis / 10.0).toFixed(0));
-					debug.push({ data: gd[series], label: series, yaxis: selected_axis ,lines: {show: true,fill: false,steps: true}});	
+            $('#spinner').hide();
+            if (msg.value == null){//provide warning of null response
+                $('#overlay_content').html('<h2>Gene Link</h2><br><br>Warning: Query returned no data.<br><br>')
+                $('#overlay_content').append('Verify redis is installed and running, restart bid_maker.py and try again after a few minutes.');
+                $('#overlay').show();
+            }
+            else{
+			    debug = [];
+			    var axis_data = {};
+			    var selected_axis;
+			    //clear the overlay content container
+			    $('#overlay_content').html('<h2>Gene Link</h2>');
+                var gd = JSON.parse(msg.value)['content'];
+                var meta_gd = JSON.parse(msg.value)['metacontent'];
+			    for (var series in gd){
+				    if (gd[series].length > 1){
+					    //find the min max of each series to determine which axis it should belong to
+					    selected_axis = gd[series].reduce(function(max, arr) {return max >= arr[1] ? max : arr[1];}, -Infinity);				
+					    selected_axis = parseInt((selected_axis / 10.0).toFixed(0));
+					    debug.push({ data: gd[series], label: series, yaxis: selected_axis ,lines: {show: true,fill: false,steps: true}});	
 
-                    //deterime if data is a continuous series or event
-                    var dif = 0;
-                    for (var k = 1; k < gd[series].length; k++){
-                        dif += gd[series][k][0] - gd[series][k-1][0];
-                    }
-                    dif /= gd[series].length;
-                    console.log(series + ' dif:' + dif);
+                        //deterime if data is a continuous series or event
+                        var dif = 0;
+                        for (var k = 1; k < gd[series].length; k++){
+                            dif += gd[series][k][0] - gd[series][k-1][0];
+                        }
+                        dif /= gd[series].length;
+                        console.log(series + ' dif:' + dif);
 			
-					if (axis_data[selected_axis] == undefined){axis_data[selected_axis] = [];}
-					axis_data[selected_axis].push({ data: gd[series], label: series, yaxis: selected_axis ,lines: {show: true,fill: false,steps: true}});
-				}
+					    if (axis_data[selected_axis] == undefined){axis_data[selected_axis] = [];}
+					    axis_data[selected_axis].push({ data: gd[series], label: series, yaxis: selected_axis ,lines: {show: true,fill: false,steps: true}});
+				    }
 
-			}
+			    }
 
-			//plot each axis in its own chart
-			for (selected_axis in axis_data){
-				var chart_height;
-				if (axis_data[selected_axis].length > 2){chart_height='45%';}else{chart_height='15%';}
-				$('#overlay_content').append('<div id="glc_'+selected_axis+'" style="width:98%;height:'+chart_height+';font-size:1.30em;"></div>')
-				$.plot($('#glc_' + selected_axis),axis_data[selected_axis],
-					{ 
-						series: { shadowSize: 0 },
-						yaxis: { color: "#c2d98f",zoomRange: [0.1, 10], panRange: [null, null]},
-						xaxis: { mode: 'time', show: true, zoomRange: [1, 2], panRange: [null,null],color: "#c2d98f" },
-						grid : { backgroundColor: "#242423"},
-//						zoom: {interactive: true},
-						pan: {interactive: true},
-						autoHighlight: true,
-                         legend: { position: 'sw' },
-		    				mouseActiveRadius: 3
-					}
-				);
-                $('#glc_' + selected_axis + ' div.legend table').css("border", "1px solid #333333");
-                $('#glc_' + selected_axis + ' div.legend table').css("background", "#000000")
-			};
+			    //plot each axis in its own chart
+			    for (selected_axis in axis_data){
+				    var chart_height;
+				    if (axis_data[selected_axis].length > 2){chart_height='45%';}else{chart_height='15%';}
+				    $('#overlay_content').append('<div id="glc_'+selected_axis+'" style="width:98%;height:'+chart_height+';font-size:1.30em;"></div>')
+				    $.plot($('#glc_' + selected_axis),axis_data[selected_axis],
+					    { 
+						    series: { shadowSize: 0 },
+						    yaxis: { color: "#c2d98f",zoomRange: [0.1, 10], panRange: [null, null]},
+						    xaxis: { mode: 'time', show: true, zoomRange: [1, 2], panRange: [null,null],color: "#c2d98f" },
+						    grid : { backgroundColor: "#242423"},
+    //						zoom: {interactive: true},
+						    pan: {interactive: true},
+						    autoHighlight: true,
+                             legend: { position: 'sw' },
+		        				mouseActiveRadius: 3
+					    }
+				    );
+                    $('#glc_' + selected_axis + ' div.legend table').css("border", "1px solid #333333");
+                    $('#glc_' + selected_axis + ' div.legend table').css("background", "#000000")
+			    };
 			
-			//$('#overlay_content').html(msg.value);
-			$('#overlay').show();
+			    //$('#overlay_content').html(msg.value);
+			    $('#overlay').show();
+            }
 		}		
 		if (msg.channel == 'pids')
 		{
@@ -488,6 +496,7 @@ var debug;
 		for(var a_gene_link in gene_link_list){
 			$("#"+gene_link_list[a_gene_link]).button();
 			$("#"+gene_link_list[a_gene_link]).click(function() {
+                $('#spinner').show();
 				conn.emit('request_gene_data',this.id.split('_')[0],this.id.split('_')[1]);
 			});
 		}
@@ -496,6 +505,7 @@ var debug;
 
 	function set_gene_db(gdb)
 	{
+        $('#spinner').hide();
 		$('#pchart').show();
 		$('#dbstats').show();
 		$('#explorer').show();
@@ -505,7 +515,7 @@ var debug;
 
 		$("#gene_db_reload_button").attr({value:'Reload DB Library'});
 		$('#debug').html('<br>');
-	
+        	
 		$("#explorer").html("Select a database below:<br>");
 		var db_index = 0
 		for (var db_lib in gene_db){
@@ -670,6 +680,7 @@ var debug;
 
 
 	$("#gene_db_reload_button").click(function() {
+        $('#spinner').show();
 		$("#gene_db_reload_button").attr({value:'Loading...'});
   		conn.emit('request_gene_db',{});
 		try{$('#pchart').accordion("destroy");}catch(err){};

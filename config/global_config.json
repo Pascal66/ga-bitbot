@@ -31,7 +31,7 @@
 		"enable_text_messaging":0,
         "enable_constant_bid" : 0,
         "constant_bid_discount" : 0.10,
-        "constant_bid_qty" : 7.777,
+        "constant_bid_qty" : 4.321,
 
 		"REPORTGEN_SECTION" : 1,
 		"chart_zoom_periods" : 2500,
