@@ -138,99 +138,104 @@ while 1:
             if quartile == server.get_active_quartile():
                 p = {'buy':-1.00,'bid_maker_time_stamp':time.time(),'gene_id':'none','score':0}
                 server.put_target(json.dumps(p),pid)
-        else:
-
+        else: 
             if type(ag) == type([]):
                 ag = ag[0]
 
+            if not (ag == {}):
 
-            #load the gene dictionary into the trade engine
-            te = load_config_into_object({'set':ag},te)
+                #load the gene dictionary into the trade engine
+                te = load_config_into_object({'set':ag},te)
 
-            print "_" * 40
-            print "bid_maker: quartile:",quartile, "(%.4f)"%ag['score'],"+active"
-            server.put_active_quartile(quartile,pid)
+                print ag
+                print "_" * 40
+                try:
+                    print "bid_maker: quartile:",quartile, "(%.4f)"%ag['score'],"+active"
+                except:
+                    print ag
 
-            #run the trade engine
-            try:
-                te.run()
-            except:
-                print "bid_maker: gene fault"
-            else:
-                if len(te.positions) == 0:
-                    print "bid_maker: no positions, order cleared"
-                    p = {'buy':-1.00,'bid_maker_time_stamp':time.time(),'gene_id':ag['id'],'score':0}
-                    server.put_target(json.dumps(p),pid)
+                server.put_active_quartile(quartile,pid)
 
-                # Calc the next buy trigger point
-                else:   #if len(te.positions) > 0:
-                    #get the target trigger price
-                    target = te.get_target()
-                    print "bid_maker: inverse MACD result (target): ",target
-
-                    if target > te.history[1]:
-                        target = te.history[1]
-
-                    #first check to see if the tested input triggered a buy:
-                    if te.positions[-1]['buy_period'] == te.period - 1:
-                        p = te.positions[-1]
-                        target = p['buy']
-                    else:
-                        print "bid_maker: last buy order was", te.period - te.positions[-1]['buy_period'],"periods ago."
-                        #if not try to calculate the trigger point to get the buy orders in early...
-                        #print "Trying to trigger with: ",target
-                        st = time.time()
-                        te.input(st,target)
-                        p = te.positions[-1].copy()
-                        if p['buy'] != target:
-                            #print "Order not triggered @",target
-                            p['buy'] = 0.00
-                            p['target'] = 0.00
-
-                    score = te.score()
-                    print "bid_maker: score: ",score
-                    #time stamp the bid and capture the gene id
-                    p.update({'bid_maker_time_stamp':time.time(),'gene_id':ag['id'],'score':score})
-
-                    #te.chart("./report/chart.templ",gdh + '/' + ag['id'] + '.html',chart_zoom_periods,basic_chart=chart_type,write_cache_only=True)
-                    te.cache_output(gdh + '/' + ag['id'],periods=30000)
-
-                    #print "Evaluating target price"
-                    if ((target >= p['buy']) or (abs(target - p['buy']) < 0.01)) and p['buy'] != 0: #submit the order at or below target
-                        #format the orders
-                        p['buy'] = float(price_format%(p['buy'] - 0.01))
-                        p['target'] = float(price_format%p['target'])
-                        p.update({'stop_age':(60 * te.stop_age)})
-                        if float(te.wins / float(te.wins + te.loss + 0.000001)) > win_loss_gate_pct:
-                            #only submit an order if the win/loss ratio is greater than x%
-                            print "bid_maker: sending target buy order to server @ $" + str(p['buy'])
-                            server.put_target(json.dumps(p),pid)
-                            skip_sleep_delay = True #if target buy orders are active skip the sleep delay
-                        else:
-                            print "bid_maker: underperforming trade strategy, no order"
-                            p['buy'] = 0.00
-                            p['target'] = 0.00
-                            server.put_target(json.dumps(p),pid)
-                        print "-" * 40
-                        print "bid_maker: trigger criteria met, bid set."
-                        #print "\tQuartile     :",quartile
-                        print "\tBuy        :$", p['buy']
-                        print "\tTarget     :$",p['target']
-                        print "\tWin Ratio    :","%.3f"%((te.wins / float(te.wins + te.loss + 0.000001)) * 100),"%"
-                        print "-" * 40
-                    else:
-                        print "-" * 40
-                        print "bid_maker: trigger criteria not met, no bid set."
-                        print "\tBuy        :$", p['buy']
-                        print "\tTarget     :$",p['target']
-                        print "\tInput Target :$",target
-                        #print "\tMACD Log     : ",te.logs.get('macd')[-1][1]
-                        #print "\tMACD Trip    : ",te.macd_buy_trip
-                        print "-" * 40
-                        p.update({'stop_age':(60 * te.stop_age)}) #DEBUG ONLY!! - delete when done.
-                        p['buy'] = 0.00
-                        p['target'] = 0.00
+                #run the trade engine
+                try:
+                    te.run()
+                except:
+                    print "bid_maker: gene fault"
+                else:
+                    if len(te.positions) == 0:
+                        print "bid_maker: no positions, order cleared"
+                        p = {'buy':-1.00,'bid_maker_time_stamp':time.time(),'gene_id':ag['id'],'score':0}
                         server.put_target(json.dumps(p),pid)
+
+                    # Calc the next buy trigger point
+                    else:   #if len(te.positions) > 0:
+                        #get the target trigger price
+                        target = te.get_target()
+                        print "bid_maker: inverse MACD result (target): ",target
+
+                        if target > te.history[1]:
+                            target = te.history[1]
+
+                        #first check to see if the tested input triggered a buy:
+                        if te.positions[-1]['buy_period'] == te.period - 1:
+                            p = te.positions[-1]
+                            target = p['buy']
+                        else:
+                            print "bid_maker: last buy order was", te.period - te.positions[-1]['buy_period'],"periods ago."
+                            #if not try to calculate the trigger point to get the buy orders in early...
+                            #print "Trying to trigger with: ",target
+                            st = time.time()
+                            te.input(st,target)
+                            p = te.positions[-1].copy()
+                            if p['buy'] != target:
+                                #print "Order not triggered @",target
+                                p['buy'] = 0.00
+                                p['target'] = 0.00
+
+                        score = te.score()
+                        print "bid_maker: score: ",score
+                        #time stamp the bid and capture the gene id
+                        p.update({'bid_maker_time_stamp':time.time(),'gene_id':ag['id'],'score':score})
+
+                        #te.chart("./report/chart.templ",gdh + '/' + ag['id'] + '.html',chart_zoom_periods,basic_chart=chart_type,write_cache_only=True)
+                        te.cache_output(gdh + '/' + ag['id'],periods=30000)
+
+                        #print "Evaluating target price"
+                        if ((target >= p['buy']) or (abs(target - p['buy']) < 0.01)) and p['buy'] != 0: #submit the order at or below target
+                            #format the orders
+                            p['buy'] = float(price_format%(p['buy'] - 0.01))
+                            p['target'] = float(price_format%p['target'])
+                            p.update({'stop_age':(60 * te.stop_age)})
+                            if float(te.wins / float(te.wins + te.loss + 0.000001)) > win_loss_gate_pct:
+                                #only submit an order if the win/loss ratio is greater than x%
+                                print "bid_maker: sending target buy order to server @ $" + str(p['buy'])
+                                server.put_target(json.dumps(p),pid)
+                                skip_sleep_delay = True #if target buy orders are active skip the sleep delay
+                            else:
+                                print "bid_maker: underperforming trade strategy, no order"
+                                p['buy'] = 0.00
+                                p['target'] = 0.00
+                                server.put_target(json.dumps(p),pid)
+                            print "-" * 40
+                            print "bid_maker: trigger criteria met, bid set."
+                            #print "\tQuartile     :",quartile
+                            print "\tBuy        :$", p['buy']
+                            print "\tTarget     :$",p['target']
+                            print "\tWin Ratio    :","%.3f"%((te.wins / float(te.wins + te.loss + 0.000001)) * 100),"%"
+                            print "-" * 40
+                        else:
+                            print "-" * 40
+                            print "bid_maker: trigger criteria not met, no bid set."
+                            print "\tBuy        :$", p['buy']
+                            print "\tTarget     :$",p['target']
+                            print "\tInput Target :$",target
+                            #print "\tMACD Log     : ",te.logs.get('macd')[-1][1]
+                            #print "\tMACD Trip    : ",te.macd_buy_trip
+                            print "-" * 40
+                            p.update({'stop_age':(60 * te.stop_age)}) #DEBUG ONLY!! - delete when done.
+                            p['buy'] = 0.00
+                            p['target'] = 0.00
+                            server.put_target(json.dumps(p),pid)
 
 
     while True:

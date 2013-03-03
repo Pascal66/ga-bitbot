@@ -33,14 +33,21 @@ __server__ = gene_server_config.__server__
 __port__ = gene_server_config.__port__
 __path__ = "/gene"
 
+
+
+
 import sys
 import time
 import json
 import hashlib
+import socket
+import SocketServer
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 from SimpleXMLRPCServer import SimpleXMLRPCRequestHandler
 from operator import itemgetter, attrgetter
 from copy import deepcopy
+import threading
+from Queue import Queue
 
 import paths
 import call_metrics
@@ -201,7 +208,7 @@ def get_gene(n_sec,quartile,pid = None):
     if len(r) == 0 and len(g_gene_library[gdh]['gene_high_scores'][quartile - 1]) > 0:
         r = sorted(g_gene_library[gdh]['gene_high_scores'][quartile - 1], key=itemgetter('time'),reverse = True)[0]
         print "get",r['time'],r['score']
-    elif len(g_gene_library[gdh]['gene_high_scores'][quartile - 1]) > 0:
+    elif len(r) > 1:
         #if more than one record found find the highest scoring one
         r = sorted(r, key=itemgetter('score'),reverse = True)[0]
         print "get",r['time'],r['score']
@@ -593,8 +600,78 @@ def get_gene_server_metrics():
 class RequestHandler(SimpleXMLRPCRequestHandler):
     rpc_paths = ('/gene','/RPC2')
 
+
 #create the server
-server = SimpleXMLRPCServer((__server__, __port__),requestHandler = RequestHandler,logRequests = False, allow_none = True)
+#the type of server is defined in gene_server_config.py
+if gene_server_config.__type__ == "single_threaded":
+    server = SimpleXMLRPCServer((__server__, __port__),requestHandler = RequestHandler,logRequests = False, allow_none = True)
+
+elif gene_server_config.__type__ == "thread_pool":
+    class ThreadPoolMixIn(SocketServer.ThreadingMixIn):
+        def __init__(self):
+            self.num_threads = gene_server_config.__poolsize__
+            self.allow_reuse_address = True  #fix socket.error on server restart
+            self.lock = threading.Lock()
+            self.requests = Queue(self.num_threads)
+
+            for x in range(self.num_threads):
+                t = threading.Thread(target = self.process_request_thread)
+                t.daemon = True
+                t.start()
+
+        def serve_forever(self):
+            while True:
+                self.handle_request()
+            self.server_close()
+
+        def process_request_thread(self):
+            while True:
+                got = self.requests.get()
+                self.lock.acquire()
+                SocketServer.ThreadingMixIn.process_request_thread(self, *got)
+                self.lock.release()
+        
+        def handle_request(self):
+            try:
+                request, client_address = self.get_request()
+            except socket.error:
+                return
+            if self.verify_request(request, client_address):
+                self.requests.put((request, client_address))
+
+    class AsyncXMLRPCServer(ThreadPoolMixIn,SimpleXMLRPCServer):
+        def __init__(self, *args, **kwargs):
+            SimpleXMLRPCServer.__init__(self, *args, **kwargs)
+            ThreadPoolMixIn.__init__(self)
+
+    #create the server
+    server = AsyncXMLRPCServer((__server__, __port__),requestHandler = RequestHandler,logRequests = False, allow_none = True)
+
+elif gene_server_config.__type__ == "threaded":
+    # Threaded mix-in
+    class AsyncXMLRPCServer(SocketServer.ThreadingMixIn,SimpleXMLRPCServer):
+        def __init__(self, *args, **kwargs):
+            SimpleXMLRPCServer.__init__(self, *args, **kwargs)
+            self.lock = threading.Lock()
+
+        def process_request_thread(self, request, client_address):
+            # Blatant copy of SocketServer.ThreadingMixIn, but we need a single threaded handling of the request
+            self.lock.acquire()
+            try:
+                self.finish_request(request, client_address)
+                self.shutdown_request(request)
+            except:
+                self.handle_error(request, client_address)
+                self.shutdown_request(request)
+            finally:
+                self.lock.release()
+
+    #create the server
+    server = AsyncXMLRPCServer((__server__, __port__),requestHandler = RequestHandler,logRequests = False, allow_none = True)
+else:
+    print "Invalid server type defined: ",gene_server_config.__type__
+    sys.exit()    
+
 
 #register the functions
 #client services
@@ -647,7 +724,7 @@ server.register_function(put_gene,'mc_put')
 server.register_introspection_functions()
 
 if __name__ == "__main__":
-    print "gene_server: running on port %s"%__port__
+    print "gene_server: running "+ gene_server_config.__type__ +" server on port " + str(__port__)
     while not quit:
         server.handle_request()
 

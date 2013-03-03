@@ -304,17 +304,19 @@ class trade_engine:
             exp_scale = self.nlsf / self.period #float(self.positions[-1]['buy_period'])
             final_score_balance = 0
             for p in self.positions:
-                p['age'] = float(p['sell_period'] - p['buy_period'])
-                p['score'] = (((p['actual'] - p['buy']) / p['buy']) * 100.0 ) * self.shares
-                #apply non-linear scaling to the trade based on the round trip time (age)
-                #favors a faster turn around time on positions
+                if not p['status'] == "dumped":
+                    p['age'] = float(p['sell_period'] - p['buy_period'])
+                    p['score'] = (((p['actual'] - p['buy']) / p['buy']) * 100.0 ) * self.shares
+                    #apply non-linear scaling to the trade based on the round trip time (age)
+                    #favors a faster turn around time on positions
 
-                p['score'] *= (p['age'] + 1)/(pow(p['age'],self.stbf) + 1)
+                    p['score'] *= (p['age'] + 1)/(pow(p['age'],self.stbf) + 1)
 
 
-                #apply e^0 to e^nlsf weighting to favor the latest trade results
-                p['score'] *= exp(exp_scale * p['buy_period'])
-                final_score_balance += p['score']
+                    #apply e^0 to e^nlsf weighting to favor the latest trade results
+                    p['score'] *= exp(exp_scale * p['buy_period'])
+                    final_score_balance += p['score']
+
 
 
             #because stop loss will generaly be higher that the target (markup) percentage

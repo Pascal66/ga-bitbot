@@ -1,7 +1,7 @@
 {
-	"name":"bct_active - med window low markup",
-	"version":"0.7",
-	"description":"1.5 - 2.77% markup",
+	"name":"bct_active - short window low markup2",
+	"version":"0.8",
+	"description":"1.5 - 2.77% markup, longer stop_age, reduced nlsf, 50K len, ATR 25 ",
 
 	"fitness_script":"bct_active",
 	"fitness_config":
@@ -9,11 +9,11 @@
 		"set" :
 		{
 			"input_file_name": "./datafeed/bcfeed_mtgoxUSD_1min.csv",
-			"nlsf": 7.0,
+			"nlsf": 1.0,
 			"stbf": 1.025,
 			"commision": 0.006,
-			"atr_depth": 15,
-			"max_length" : 75000,
+			"atr_depth": 25,
+			"max_length" : 50000,
 			"enable_flash_crash_protection" : 1,
 			"flash_crash_protection_delay" : 240
 		}
@@ -53,10 +53,10 @@
 			["buy_wait_after_stop_loss",8,0,1],
 			["markup",7,4,0.015],
 			["stop_loss",8,4,0.03],
-			["stop_age",8,0,5000,2.0],
-			["macd_buy_trip",10,2,2.0,-2.0],
+			["stop_age",8,0,15000,2.0],
+			["macd_buy_trip",10,2,0,-1.0],
 			["rsi_enable",1,0,1],
-			["rsi_length",7,0,3],
+			["rsi_length",8,0,3],
 			["rsi_gate",6,0,36]
 		]
 	}
