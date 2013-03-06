@@ -48,6 +48,7 @@ from operator import itemgetter, attrgetter
 from copy import deepcopy
 import threading
 from Queue import Queue
+import gc
 
 import paths
 import call_metrics
@@ -509,6 +510,8 @@ def save_db():
     f.write(json.dumps(g_gene_library))
     #pop the signed package library back out of the gene library
     g_gene_library.pop('signed_package_library')
+    #call the python garbage collector - improve long running process memory useage when using pypy
+    gc.collect()
     return 'OK'
 
 @call_metrics.call_metrics

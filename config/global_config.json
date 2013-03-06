@@ -10,7 +10,7 @@
 
 		"GTS_SECTION" : 1,
 		"load_throttle" : 1,
-		"load_throttle_sleep_interval" : 0.01,
+		"load_throttle_sleep_interval" : 0.1,
 		"calibrate" : 1,
 		"cycle_time" : 60,
 		"min_cycle_time" : 30,
@@ -21,7 +21,7 @@
 		"monitor_mode" : 0,
 		"bid_counter" : 0,
 		"bid_counter_trip" : 1,
-		"order_qty" : 1.0,
+		"order_qty" : 0.5,
 		"commit_pct_to_target" : 0.75,
 		"sleep_state_seconds" : 60,
 		"buy_order_wait" : 90,
@@ -31,7 +31,7 @@
 		"enable_text_messaging":0,
         "enable_constant_bid" : 1,
         "constant_bid_discount" : 0.10,
-        "constant_bid_qty" : 4.321,
+        "constant_bid_qty" : 3.666,
 
 		"REPORTGEN_SECTION" : 1,
 		"chart_zoom_periods" : 2500,

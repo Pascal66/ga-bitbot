@@ -91,16 +91,6 @@ class trade_engine:
         self.history = []           #moving window of the inputs
         self.period = 0             #current input period
         self.time = 0               #current period timestamp
-        #self.input_log = []            #record of the inputs
-        #self.wl_log = []           #record of the wl
-        #self.ws_log = []           #record of the ws
-        #self.macd_pct_log = []
-        #self.rsi_log = []
-        #self.buy_log = []
-        #self.sell_log = []
-        #self.stop_log = []
-        #self.net_worth_log = []
-        #self.trigger_log = []
         self.logs.reset()
         self.balance = 1000         #account balance
         self.opening_balance = self.balance #record the starting balance
@@ -759,8 +749,14 @@ class trade_engine:
             self.logs.prune_logs(p[-1*periods][0])
 
         self.logs.compress_logs(exclude_keys=['buy','sell','stop','trigger'],lossless_compression = False, max_lossy_length = 10000)
-        self.cache.set(cache_name,self.logs.json())
+        #set metacontent - used by the web client to override the flot chart library data series configuration
+        self.logs.set_metacontent('buy',{'lines':{'show':0},'points': {'show': 1, 'radius':5, 'lineWidth': 5}})
+        self.logs.set_metacontent('sell',{'lines':{'show':0},'points': {'show': 1, 'radius':5, 'lineWidth': 5}})
+        self.logs.set_metacontent('stop',{'lines':{'show':0},'points': {'show': 1, 'radius':5, 'lineWidth': 5}})
+        self.logs.set_metacontent('trigger',{'lines':{'show':0},'points': {'show': 1, 'radius':2, 'lineWidth': 1}})
 
+        self.cache.set(cache_name,self.logs.json())
+        self.cache.expire(cache_name,60*25)
 
     def chart(self,template,filename,periods=-1,basic_chart=False,write_cache_only=False):
         self.log_orders()

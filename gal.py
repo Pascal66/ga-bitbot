@@ -37,7 +37,10 @@ import random
 import __main__
 import paths
 from load_config import *
-
+import gene_server_config
+import xmlrpclib
+import json
+import gc
 
 def make_pid():
     #simple function which spits out a random hex code
@@ -183,6 +186,16 @@ xlclient_monitored_launch = ['pypy gts.py all n run_once pid ',\
 'pypy gts.py 3 y run_once get_config pid ',\
 'pypy gts.py 4 y run_once get_config pid ',\
 'pypy gts.py 4 y run_once get_config pid ',\
+'pypy gts.py 1 n run_once get_config pid ',\
+'pypy gts.py 2 n run_once get_config pid ',\
+'pypy gts.py 3 n run_once get_config pid ',\
+'pypy gts.py 3 n run_once get_config pid ',\
+'pypy gts.py 4 n run_once get_config pid ',\
+'pypy gts.py 4 n run_once get_config pid ',\
+'pypy gts.py 3 y run_once get_config pid ',\
+'pypy gts.py 3 y run_once get_config pid ',\
+'pypy gts.py 4 y run_once get_config pid ',\
+'pypy gts.py 4 y run_once get_config pid ',\
 'pypy gts.py all y run_once get_config pid ']
 
 
@@ -249,14 +262,11 @@ no_monitor.append(p)
 if run_server:
     print "gal: Launching the xmlrpc server..."
     Popen(shlex.split('pypy gene_server.py'),stdin=fnull, stdout=fnull, stderr=GENE_SERVER_STDERR_FILE)
-    sleep(1) #give the server time to start
+    sleep(5) #give the server time to start
 
 
 # connect to the xml server
 #
-import gene_server_config
-import xmlrpclib
-import json
 __server__ = gene_server_config.__server__
 __port__ = str(gene_server_config.__port__)
 server = xmlrpclib.Server('http://' + __server__ + ":" + __port__)
@@ -304,6 +314,7 @@ if run_server:
 print "\ngal: Monitoring Processes..."
 count = 0
 while 1:
+    gc.collect()
     if run_server:
         count += 1
         #periodicaly tell the server to save the gene db

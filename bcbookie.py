@@ -251,14 +251,18 @@ class bookie:
             price = self.btc_price - 0.01
             print "sell: price adjustment: qty,price: ",amount,price
 
-        while 1:
+        retry = 5
+        while retry > 0:
+            retry -= 1
             try:
                 order = self.client.sell_btc(amount, price)
                 order.update({'commission':self.client_commission,'parent_oid':parent_oid,'localtime':time(),'pending_counter':10,'book':'open','commit':price,'target':price,'stop':price,'max_wait':999999,'max_hold':999999})
-                self.add_record(order)
-                return
             except:
                 print "sell: client error..retrying @ " + ctime()
+            else:
+                self.add_record(order)
+                return
+        print "sell: client error..max retry reached @ " + ctime()
 
     def validate_buy(self,buy_price,target_price):
         if (buy_price * 1.00013) >= target_price:

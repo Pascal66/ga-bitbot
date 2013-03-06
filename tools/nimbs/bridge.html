@@ -269,6 +269,7 @@ var debug;
 			    $('#overlay_content').html('<h2>Gene Link</h2>');
                 var gd = JSON.parse(msg.value)['content'];
                 var meta_gd = JSON.parse(msg.value)['metacontent'];
+                var format;
 			    for (var series in gd){
 				    if (gd[series].length > 1){
 					    //find the min max of each series to determine which axis it should belong to
@@ -286,7 +287,11 @@ var debug;
                         console.log(series + ' dif:' + dif);
 			
 					    if (axis_data[selected_axis] == undefined){axis_data[selected_axis] = [];}
-					    axis_data[selected_axis].push({ data: gd[series], label: series, yaxis: selected_axis ,lines: {show: true,fill: false,steps: true}});
+
+                        format = { data: gd[series], label: series, yaxis: selected_axis ,lines: {show: true,fill: false,steps: true}};
+                        $.extend(true,format, meta_gd[series]);
+					    debug.push(format);
+					    axis_data[selected_axis].push(format);
 				    }
 
 			    }

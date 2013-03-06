@@ -91,17 +91,8 @@ class trade_engine:
         self.history = []           #moving window of the inputs
         self.period = 0             #current input period
         self.time = 0               #current period timestamp
-        #self.input_log = []            #record of the inputs
-        #self.wl_log = []           #record of the wl
-        #self.ws_log = []           #record of the ws
-        #self.macd_pct_log = []
-        #self.rsi_log = []
-        #self.buy_log = []
-        #self.sell_log = []
-        #self.stop_log = []
-        #self.net_worth_log = []
-        #self.trigger_log = []
         self.logs.reset()
+
         self.balance = 1000         #account balance
         self.opening_balance = self.balance #record the starting balance
         self.score_balance = 0          #cumlative score
@@ -164,7 +155,7 @@ class trade_engine:
         self.load_input_data()
         cm = None
         if self.cache_input == True:
-            cache_label = self.input_file_name + '::bct_slope_classify_market::'+str(self.max_length)+'::atr_depth::'+str(self.atr_depth)
+            cache_label = self.input_file_name + '::bct_slope::'+str(self.max_length)+'::atr_depth::'+str(self.atr_depth)
             cm = self.cache.get(cache_label)
         if cm == None:
             print "bct_alt: classifying market data..."
@@ -196,11 +187,11 @@ class trade_engine:
     def classify_market(self,input_list):
         #print "start market classify"
         #market detection preprocessor splits the input data into
-        #quartiles based on the true range indicator
-
+        #quartiles based on price deviation from the ema
+        #self.atr_depth variable is used as the window length for the ema
         self.market_class = []
         #calculate the ema weighting multiplier
-        ema_long_mult = (2.0 / (self.wll + 1) )
+        ema_long_mult = (2.0 / (self.atr_depth + 1) )
         ema = 0
         ema_history = []
         slope = []
@@ -211,8 +202,8 @@ class trade_engine:
             t = int(t * 1000)
             #bootstrap the ema calc using a simple moving avg if needed
             if ema == 0:
-                for j in xrange(self.wll):
-                    ema += input_list[j][1] / self.wll
+                for j in xrange(self.atr_depth):
+                    ema += input_list[j][1] / self.atr_depth
 
             else:
                 #calculate the long and short ema
@@ -220,10 +211,10 @@ class trade_engine:
 
             ema_history.append(ema)
 
-            if i < self.wll:
+            if i < self.atr_depth:
                 slope.append([t,0.0])
             else:
-                slope.append([t,(p - ema_history[i - self.wll])/p])
+                slope.append([t,(p - ema_history[i - self.atr_depth])/p])
 
 
         self.market_class = slope
@@ -759,7 +750,14 @@ class trade_engine:
             self.logs.prune_logs(p[-1*periods][0])
 
         self.logs.compress_logs(exclude_keys=['buy','sell','stop','trigger'],lossless_compression = False, max_lossy_length = 10000)
+        #set metacontent - used by the web client to override the flot chart library data series configuration
+        self.logs.set_metacontent('buy',{'lines':{'show':0},'points': {'show': 1, 'radius':5, 'lineWidth': 5}})
+        self.logs.set_metacontent('sell',{'lines':{'show':0},'points': {'show': 1, 'radius':5, 'lineWidth': 5}})
+        self.logs.set_metacontent('stop',{'lines':{'show':0},'points': {'show': 1, 'radius':5, 'lineWidth': 5}})
+        self.logs.set_metacontent('trigger',{'lines':{'show':0},'points': {'show': 1, 'radius':2, 'lineWidth': 1}})
+
         self.cache.set(cache_name,self.logs.json())
+        self.cache.expire(cache_name,60*25)
 
     def chart(self,template,filename,periods=-1,basic_chart=False,write_cache_only=False):
         self.log_orders()
