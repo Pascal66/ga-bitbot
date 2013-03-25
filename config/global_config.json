@@ -4,9 +4,10 @@
 		"SHARED_SECTION" : 1,
 		"max_length" : 75000,
 		"enable_flash_crash_protection" : 1,
-		"flash_crash_protection_delay" : 240,
+		"flash_crash_protection_delay" : 1240,
 		"price_format" : "%.5f",
         "trusted_keys_path":"./config/trusted_keys/",
+        "datafeed_stale_after_n_seconds": 720,
 
 		"GTS_SECTION" : 1,
 		"load_throttle" : 1,
@@ -15,7 +16,7 @@
 		"cycle_time" : 60,
 		"min_cycle_time" : 30,
 		"cycle_time_step" : 2,
-		"pid_update_rate" : 35,
+		"pid_update_rate" : 90,
 
 		"BCBOOKIE_SECTION" : 1,
 		"monitor_mode" : 0,
@@ -40,7 +41,7 @@
 		"chart_type" : 1,
 
 		"GAL_SECTION" : 1,
-		"WATCHDOG_TIMEOUT" : 90,
+		"WATCHDOG_TIMEOUT" : 100,
 		"MONITORED_PROCESS_LAUNCH_TIMEOUT" : 120,
 		"GENE_SERVER_STDERR_FILE" : "./report/gene_server_error_log.txt",
 		"BCFEED_STDERR_FILE" : "/dev/null",

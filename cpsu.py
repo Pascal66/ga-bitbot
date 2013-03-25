@@ -103,7 +103,7 @@ elif operation == 'get':
             print "cpsu:Info:Package failed verification"
             print "cpsu:Info:- Either the public key isn't trusted or the package contents have been modified since it was signed."
     else:
-        print "cpsu:Error: Package not found"
+        print "cpsu:Warning: Package not found"
 else:
     print "cpsu:Error: Invalid operation"
 

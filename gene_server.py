@@ -728,6 +728,7 @@ server.register_introspection_functions()
 
 if __name__ == "__main__":
     print "gene_server: running "+ gene_server_config.__type__ +" server on port " + str(__port__)
+    reload_db()
     while not quit:
         server.handle_request()
 

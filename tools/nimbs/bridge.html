@@ -272,34 +272,28 @@ var debug;
                 var format;
 			    for (var series in gd){
 				    if (gd[series].length > 1){
-					    //find the min max of each series to determine which axis it should belong to
-					    selected_axis = gd[series].reduce(function(max, arr) {return max >= arr[1] ? max : arr[1];}, -Infinity);				
-                        //bug fix for issue 58 - add one to the selected axis (flot throws an exception if axis is set to 0)
-					    selected_axis = 1 + parseInt((selected_axis / 10.0).toFixed(0));
-					    debug.push({ data: gd[series], label: series, yaxis: selected_axis ,lines: {show: true,fill: false,steps: true}});	
-
-                        //deterime if data is a continuous series or event
-                        var dif = 0;
-                        for (var k = 1; k < gd[series].length; k++){
-                            dif += gd[series][k][0] - gd[series][k-1][0];
+                        if (meta_gd[series].hasOwnProperty('selected_axis')){
+                            selected_axis = meta_gd[series]['selected_axis'];
+                        } else {
+					        //find the min max of each series to determine which axis it should belong to
+					        selected_axis = gd[series].reduce(function(max, arr) {return max >= arr[1] ? max : arr[1];}, -Infinity);
+				            selected_axis = parseInt((selected_axis / 10.0).toFixed(0));
                         }
-                        dif /= gd[series].length;
-                        console.log(series + ' dif:' + dif);
-			
-					    if (axis_data[selected_axis] == undefined){axis_data[selected_axis] = [];}
-
+                        //bug fix for issue 58 - add one to the selected axis (flot throws an exception if axis is set to 0)
+                        selected_axis += 1;
+				        //debug.push({ data: gd[series], label: series, yaxis: selected_axis ,lines: {show: true,fill: false,steps: true}});	
+				        if (axis_data[selected_axis] == undefined){axis_data[selected_axis] = [];}
                         format = { data: gd[series], label: series, yaxis: selected_axis ,lines: {show: true,fill: false,steps: true}};
                         $.extend(true,format, meta_gd[series]);
-					    debug.push(format);
-					    axis_data[selected_axis].push(format);
-				    }
-
+				        //debug.push(format);
+				        axis_data[selected_axis].push(format);
+                    }
 			    }
 
 			    //plot each axis in its own chart
 			    for (selected_axis in axis_data){
 				    var chart_height;
-				    if (axis_data[selected_axis].length > 2){chart_height='45%';}else{chart_height='15%';}
+				    if (selected_axis === 77){chart_height='45%'; }else if (axis_data[selected_axis].length > 2){chart_height='45%';}else{chart_height='15%';}
 				    $('#overlay_content').append('<div id="glc_'+selected_axis+'" style="width:98%;height:'+chart_height+';font-size:1.30em;"></div>')
                     try{
                         
@@ -549,7 +543,6 @@ var debug;
 
 	function renderGeneDB(db_lib)
 	{
-		var gene_db_data_array = new Array();
 		var gene_db_dimensions_array = new Array();
 		var gene_db_library_id = db_lib;
 
@@ -614,6 +607,7 @@ var debug;
 		//for each quartile
 		for (var i = 0; i < gene_db[db_lib]["gene_high_scores"].length; i++)
 		{
+            var gene_db_data_array = new Array();
 			//get the high scores
 			gene_db[db_lib]["gene_high_scores"][i].forEach(function (db_record)
 			{ 					
@@ -626,6 +620,21 @@ var debug;
 				}
 
 			});
+
+            gene_db[db_lib]["gene_best"][i].forEach(function (db_record)
+			{ 					
+				if (db_record["score"] > 0.0) //filter any scores below zero
+				{
+					gene_db_data_array.push(db_record); //data_array
+					ts = new Date(db_record['time'] * 1000);
+					//console.log(db_lib +' : '+ db_record['id']+' : '+ db_record['score']+' : '+ts+' : '+i);
+					$('#debug').append(db_lib +' : '+ db_record['id']+' : '+ db_record['score']+' : '+ts+' : '+i +'<br>');
+				}
+
+			})
+
+
+
 			//create the chart
 			if (gene_db_data_array.length > 0){
 				$("#pchart").append("<h3>Quartile: " +(i+1)+"</h3>");
@@ -685,10 +694,10 @@ var debug;
 		var dec = 1.0 / Math.pow(10,parseInt($("#decimal").val()));
 		var offset = parseFloat($("#offset").val());
         var multiplier = parseFloat($("#multiplier").val());
-		var mx = ((bits * dec) + offset) * multiplier;
+		var mx = (((bits -  1) * dec) + offset) * multiplier;
 		$("#calc_result").html(
 			"<br>resolution: " + bits + ' values<BR>' +
-			"step size: " + (mx - (offset * multiplier)) / bits + '<BR>' + 
+			"step size: " + (mx - (offset * multiplier)) / (bits - 1) + '<BR>' + 
 			"min value: " + offset * multiplier + '<BR>' + 
 			"max value: " + mx + '<BR>' 
 		);

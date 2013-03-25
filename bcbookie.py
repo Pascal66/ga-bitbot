@@ -511,7 +511,7 @@ class bookie:
                     put_for_sale = 1
                 #check stop loss
                 elif current_price <= r['stop'] and put_for_sale == 0:
-                    if self.__enable_flash_crash_protection == True and self.active_quartile == 4:
+                    if self.__enable_flash_crash_protection == True: #and self.active_quartile == 4:
                         print "\t--- update: flash crash protection triggered: (OID):",r['oid']
                         r['stop'] = 0.0
                         r['max_hold'] = (time() - r['localtime']) + self.__flash_crash_protection_delay

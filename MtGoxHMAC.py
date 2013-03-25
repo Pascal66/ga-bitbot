@@ -69,8 +69,8 @@ class Client:
 
         self.buff = ""
         self.timeout = 15
-        self.__url_parts = urlparse.urlsplit("https://mtgox.com/api/0/")
-        self.__url_parts_1 = urlparse.urlsplit("https://mtgox.com/api/1/")
+        self.__url_parts = urlparse.urlsplit("https://data.mtgox.com/api/0/")
+        self.__url_parts_1 = urlparse.urlsplit("https://data.mtgox.com/api/1/")
         self.clock_window = time.time()
         self.clock = time.time()
         self.query_count = 0

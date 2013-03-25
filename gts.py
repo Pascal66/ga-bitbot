@@ -62,7 +62,7 @@ if __name__ == "__main__":
     cycle_time = 60 * 1#time in seconds to test the entire population
     min_cycle_time = 30
     cycle_time_step = 2
-    pid_update_rate = 20 #reset watchdog after every n genes tested
+    pid_update_rate = 20 #reset watchdog after every n seconds
     enable_flash_crash_protection = False
     flash_crash_protection_delay = 60 * 3 #three hours
     trusted_keys_path = "./config/trusted_keys/"
@@ -205,7 +205,7 @@ if __name__ == "__main__":
                     get_config = False #force load local gen_def.json config
             else:
                 time.sleep(5) #default config is undefined so just wait and try again....
-                          #the script will remain in this loop until the default config is set
+                                #the script will remain in this loop until the default config is set
 
 
     if get_config == False:
@@ -303,6 +303,8 @@ if __name__ == "__main__":
     max_gene = None
     multicall_count = 0
     start_time = time.time()
+    watchdog_reset_time = time.time()
+    server.pid_alive(pid)
     print "gts: running the test sequencer"
     while 1:
         test_count += 1
@@ -311,9 +313,10 @@ if __name__ == "__main__":
         if load_throttle == 1:
             time.sleep(load_throttle_sleep_interval)
 
-        if total_count%pid_update_rate == 0:
+        if (time.time() - watchdog_reset_time) >= pid_update_rate: #total_count%pid_update_rate == 0:
             #periodicaly reset the watchdog monitor
             print "gts: resetting watchdog timer"
+            watchdog_reset_time = time.time()
             server.pid_alive(pid)
 
         if loop_count > g.pool_size:
@@ -325,12 +328,12 @@ if __name__ == "__main__":
             #update_all_scores = False  #on the first pass only, bob clients need to resubmit updated scores for every gene
             loop_count = 0
             #reset the watchdog monitor
-            server.pid_alive(pid)
+            #server.pid_alive(pid)
             #benchmark the cycle speed
             current_time = time.time()
             elapsed_time = current_time - start_time
             gps = total_count / elapsed_time
-            pid_update_rate = int(gps * 40)
+            #pid_update_rate = int(gps * 40)
             if calibrate == 1:
                 print "gts: recalibrating pool size..."
                 g.pool_size = int(gps * cycle_time)

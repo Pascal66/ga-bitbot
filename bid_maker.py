@@ -31,13 +31,13 @@ __appversion__ = "0.01a"
 print "Genetic Bitcoin Bid Maker v%s"%__appversion__
 # connect to the xml server
 #
-
+import traceback
 import xmlrpclib
 import json
 import paths
 import gene_server_config
 import time
-
+import os
 
 __server__ = gene_server_config.__server__
 __port__ = str(gene_server_config.__port__)
@@ -62,6 +62,7 @@ chart_now_periods = 200
 win_loss_gate_pct = 0.80
 price_format = "%.3f"
 chart_type = 0
+datafeed_stale_after_n_seconds = 360
 config_loaded = 0
 #load config
 try:
@@ -79,7 +80,18 @@ else:
         print "bid_maker: configuration loaded."
 
 
+#define a utility function to find the age of a datafeed
+def datafeed_age(filename):
+    f = open(filename,'r')
+    f.seek(0,os.SEEK_END)
+    #back of from the end of the file far enought to ensure the last line will be captured
+    f.seek(-128,os.SEEK_CUR)
+    last = float(f.readlines()[-1].split(',')[0]) #read the time stamp from the last line
+    f.close()
+    now = time.time()
+    return (now - last)
 
+#enter the main loop
 while 1:
     start_time = time.time()
 
@@ -114,9 +126,9 @@ while 1:
         ff = reload(ff) #make sure we're not using a cached version of the module
         te = ff.trade_engine()
         #te.cache.disable() #dont use cached data for reporting
-        te.cache_input = False  #dont use cached data for reporting
+        te.cache_input = False  #dont use cached input data for reporting
 
-        #apply global configs
+        #apply global configs (can be overridden by the gene def config)
         te.max_length = max_length
         te.enable_flash_crash_protection = enable_flash_crash_protection
         te.flash_crash_protection_delay = flash_crash_protection_delay
@@ -131,8 +143,9 @@ while 1:
         #get the high score gene from the gene server
         try:
             ag = json.loads(server.get(60*60*24*7,quartile,pid))
-        except:
+        except Exception, err:
             print "bid_maker: warning: gene server error or no data available."
+            print Exception, err
             #if the quartile is active set the buy to 0 to prevent old targets from remaining active
             #this is for fault protection as it should never normaly happen:
             if quartile == server.get_active_quartile():
@@ -147,7 +160,7 @@ while 1:
                 #load the gene dictionary into the trade engine
                 te = load_config_into_object({'set':ag},te)
 
-                print ag
+                #print ag
                 print "_" * 40
                 try:
                     print "bid_maker: quartile:",quartile, "(%.4f)"%ag['score'],"+active"
@@ -162,10 +175,19 @@ while 1:
                 except:
                     print "bid_maker: gene fault"
                 else:
-                    if len(te.positions) == 0:
-                        print "bid_maker: no positions, order cleared"
+                    datafeed_is_stale = False
+                    if datafeed_age(te.input_file_name) > datafeed_stale_after_n_seconds:
+                        print "bid_maker: warning: stale datafeed detected - bidding disabled"
+                        datafeed_is_stale = True
+
+                    if len(te.positions) == 0 or datafeed_is_stale:
+                        if datafeed_is_stale:
+                            print "bid_maker: stale datafeed, order cleared"
+                        else:
+                            print "bid_maker: no positions, order cleared"
                         p = {'buy':-1.00,'bid_maker_time_stamp':time.time(),'gene_id':ag['id'],'score':0}
                         server.put_target(json.dumps(p),pid)
+                        te.cache_output(gdh + '/' + ag['id'],periods=60000)
 
                     # Calc the next buy trigger point
                     else:   #if len(te.positions) > 0:
@@ -198,7 +220,7 @@ while 1:
                         p.update({'bid_maker_time_stamp':time.time(),'gene_id':ag['id'],'score':score})
 
                         #te.chart("./report/chart.templ",gdh + '/' + ag['id'] + '.html',chart_zoom_periods,basic_chart=chart_type,write_cache_only=True)
-                        te.cache_output(gdh + '/' + ag['id'],periods=30000)
+                        te.cache_output(gdh + '/' + ag['id'],periods=150000)
 
                         #print "Evaluating target price"
                         if ((target >= p['buy']) or (abs(target - p['buy']) < 0.01)) and p['buy'] != 0: #submit the order at or below target

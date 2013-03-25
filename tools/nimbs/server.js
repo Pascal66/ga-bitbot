@@ -1,6 +1,6 @@
 //
 // server.js v0.01 
-//f
+//
 //    -- A node.js ga-bitbot server which also serves as a mtgox socket.io bridge 
 //	 This application must be started on the same computer running the ga-bitbot gene server.	
 //
@@ -24,7 +24,6 @@
 //
 var _redis = require("redis");
 var redis = _redis.createClient();
-
 var express = require('express');
 var app = express();
 app.use(express.static(__dirname + '/'));
@@ -45,17 +44,13 @@ var ask_depth = {};
 var bid_depth = {};
 var initializing = 1;
 
-
 //
 // get full depth using the mtgox http api 
 //   - bootstrap the depth data on the server
-
-
 var options = {
 	host: 'localhost',	
 	path: '/api/1/BTCUSD/fulldepth'
 };
-
 
 //give a bad address for the depth init - needed for debug 
 //because multiple requests from server restarts could get the IP banned
@@ -125,20 +120,12 @@ app.get('/gene_link/:hid/:gid', function (req, res) {
 		}
 		res.send(JSON.parse(reply));
 	});
-
-	//redis.keys('*', function (err, reply) {
-	//	console.log(err)
-	//	console.log(reply)
-	//});
 });
-
 
 
 //
 // create socket.io server
 //
-
-
 var server = http.createServer(app);
 var io = require('socket.io').listen(server);
 io.set('log level', 1);
@@ -146,7 +133,7 @@ server.listen(8088);
 var gabb = io.of('/ga_bitbot');
 var rpc_start_call = 0;
 
-//performance metrics - gene_server latency
+//performance metric functions - used to measure gene_server latency
 function startRPC(){
 	var d = new Date();
 	rpc_start_call = d.getSeconds();
@@ -165,6 +152,7 @@ function endRPC(){
 gabb.on('connection', function (socket) {
 
 	io.sockets.emit('user connected');
+    //when a user connects send them the full bid and ask depths
 	socket.emit('message', {'channel':'full_ask','depth':ask_depth});
 	socket.emit('message', {'channel':'full_bid','depth':bid_depth});
 
@@ -239,8 +227,6 @@ gabb.on('connection', function (socket) {
 	});
 });
 
-
-
 //
 // create client socket.io connection to MtGox
 //
@@ -305,6 +291,7 @@ function onMessage(msg)
 		{
 			if (msg.trade.price_currency == 'USD')
 			{
+                //add the trade to the buffer - used for 1min reporting
 				trade_buffer.push({'volume':msg.trade.amount, 'price':msg.trade.price});
 				console.log('server.js: ch_trades-amt: ' + msg.trade.amount + ', ch_trades-price: ' + msg.trade.price);
 			}
@@ -313,9 +300,7 @@ function onMessage(msg)
 
 }
 
-
-
-// send and archive the 1 min volume weighted trade data
+// send the 1 min volume weighted trade data
 function log_one_min_trade()
 {
 	var volume = 0;
@@ -325,56 +310,40 @@ function log_one_min_trade()
 		volume += parseFloat(trade.volume);
 		weighted += parseFloat(trade.volume) * parseFloat(trade.price);
 	});
-	weighted = weighted / volume;
 	trade_buffer = []; //clear the buffer
-	console.log('server.js: 1min price: ' + weighted + ', 1min volume: ' + volume);
 	if (volume > 0)
 	{
+        	weighted = weighted / volume;
 		gabb.emit('message', {'channel':'1min','price':weighted,'volume':volume,'time':(new Date).getTime()});
+        	console.log('server.js: 1min price: ' + weighted + ', 1min volume: ' + volume);
 	}
 }
 
 
+//periodically send data pulled from the xmlrpc server (gene server)
 function xmlrpcBroadcastBridge()
 {
 	var pid = "NODEJS";
 	var gene_def_hash = "";
 	// Sends a method call to the XML-RPC server
 	rpcClient.methodCall('get_default_gene_def_hash', [], function (error, value) {	
-		gene_def_hash = value.replace(/"/g,""); 
-		//console.log('get default gene hash response: ' + value);
-
+	    gene_def_hash = value.replace(/"/g,""); 
+	    //console.log('get default gene hash response: ' + value);
 		rpcClient.methodCall('pid_register_client', [pid, gene_def_hash], function (error, value) {
-			//console.log('register client response: ' + value + '::::' + gene_def_hash);
-
 			//client is registered - now pull the data
-
 			rpcClient.methodCall('get_target', [pid], function (error, value) {
 				//console.log('get target response: ' + value +', '+ pid +', '+ gene_def_hash);
 				gabb.emit('message', {'channel':'target_bid','price':value,'gene_def_hash':gene_def_hash});
 			});
-
 			rpcClient.methodCall('get_pids', [], function (error, value) {
 				//console.log('get pids response: ' + value);
 				gabb.emit('message', {'channel':'pids','value':JSON.parse(value)});
 			});
-
-			//rpcClient.methodCall('get_db', [], function (error, value) {
-				//console.log('get pids response: ' + value);
-			//	gabb.emit('message', {'channel':'gene_db','value':JSON.parse(value)});
-			//});
-			//rpcClient.methodCall('get_target', [pid], function (error, value) {
-			//	console.log('get target response: ' + value +', '+ pid +', '+ gene_def_hash);
-			//});
-
-
 		});
 
-	}); //.replace(/"/g,"")
-	
+	});	
 }
 
 // periodic timers
 setInterval(log_one_min_trade, 60000); //60 second interval
 setInterval(xmlrpcBroadcastBridge, 10000); //10 second interval
-
